@@ -691,6 +691,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
           <span style={bg2(mb.status==="Activo"?"#22c55e":"#6b7280")}>{mb.status}</span>
         </div>
         {mb.email&&<div style={{fontSize:10,color:s2}}>{mb.email}</div>}
+        {mb.notes&&<div style={{fontSize:10,color:mt,marginTop:6,lineHeight:1.4,borderTop:`1px solid ${bd}`,paddingTop:6}}>{mb.notes}</div>}
         {isA&&<div style={{borderTop:`1px solid ${bd}`,paddingTop:8,marginTop:8}}>
           {Number(mb.rate)>0&&<div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:10,color:mt}}>Pago ({mb.rateType})</span><span style={{fontSize:14,fontWeight:800,color:tl}}>{fm(mb.rate)}</span></div>}
           {Number(mb.invested)>0&&<div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:10,color:mt}}>Inversión</span><span style={{fontSize:14,fontWeight:800,color:"#22c55e"}}>{fm(mb.invested)}</span></div>}

@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STRYV — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.10/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Geist',system-ui,sans-serif;background:#0a0c10;color:#e0e6e4;overflow-x:hidden}
@@ -21,6 +21,7 @@ input,select,textarea,button{font-family:inherit}
 <body>
 <div id="root"></div>
 <script type="text/babel">
+window.addEventListener("unhandledrejection",e=>{console.error("Unhandled async error:",e.reason)});
 const{useState,useEffect,useMemo,useCallback}=React;
 const SB=window.supabase.createClient("https://ltveorvqvvlyivjwxjlc.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dmVvcnZxdnZseWl2and4amxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzODEzNTAsImV4cCI6MjA4Nzk1NzM1MH0.BpBc3lM6VpDyL5299H1MwQK0VBOBjKWQQconfpcCsfU");
 
@@ -42,7 +43,7 @@ const SS=["Activo","Completado","Pausado","Abandonó"];
 const AW=[{n:1,t:"Fundación",s:"¿Qué vas a vender y por qué te van a comprar?"},{n:2,t:"Sistema de Ventas",s:"Listo para cobrar aunque sea poquito"},{n:3,t:"Entrega y Automatización",s:"Que opere sin ti"},{n:4,t:"Medición, Tráfico y Control",s:"Crecer sin colapsar"}];
 const IT=["Inyección de capital","Pago de stack mensual","Equipo","Otro"];
 
-const fm=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0});
+const fm=n=>"$"+Number(n||0).toLocaleString("es-MX",{minimumFractionDigits:0});
 const MO=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const bg="#0a0c10",cd="#12161e",cd2="#181d27",bd="rgba(78,205,196,.12)",tl="#4ECDC4",tx="#e0e6e4",s2="rgba(224,230,228,.55)",mt="rgba(224,230,228,.3)";
 const lb={display:"block",fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:mt,marginBottom:6,fontFamily:"'Geist Mono',monospace"};
@@ -53,10 +54,34 @@ const bg2=c=>({background:`${c}22`,color:c,padding:"3px 10px",borderRadius:20,fo
 const toSn=o=>{const r={};for(const k in o)r[k.replace(/([A-Z])/g,"_$1").toLowerCase()]=o[k];return r};
 const toCa=o=>{if(!o)return o;const r={};for(const k in o)r[k.replace(/_([a-z])/g,(_,l)=>l.toUpperCase())]=o[k];return r};
 const toCaA=a=>(a||[]).map(toCa);
-async function dSel(t){const{data,error}=await SB.from(t).select("*").order("created_at",{ascending:true});return error?[]:toCaA(data)}
+async function dSel(t){
+  const{data,error,count}=await SB.from(t).select("*",{count:"exact"}).order("created_at",{ascending:true}).limit(2000);
+  if(!error&&count>2000)console.warn(`⚠ ${t}: ${count} rows, mostrando 2000`);
+  return error?[]:toCaA(data);
+}
 async function dIns(t,row){const c={...toSn(row)};delete c.id;delete c.created_at;delete c.updated_at;const{data,error}=await SB.from(t).insert(c).select();return error?null:toCa(data[0])}
 async function dUpd(t,id,row){const c={...toSn(row)};delete c.id;delete c.created_at;delete c.updated_at;const{data,error}=await SB.from(t).update(c).eq("id",id).select();return error?null:toCa(data[0])}
-async function dDel(t,id){const{error}=await SB.from(t).delete().eq("id",id);return !error}
+const _softDelTables=["clients","team","tools","projects","investments"];
+async function dDel(t,id){
+  if(_softDelTables.includes(t)){
+    const{error}=await SB.from(t).update({deleted_at:new Date().toISOString()}).eq("id",id);
+    if(error){console.error("soft delete error",t,error);return false}
+    return true;
+  }else{
+    const{error}=await SB.from(t).delete().eq("id",id);
+    if(error){console.error("delete error",t,error);return false}
+    return true;
+  }
+}
+
+const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,stackCost:0,stackDetail:"",startDate:"",estDelivery:"",notes:"",tasks:[]};
+const _eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:""};
+const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",paidBy:"STRYV",paidByName:""};
+const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,startDate:"",deadline:"",description:"",tasks:[],notes:""};
+const _eL={week:1,title:"",description:"",type:"Video",status:"Borrador",version:"v1",assets:[],notes:""};
+const _eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:"",convertedToClient:false,notes:""};
+const _eI={type:"Inyección de capital",investor:"",amount:0,date:"",notes:""};
+const today=()=>new Date().toISOString().split("T")[0];
 
 function App(){
 const[user,setUser]=useState(null);const[prof,setProf]=useState(null);const[aL,setAL]=useState(true);
@@ -64,27 +89,32 @@ const[aErr,setAErr]=useState("");const[aEm,setAEm]=useState("");const[aPw,setAPw
 const[chPw,setChPw]=useState(false);const[nPw,setNPw]=useState("");const[pwMsg,setPwMsg]=useState("");
 const isA=prof?.role==="admin";
 
+const lProf=async u=>{const{data}=await SB.from("profiles").select("*").eq("id",u).single();setProf(data?toCa(data):null);setAL(false)};
+
+// Fix 6: Only onAuthStateChange, no duplicate getSession
 useEffect(()=>{
-  SB.auth.getSession().then(({data:{session}})=>{setUser(session?.user||null);if(session?.user)lProf(session.user.id);else setAL(false)});
   const{data:{subscription}}=SB.auth.onAuthStateChange((_,s)=>{setUser(s?.user||null);if(s?.user)lProf(s.user.id);else{setProf(null);setAL(false)}});
   return()=>subscription.unsubscribe();
 },[]);
-const lProf=async u=>{const{data}=await SB.from("profiles").select("*").eq("id",u).single();setProf(data?toCa(data):null);setAL(false)};
-const login=async()=>{setAErr("");const{error}=await SB.auth.signInWithPassword({email:aEm,password:aPw});if(error)setAErr(error.message)};
+const login=async()=>{setAErr("");const{error}=await SB.auth.signInWithPassword({email:aEm,password:aPw});if(error)setAErr(error.message);else{setAPw("");setAEm("")}};
 const logout=async()=>{await SB.auth.signOut();setProf(null);setD({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[]})};
-const chPass=async()=>{setPwMsg("");const{error}=await SB.auth.updateUser({password:nPw});if(error)setPwMsg(error.message);else{setPwMsg("✓ Actualizada");setNPw("");setTimeout(()=>{setChPw(false);setPwMsg("")},2000)}};
+const chPassTimer=React.useRef(null);
+const chPass=async()=>{setPwMsg("");const{error}=await SB.auth.updateUser({password:nPw});if(error)setPwMsg(error.message);else{setPwMsg("✓ Actualizada");setNPw("");clearTimeout(chPassTimer.current);chPassTimer.current=setTimeout(()=>{setChPw(false);setPwMsg("")},2000)}};
+useEffect(()=>()=>clearTimeout(chPassTimer.current),[]);
 
 const[D,setD]=useState({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[]});
 const[ld,setLd]=useState(false);const[vw,setVw]=useState("dashboard");const[sub,setSub]=useState(null);
 const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");
+const loadLock=React.useRef(false);
 
-const eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,stackCost:0,stackDetail:"",startDate:new Date().toISOString().split("T")[0],estDelivery:"",notes:"",tasks:[]};
-const eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:""};
-const eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",paidBy:"STRYV",paidByName:""};
-const eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,startDate:new Date().toISOString().split("T")[0],deadline:"",description:"",tasks:[],notes:""};
-const eL={week:1,title:"",description:"",type:"Video",status:"Borrador",version:"v1",assets:[],notes:""};
-const eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:new Date().toISOString().split("T")[0],convertedToClient:false,notes:""};
-const eI={type:"Inyección de capital",investor:"",amount:0,date:new Date().toISOString().split("T")[0],notes:""};
+// Fix 1: templates from outside, add today() for dates
+const eC={..._eC,startDate:today()};
+const eM={..._eM};
+const eT={..._eT};
+const eP={..._eP,startDate:today()};
+const eL={..._eL};
+const eSt={..._eSt,startDate:today()};
+const eI={..._eI,date:today()};
 
 const[cF,setCF]=useState({...eC});const[mF,setMF]=useState({...eM});const[tF,setTF]=useState({...eT});
 const[pF,setPF]=useState({...eP});const[lF,setLF]=useState({...eL});const[sF,setSF]=useState({...eSt});const[iF,setIF]=useState({...eI});
@@ -92,49 +122,99 @@ const[pF,setPF]=useState({...eP});const[lF,setLF]=useState({...eL});const[sF,set
 const cl=D.clients,tm=D.team,tls=D.tools,pjs=D.projects,lsns=D.lessons,sts=D.students,invs=D.investments,leads=D.leads;
 
 const loadAll=useCallback(async()=>{
+  if(loadLock.current)return;
+  loadLock.current=true;
   setLd(true);
-  const[clients,team,tools,projects,lessons,students,investments,leads]=await Promise.all([dSel("clients"),dSel("team"),dSel("tools"),dSel("projects"),dSel("lessons"),dSel("students"),dSel("investments"),dSel("leads")]);
-  setD({clients,team,tools,projects,lessons,students,investments,leads});setLd(false);
+  try{
+    const[clients,team,tools,projects,lessons,students,investments,leads]=await Promise.all([dSel("clients"),dSel("team"),dSel("tools"),dSel("projects"),dSel("lessons"),dSel("students"),dSel("investments"),dSel("leads")]);
+    setD({clients,team,tools,projects,lessons,students,investments,leads});
+  }catch(err){console.error("loadAll error",err)}
+  setLd(false);
+  loadLock.current=false;
 },[]);
 useEffect(()=>{if(user)loadAll()},[user,loadAll]);
 
-const sv=async(t,f,sf,e)=>{if(!f.name&&!f.title&&!f.amount)return;if(eid)await dUpd(t,eid,f);else await dIns(t,f);sf({...e});setEid(null);setSub(null);await loadAll()};
+const sv=async(t,f,sf,e)=>{
+  if(t==="lessons"){if(!f.title){alert("Título requerido");return}}
+  else if(!f.name){alert("Nombre requerido");return}
+  const res=eid?await dUpd(t,eid,f):await dIns(t,f);
+  if(!res){alert("Error al guardar");return}
+  sf({...e});setEid(null);setSub(null);await loadAll();
+};
 const dl=async(t,id)=>{if(!confirm("¿Eliminar?"))return;await dDel(t,id);setEid(null);setSub(null);await loadAll()};
-const ed=(item,sf,v,s)=>{sf({...item});setEid(item.id);setVw(v);setSub(s)};
+const ed=(item,sf,v,s)=>{sf(JSON.parse(JSON.stringify(item)));setEid(item.id);setVw(v);setSub(s)};
 const goN=(v,s,sf,e)=>{setEid(null);setVw(v);setSub(s);sf({...e})};
-const svI=async()=>{const amt=iF.type==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:Number(iF.amount);if(!amt)return;const rec={...iF,amount:amt};if(eid)await dUpd("investments",eid,rec);else await dIns("investments",rec);setIF({...eI});setEid(null);setSub(null);await loadAll()};
-const mvSt=async(id,s)=>{await dUpd("clients",id,{stage:s});await loadAll()};
-const togT=async(cid,tid)=>{const c=cl.find(x=>x.id===cid);if(!c)return;await dUpd("clients",cid,{tasks:(c.tasks||[]).map(t=>t.id===tid?{...t,done:!t.done}:t)});await loadAll()};
-const togPT=async(pid,tid)=>{const p=pjs.find(x=>x.id===pid);if(!p)return;await dUpd("projects",pid,{tasks:(p.tasks||[]).map(t=>t.id===tid?{...t,done:!t.done}:t)});await loadAll()};
-const convLead=async l=>{const nc={...eC,name:l.name||"",email:l.email||"",phone:l.phone||"",company:l.company||"",source:l.source||"Web"};const ins=await dIns("clients",nc);if(ins)await dUpd("leads",l.id,{converted:true,convertedClientId:ins.id});await loadAll()};
+const svI=async()=>{const amt=iF.type==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:Number(iF.amount||0);if(!amt){alert("Monto requerido");return}const rec={...iF,amount:amt};if(eid)await dUpd("investments",eid,rec);else await dIns("investments",rec);setIF({...eI});setEid(null);setSub(null);await loadAll()};
+const mvSt=async(id,s)=>{
+  const prev=cl.find(x=>x.id===id)?.stage;
+  setD(p=>({...p,clients:p.clients.map(c=>c.id===id?{...c,stage:s}:c)}));
+  const res=await dUpd("clients",id,{stage:s});
+  if(!res){setD(p=>({...p,clients:p.clients.map(c=>c.id===id?{...c,stage:prev}:c)}));alert("Error al mover etapa")}
+};
+const togT=async(cid,tid)=>{
+  const c=cl.find(x=>x.id===cid);if(!c)return;
+  const oldTasks=c.tasks||[];
+  const newTasks=oldTasks.map(t=>t.id===tid?{...t,done:!t.done}:t);
+  setD(p=>({...p,clients:p.clients.map(x=>x.id===cid?{...x,tasks:newTasks}:x)}));
+  const res=await dUpd("clients",cid,{tasks:newTasks});
+  if(!res){setD(p=>({...p,clients:p.clients.map(x=>x.id===cid?{...x,tasks:oldTasks}:x)}));alert("Error al actualizar tarea")}
+};
+const togPT=async(pid,tid)=>{
+  const p=pjs.find(x=>x.id===pid);if(!p)return;
+  const oldTasks=p.tasks||[];
+  const newTasks=oldTasks.map(t=>t.id===tid?{...t,done:!t.done}:t);
+  setD(prev=>({...prev,projects:prev.projects.map(x=>x.id===pid?{...x,tasks:newTasks}:x)}));
+  const res=await dUpd("projects",pid,{tasks:newTasks});
+  if(!res){setD(prev=>({...prev,projects:prev.projects.map(x=>x.id===pid?{...x,tasks:oldTasks}:x)}));alert("Error al actualizar tarea")}
+};
+const convLead=async l=>{
+  try{
+    const{data:ins,error:e1}=await SB.from("clients").insert({name:(l.name||"").trim(),email:l.email||"",phone:l.phone||"",company:l.company||"",source:l.source||"Web",stage:"Lead",amount:0,amount_paid:0,mrr:0,stack_cost:0,solutions:[],tasks:[]}).select();
+    if(e1){alert("Error al crear cliente: "+e1.message);return}
+    const newCl=ins&&ins[0];
+    if(newCl){
+      const{error:e2}=await SB.from("leads").update({converted:true,converted_client_id:newCl.id}).eq("id",l.id);
+      if(e2)alert("Cliente creado pero error al marcar lead: "+e2.message);
+    }
+    await loadAll();
+  }catch(err){alert("Error: "+err.message)}};
 
 const me=useMemo(()=>{
   const tRev=cl.reduce((s,c)=>s+Number(c.amount||0),0),tPaid=cl.reduce((s,c)=>s+Number(c.amountPaid||0),0);
-  const tMRR=cl.filter(c=>c.stage==="Mantenimiento"||c.stage==="Entregado").reduce((s,c)=>s+Number(c.mrr||0),0);
+  // Fix 1: MRR cuenta cualquier cliente con mrr>0 sin importar etapa
+  const tMRR=cl.filter(c=>Number(c.mrr||0)>0).reduce((s,c)=>s+Number(c.mrr||0),0);
   const byStg={};STAGES.forEach(s=>{byStg[s]=cl.filter(c=>c.stage===s).length});
-  const byMo={};cl.forEach(c=>{if(c.startDate){const m=(c.startDate+"").substring(0,7);byMo[m]=(byMo[m]||0)+Number(c.amount||0)}});
+  // Fix 5: Revenue por mes usa amountPaid (dinero real cobrado) no amount (contratado)
+  const byMo={};cl.forEach(c=>{if(c.startDate){const ds=(c.startDate+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(m)byMo[m]=(byMo[m]||0)+Number(c.amountPaid||0)}});
   const cTasks=[],pTasks=[];
   cl.forEach(c=>{(c.tasks||[]).forEach(t=>{if(!t.done)cTasks.push({...t,cn:c.name,cid:c.id})})});
   pjs.forEach(p=>{(p.tasks||[]).forEach(t=>{if(!t.done)pTasks.push({...t,cn:p.name,cid:p.id})})});
-  const tmCost=tm.filter(x=>x.status==="Activo").reduce((s,x)=>{const ro=x.roles||[];if(ro.length===1&&ro[0]==="Inversionista")return s;const r=Number(x.rate||0);return s+(x.rateType==="Anual"?r/12:x.rateType==="Por proyecto"?0:r)},0);
-  const tlCost=tls.filter(x=>x.status==="Activo").reduce((s,x)=>{const c=Number(x.cost||0);return s+(x.billing==="Anual"?c/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:c)},0);
+  // Fix 2: "Por hora" excluido igual que "Por proyecto"
+  const tmCost=tm.filter(x=>x.status==="Activo").reduce((s,x)=>{const ro=x.roles||[];if(ro.length===1&&ro[0]==="Inversionista")return s;const r=Number(x.rate||0);return s+(x.rateType==="Anual"?r/12:x.rateType==="Por proyecto"||x.rateType==="Por hora"?0:r)},0);
+  // Fix 3: tlCost derivado de tlP para evitar divergencia
   const tlP={STRYV:0,Inversor:0,Cliente:0};
-  tls.filter(x=>x.status==="Activo").forEach(x=>{const c=Number(x.cost||0);const mo=x.billing==="Anual"?c/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:c;tlP[x.paidBy||"STRYV"]=(tlP[x.paidBy||"STRYV"]||0)+mo});
-  const tlCov=tlCost?Math.round(((tlP.Cliente+tlP.Inversor)/tlCost)*100):0;
+  tls.filter(x=>x.status==="Activo").forEach(x=>{const c=Number(x.cost||0);const mo=x.billing==="Anual"?c/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:c;const pk=x.paidBy||"STRYV";tlP[pk]=(tlP[pk]||0)+mo});
+  const tlCost=Object.values(tlP).reduce((s,v)=>s+v,0);
+  // Fix 4: Si no hay costo, cobertura es 100%
+  const tlCov=tlCost?Math.round(((tlP.Cliente+tlP.Inversor)/tlCost)*100):100;
   const totCost=tmCost+tlCost,clSt=cl.reduce((s,c)=>s+Number(c.stackCost||0),0);
+  // Fix 7: MRR de academia (alumnos activos)
+  const acaMRR=sts.filter(x=>x.status==="Activo").reduce((s,x)=>s+Number(x.amount||0),0);
   const acaRev=sts.reduce((s,x)=>s+Number(x.amountPaid||0),0),acaAct=sts.filter(x=>x.status==="Activo").length,acaCnv=sts.filter(x=>x.convertedToClient).length;
   const lR=lsns.filter(x=>x.status==="Listo").length;
   const tInj=invs.filter(x=>x.type==="Inyección de capital").reduce((s,x)=>s+Number(x.amount||0),0);
   const tSP=invs.filter(x=>x.type==="Pago de stack mensual").reduce((s,x)=>s+Number(x.amount||0),0);
   const tIA=invs.reduce((s,x)=>s+Number(x.amount||0),0);
+  // Fix 8: Inversiones sin fecha se ignoran en todos los desgloces
   const iMo={},iT={},iInv={};
-  invs.forEach(x=>{if(x.date){const m=(x.date+"").substring(0,7);iMo[m]=(iMo[m]||0)+Number(x.amount||0)};iT[x.type]=(iT[x.type]||0)+Number(x.amount||0);const inv=x.investor||"Sin asignar";iInv[inv]=(iInv[inv]||0)+Number(x.amount||0)});
+  invs.forEach(x=>{if(!x.date)return;const ds=(x.date+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(!m)return;iMo[m]=(iMo[m]||0)+Number(x.amount||0);iT[x.type]=(iT[x.type]||0)+Number(x.amount||0);const inv=x.investor||"Sin asignar";iInv[inv]=(iInv[inv]||0)+Number(x.amount||0)});
   const nL=leads.filter(l=>!l.converted).length;
-  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,totCost,profit:tMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,clSt,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,iMo,iT,iInv,tlP,tlCov,nL};
+  // Fix 7b: profit incluye MRR de academia
+  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,totCost,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,clSt,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,iMo,iT,iInv,tlP,tlCov,nL};
 },[cl,tm,tls,pjs,lsns,sts,invs,leads]);
 
 const fCl=useMemo(()=>cl.filter(c=>{const ms=!srch||c.name?.toLowerCase().includes(srch.toLowerCase())||(c.company||"").toLowerCase().includes(srch.toLowerCase());return ms&&(fSt==="Todos"||c.stage===fSt)}),[cl,srch,fSt]);
-const mxMo=Math.max(...Object.values(me.byMo),1);
+const mxMoVals=Object.values(me.byMo);const mxMo=mxMoVals.length?mxMoVals.reduce((a,b)=>a>b?a:b,1):1;
 
 if(aL)return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:bg}}><div style={{animation:"spin 1s linear infinite",width:30,height:30,border:`3px solid ${bd}`,borderTop:`3px solid ${tl}`,borderRadius:"50%"}}/></div>;
 if(!user)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:bg}}>
@@ -181,7 +261,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 {/* DASHBOARD */}
 {vw==="dashboard"&&!sub&&(<div>
   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(125px,1fr))",gap:8,marginBottom:16}}>
-    {[{l:"Revenue total",v:fm(me.tRev),c:tl},{l:"Cobrado",v:fm(me.tPaid),c:"#22c55e"},{l:"Pendiente",v:fm(me.tPend),c:me.tPend>0?"#f59e0b":"#22c55e"},{l:"MRR",v:fm(me.tMRR),c:"#8b5cf6"},
+    {[{l:"Revenue total",v:fm(me.tRev),c:tl},{l:"Cobrado",v:fm(me.tPaid),c:"#22c55e"},{l:"Pendiente",v:fm(me.tPend),c:me.tPend>0?"#f59e0b":"#22c55e"},{l:"MRR clientes",v:fm(me.tMRR),c:"#8b5cf6"},{l:"MRR academia",v:fm(me.acaMRR),c:"#e879f9"},
       ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#ff6b6b"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?"#22c55e":"#ff6b6b"},{l:"Inversión total",v:fm(me.tIA),c:"#22c55e"},{l:"Stack clientes",v:fm(me.clSt),c:"#f59e0b"}]:[]),
       {l:"Leads",v:me.nLeads,c:"#f59e0b"},{l:"Leads web",v:me.nL,c:"#e879f9"},{l:"Proy. clientes",v:me.active,c:tl},{l:"Equipo",v:me.aTm,c:"#3b82f6"},
       {l:"Alumnos",v:me.acaAct,c:"#e879f9"},...(isA?[{l:"Rev. academia",v:fm(me.acaRev),c:"#e879f9"}]:[]),
@@ -201,7 +281,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       </div>)}
     </div>
     <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
-      <div style={hd}>Revenue/mes</div>
+      <div style={hd}>Cobrado/mes</div>
       {Object.keys(me.byMo).length===0?<div style={{color:mt,fontSize:12}}>Sin datos.</div>:
         Object.entries(me.byMo).sort().slice(-6).map(([mo,v])=><div key={mo} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
           <span style={{fontSize:11,color:s2,width:45,flexShrink:0}}>{MO[parseInt(mo.split("-")[1])-1]} {mo.split("-")[0].slice(2)}</span>
@@ -270,7 +350,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Fuente</label><select value={cF.source} onChange={e=>setCF({...cF,source:e.target.value})} style={iS}>{SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
     <div><label style={lb}>Etapa</label><select value={cF.stage} onChange={e=>setCF({...cF,stage:e.target.value})} style={iS}>{STAGES.map(s=><option key={s}>{s}</option>)}</select></div>
   </div>
-  <div style={{marginBottom:16}}><label style={lb}>Soluciones</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{SOLUTIONS.map(sol=>{const sel=(cF.solutions||[]).includes(sol);return <button key={sol} onClick={()=>setCF(p=>({...p,solutions:sel?p.solutions.filter(s=>s!==sol):[...(p.solutions||[]),sol]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"5px 10px",borderRadius:6,fontSize:10,cursor:"pointer",fontWeight:sel?700:500}}>{sol}</button>})}</div></div>
+  <div style={{marginBottom:16}}><label style={lb}>Soluciones</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{SOLUTIONS.map(sol=>{const sel=(cF.solutions||[]).includes(sol);return <button key={sol} onClick={()=>setCF(p=>({...p,solutions:sel?(p.solutions||[]).filter(s=>s!==sol):[...(p.solutions||[]),sol]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"5px 10px",borderRadius:6,fontSize:10,cursor:"pointer",fontWeight:sel?700:500}}>{sol}</button>})}</div></div>
   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>{[{k:"amount",l:"Monto total"},{k:"amountPaid",l:"Pagado"},{k:"mrr",l:"MRR"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={cF[f.k]} onChange={e=>setCF({...cF,[f.k]:e.target.value})} type="number" placeholder="0" style={iS}/></div>)}</div>
   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
     <div><label style={lb}>Stack/mes</label><input value={cF.stackCost} onChange={e=>setCF({...cF,stackCost:e.target.value})} type="number" style={iS}/></div>
@@ -278,11 +358,11 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   </div>
   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
     <div><label style={lb}>Inicio</label><input value={(cF.startDate+"").substring(0,10)} onChange={e=>setCF({...cF,startDate:e.target.value})} type="date" style={iS}/></div>
-    <div><label style={lb}>Entrega</label><input value={(cF.estDelivery||"")+"".substring(0,10)} onChange={e=>setCF({...cF,estDelivery:e.target.value})} type="date" style={iS}/></div>
+    <div><label style={lb}>Entrega</label><input value={((cF.estDelivery||"")+"").substring(0,10)} onChange={e=>setCF({...cF,estDelivery:e.target.value})} type="date" style={iS}/></div>
   </div>
   <div style={{marginBottom:16}}><label style={lb}>Tareas</label>
     {(cF.tasks||[]).map((t,i)=><div key={t.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}><input checked={t.done} onChange={()=>{const ts=[...cF.tasks];ts[i]={...ts[i],done:!ts[i].done};setCF({...cF,tasks:ts})}} type="checkbox" style={{accentColor:tl}}/><input value={t.text} onChange={e=>{const ts=[...cF.tasks];ts[i]={...ts[i],text:e.target.value};setCF({...cF,tasks:ts})}} placeholder="Tarea..." style={{...iS,flex:1}}/><button onClick={()=>setCF({...cF,tasks:cF.tasks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button></div>)}
-    <button onClick={()=>setCF({...cF,tasks:[...(cF.tasks||[]),{text:"",done:false,id:Math.random().toString(36).substr(2,9)}]})} style={{background:"rgba(78,205,196,.06)",border:`1px dashed ${bd}`,color:s2,padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Tarea</button>
+    <button onClick={()=>setCF({...cF,tasks:[...(cF.tasks||[]),{text:"",done:false,id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(78,205,196,.06)",border:`1px dashed ${bd}`,color:s2,padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Tarea</button>
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={cF.notes} onChange={e=>setCF({...cF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
   <div style={{display:"flex",gap:8}}>
@@ -357,11 +437,11 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Budget</label><input value={pF.budget} onChange={e=>setPF({...pF,budget:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Gastado</label><input value={pF.spent} onChange={e=>setPF({...pF,spent:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Inicio</label><input value={(pF.startDate+"").substring(0,10)} onChange={e=>setPF({...pF,startDate:e.target.value})} type="date" style={iS}/></div>
-    <div><label style={lb}>Deadline</label><input value={(pF.deadline||"")+"".substring(0,10)} onChange={e=>setPF({...pF,deadline:e.target.value})} type="date" style={iS}/></div>
+    <div><label style={lb}>Deadline</label><input value={((pF.deadline||"")+"").substring(0,10)} onChange={e=>setPF({...pF,deadline:e.target.value})} type="date" style={iS}/></div>
   </div>}
   <div style={{marginBottom:16}}><label style={lb}>Tareas</label>
     {(pF.tasks||[]).map((t,i)=><div key={t.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}><input checked={t.done} onChange={()=>{const ts=[...pF.tasks];ts[i]={...ts[i],done:!ts[i].done};setPF({...pF,tasks:ts})}} type="checkbox" style={{accentColor:"#8b5cf6"}}/><input value={t.text} onChange={e=>{const ts=[...pF.tasks];ts[i]={...ts[i],text:e.target.value};setPF({...pF,tasks:ts})}} style={{...iS,flex:1}}/><button onClick={()=>setPF({...pF,tasks:pF.tasks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button></div>)}
-    <button onClick={()=>setPF({...pF,tasks:[...(pF.tasks||[]),{text:"",done:false,id:Math.random().toString(36).substr(2,9)}]})} style={{background:"rgba(139,92,246,.06)",border:"1px dashed rgba(139,92,246,.3)",color:"#8b5cf6",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Tarea</button>
+    <button onClick={()=>setPF({...pF,tasks:[...(pF.tasks||[]),{text:"",done:false,id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(139,92,246,.06)",border:"1px dashed rgba(139,92,246,.3)",color:"#8b5cf6",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Tarea</button>
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={pF.notes} onChange={e=>setPF({...pF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
   <div style={{display:"flex",gap:8}}>
@@ -465,7 +545,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   <div style={{display:"flex",gap:8}}>
     <button onClick={()=>sv("lessons",lF,setLF,eL)} style={{background:"#e879f9",border:"none",color:bg,padding:"10px 24px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Crear"}</button>
     <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"10px 24px",borderRadius:8,fontSize:13,cursor:"pointer"}}>Cancelar</button>
-    {eid&&<button onClick={()=>dl("lessons",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"10px 18px",borderRadius:8,fontSize:12,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+    {eid&&isA&&<button onClick={()=>dl("lessons",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"10px 18px",borderRadius:8,fontSize:12,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
 </div>)}
 
@@ -688,7 +768,8 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>
 </div>);
 }
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+class EB extends React.Component{constructor(p){super(p);this.state={err:null}}static getDerivedStateFromError(e){return{err:e}}componentDidCatch(e,i){console.error("STRYV Error:",e,i)}render(){if(this.state.err)return <div style={{padding:40,textAlign:"center",color:"#ff6b6b",background:"#0a0c10",minHeight:"100vh"}}><h2>Error en el dashboard</h2><pre style={{fontSize:12,color:"#e0e6e4",marginTop:16,textAlign:"left",maxWidth:600,margin:"16px auto",whiteSpace:"pre-wrap"}}>{this.state.err.toString()}</pre><button onClick={()=>this.setState({err:null})} style={{marginTop:16,background:"#4ECDC4",border:"none",color:"#0a0c10",padding:"10px 24px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}>Reintentar</button></div>;return this.props.children}}
+ReactDOM.createRoot(document.getElementById("root")).render(<EB><App/></EB>);
 </script>
 </body>
 </html>

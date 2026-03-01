@@ -14,8 +14,35 @@
 body{font-family:'Geist',system-ui,sans-serif;background:#0a0c10;color:#e0e6e4;overflow-x:hidden}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#12161e}::-webkit-scrollbar-thumb{background:#2a3040;border-radius:4px}
 ::selection{background:#4ECDC4;color:#0a0c10}
-input,select,textarea,button{font-family:inherit}
+input,select,textarea,button{font-family:inherit;font-size:16px}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── RESPONSIVE GRIDS ─── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.g-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}
+.g-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.g-inv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+
+@media(max-width:768px){
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .g-cards{grid-template-columns:repeat(2,1fr)}
+  .g-auto{grid-template-columns:1fr}
+  .g-inv{grid-template-columns:repeat(2,1fr)}
+  .mob-hide{display:none!important}
+  .mob-col{flex-direction:column!important}
+  .mob-full{width:100%!important;min-width:0!important}
+  .mob-wrap{flex-wrap:wrap!important}
+  .nav-btns{position:fixed;top:56px;left:0;right:0;background:#12161e;border-bottom:1px solid rgba(78,205,196,.12);padding:8px;display:flex;flex-wrap:wrap;gap:4px;z-index:99;justify-content:center}
+  .nav-btns button{padding:10px 12px!important;font-size:12px!important;min-height:40px}
+  .mob-stack{flex-direction:column!important;align-items:stretch!important}
+  .mob-pad{padding-top:60px}
+}
+@media(min-width:769px){
+  .nav-toggle{display:none!important}
+  .nav-btns{display:flex;gap:1px}
+}
 </style>
 </head>
 <body>
@@ -87,6 +114,7 @@ function App(){
 const[user,setUser]=useState(null);const[prof,setProf]=useState(null);const[aL,setAL]=useState(true);
 const[aErr,setAErr]=useState("");const[aEm,setAEm]=useState("");const[aPw,setAPw]=useState("");
 const[chPw,setChPw]=useState(false);const[nPw,setNPw]=useState("");const[pwMsg,setPwMsg]=useState("");
+const[navOpen,setNavOpen]=useState(false);
 const isA=prof?.role==="admin";
 
 const lProf=async u=>{const{data}=await SB.from("profiles").select("*").eq("id",u).single();setProf(data?toCa(data):null);setAL(false)};
@@ -218,7 +246,7 @@ const mxMoVals=Object.values(me.byMo);const mxMo=mxMoVals.length?mxMoVals.reduce
 
 if(aL)return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:bg}}><div style={{animation:"spin 1s linear infinite",width:30,height:30,border:`3px solid ${bd}`,borderTop:`3px solid ${tl}`,borderRadius:"50%"}}/></div>;
 if(!user)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:bg}}>
-  <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:36,width:340,textAlign:"center"}}>
+  <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:36,width:"90%",maxWidth:340,textAlign:"center"}}>
     <div style={{fontWeight:800,fontSize:18,letterSpacing:".12em",color:tl,fontFamily:"'Geist Mono',monospace",marginBottom:6}}>STRYV</div>
     <div style={{fontSize:12,color:mt,marginBottom:24}}>Centro de comando</div>
     <input value={aEm} onChange={e=>setAEm(e.target.value)} placeholder="Email" type="email" style={{...iS,marginBottom:10}} onKeyDown={e=>e.key==="Enter"&&login()}/>
@@ -232,23 +260,24 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 {/* NAV */}
 <div style={{background:cd,borderBottom:`1px solid ${bd}`,padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between",height:56,position:"sticky",top:0,zIndex:100}}>
   <div style={{display:"flex",alignItems:"center",gap:12}}>
-    <span style={{fontWeight:800,fontSize:15,letterSpacing:".12em",color:tl,fontFamily:"'Geist Mono',monospace",cursor:"pointer"}} onClick={()=>{setVw("dashboard");setSub(null)}}>STRYV</span>
-    <div style={{display:"flex",gap:1}}>
+    <span style={{fontWeight:800,fontSize:15,letterSpacing:".12em",color:tl,fontFamily:"'Geist Mono',monospace",cursor:"pointer"}} onClick={()=>{setVw("dashboard");setSub(null);setNavOpen(false)}}>STRYV</span>
+    <button className="nav-toggle" onClick={()=>setNavOpen(!navOpen)} style={{background:"none",border:`1px solid ${bd}`,color:tl,padding:"6px 10px",borderRadius:6,fontSize:16,cursor:"pointer",lineHeight:1}}>{navOpen?"✕":"☰"}</button>
+    <div className={`nav-btns${navOpen?"":" mob-hide"}`}>
       {[{k:"dashboard",l:"Dashboard"},{k:"clients",l:"Clientes"},{k:"pipeline",l:"Pipeline"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},{k:"projects",l:"Proyectos"},{k:"academy",l:"Academia"},
         ...(isA?[{k:"investment",l:"Inversión"}]:[]),{k:"team",l:"Equipo"},{k:"stack",l:"Stack"}].map(n=>
-        <button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("")}} style={{background:vw===n.k?"rgba(78,205,196,.12)":"transparent",border:"none",color:vw===n.k?tl:s2,padding:"8px 10px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer"}}>{n.l}</button>)}
+        <button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false)}} style={{background:vw===n.k?"rgba(78,205,196,.12)":"transparent",border:"none",color:vw===n.k?tl:s2,padding:"8px 10px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer"}}>{n.l}</button>)}
     </div>
   </div>
   <div style={{display:"flex",gap:6,alignItems:"center"}}>
     {ld&&<div style={{animation:"spin .8s linear infinite",width:14,height:14,border:`2px solid ${bd}`,borderTop:`2px solid ${tl}`,borderRadius:"50%"}}/>}
-    <span style={{fontSize:10,color:mt}}>{user?.email}</span>
+    <span className="mob-hide" style={{fontSize:10,color:mt}}>{user?.email}</span>
     {isA&&<span style={{background:"rgba(78,205,196,.12)",color:tl,padding:"2px 8px",borderRadius:10,fontSize:9,fontWeight:700}}>Admin</span>}
-    <button onClick={()=>setChPw(true)} style={{background:"none",border:`1px solid ${bd}`,color:mt,padding:"4px 8px",borderRadius:6,fontSize:9,cursor:"pointer"}}>🔑</button>
-    <button onClick={logout} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.2)",color:"#ff6b6b",padding:"4px 10px",borderRadius:6,fontSize:10,cursor:"pointer"}}>Salir</button>
+    <button onClick={()=>setChPw(true)} style={{background:"none",border:`1px solid ${bd}`,color:mt,padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36}}>🔑</button>
+    <button onClick={logout} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.2)",color:"#ff6b6b",padding:"6px 12px",borderRadius:6,fontSize:11,cursor:"pointer",minHeight:36}}>Salir</button>
   </div>
 </div>
 {chPw&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setChPw(false)}>
-  <div onClick={e=>e.stopPropagation()} style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:28,width:320,textAlign:"center"}}>
+  <div onClick={e=>e.stopPropagation()} style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:28,width:"90%",maxWidth:320,textAlign:"center"}}>
     <div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Cambiar contraseña</div>
     <input value={nPw} onChange={e=>setNPw(e.target.value)} type="password" placeholder="Nueva (mín 6)" style={{...iS,marginBottom:10}} onKeyDown={e=>e.key==="Enter"&&chPass()}/>
     {pwMsg&&<div style={{color:pwMsg.startsWith("✓")?"#22c55e":"#ff6b6b",fontSize:11,marginBottom:10}}>{pwMsg}</div>}
@@ -256,11 +285,11 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   </div>
 </div>}
 
-<div style={{maxWidth:1200,margin:"0 auto",padding:"20px 16px"}}>
+<div className={navOpen?"mob-pad":""} style={{maxWidth:1200,margin:"0 auto",padding:"20px 16px"}}>
 
 {/* DASHBOARD */}
 {vw==="dashboard"&&!sub&&(<div>
-  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(125px,1fr))",gap:8,marginBottom:16}}>
+  <div className="g-cards" style={{marginBottom:16}}>
     {[{l:"Revenue total",v:fm(me.tRev),c:tl},{l:"Cobrado",v:fm(me.tPaid),c:"#22c55e"},{l:"Pendiente",v:fm(me.tPend),c:me.tPend>0?"#f59e0b":"#22c55e"},{l:"MRR clientes",v:fm(me.tMRR),c:"#8b5cf6"},{l:"MRR academia",v:fm(me.acaMRR),c:"#e879f9"},
       ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#ff6b6b"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?"#22c55e":"#ff6b6b"},{l:"Inversión total",v:fm(me.tIA),c:"#22c55e"},{l:"Stack clientes",v:fm(me.clSt),c:"#f59e0b"}]:[]),
       {l:"Leads",v:me.nLeads,c:"#f59e0b"},{l:"Leads web",v:me.nL,c:"#e879f9"},{l:"Proy. clientes",v:me.active,c:tl},{l:"Equipo",v:me.aTm,c:"#3b82f6"},
@@ -271,7 +300,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <div style={{fontSize:20,fontWeight:800,color:k.c,letterSpacing:"-.03em"}}>{k.v}</div>
     </div>)}
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
       <div style={hd}>Pipeline</div>
       {STAGES.map(s=><div key={s} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
@@ -290,7 +319,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         </div>)}
     </div>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:isA?"1fr 1fr 1fr":"1fr 1fr",gap:10}}>
+  <div className="g-auto">
     {isA&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
       <div style={hd}>Costos/mes</div>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:12,color:s2}}>Equipo</span><span style={{fontSize:13,fontWeight:700,color:"#ff6b6b"}}>{fm(me.tmCost)}</span></div>
@@ -300,26 +329,26 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
       <div style={hd}>Tareas clientes ({me.cTasks.length})</div>
       <div style={{maxHeight:160,overflowY:"auto"}}>{me.cTasks.slice(0,6).map((t,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-        <button onClick={()=>togT(t.cid,t.id)} style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${tl}`,background:"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:tl}}/>
+        <button onClick={()=>togT(t.cid,t.id)} style={{width:28,height:28,borderRadius:6,border:`1.5px solid ${tl}`,background:"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:tl}}/>
         <div><div style={{fontSize:11}}>{t.text}</div><div style={{fontSize:9,color:mt}}>{t.cn}</div></div>
       </div>)}{me.cTasks.length===0&&<div style={{color:mt,fontSize:11}}>Todo al día 🎉</div>}</div>
       {(()=>{const done=[];cl.forEach(c=>{(c.tasks||[]).forEach(t=>{if(t.done)done.push({...t,cn:c.name,cid:c.id})})});const r=done.slice(-3).reverse();return r.length>0?<div style={{borderTop:`1px solid ${bd}`,marginTop:8,paddingTop:8}}>
         <div style={{fontSize:9,color:mt,marginBottom:4,fontWeight:600}}>✓ COMPLETADAS</div>
         {r.map((t,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:4,alignItems:"center"}}>
-          <button onClick={()=>togT(t.cid,t.id)} style={{width:16,height:16,borderRadius:4,border:"1.5px solid #22c55e",background:"rgba(34,197,94,.15)",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:"#22c55e"}}>✓</button>
+          <button onClick={()=>togT(t.cid,t.id)} style={{width:28,height:28,borderRadius:6,border:"1.5px solid #22c55e",background:"rgba(34,197,94,.15)",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:"#22c55e"}}>✓</button>
           <div><div style={{fontSize:11,color:mt,textDecoration:"line-through"}}>{t.text}</div><div style={{fontSize:9,color:"rgba(224,230,228,.15)"}}>{t.cn}</div></div>
         </div>)}</div>:null})()}
     </div>
     <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
       <div style={hd}>Tareas internas ({me.pTasks.length})</div>
       <div style={{maxHeight:160,overflowY:"auto"}}>{me.pTasks.slice(0,6).map((t,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-        <button onClick={()=>togPT(t.cid,t.id)} style={{width:16,height:16,borderRadius:4,border:"1.5px solid #8b5cf6",background:"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:"#8b5cf6"}}/>
+        <button onClick={()=>togPT(t.cid,t.id)} style={{width:28,height:28,borderRadius:6,border:"1.5px solid #8b5cf6",background:"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:"#8b5cf6"}}/>
         <div><div style={{fontSize:11}}>{t.text}</div><div style={{fontSize:9,color:mt}}>{t.cn}</div></div>
       </div>)}{me.pTasks.length===0&&<div style={{color:mt,fontSize:11}}>Sin pendientes 🎉</div>}</div>
       {(()=>{const done=[];pjs.forEach(p=>{(p.tasks||[]).forEach(t=>{if(t.done)done.push({...t,cn:p.name,cid:p.id})})});const r=done.slice(-3).reverse();return r.length>0?<div style={{borderTop:`1px solid ${bd}`,marginTop:8,paddingTop:8}}>
         <div style={{fontSize:9,color:mt,marginBottom:4,fontWeight:600}}>✓ COMPLETADAS</div>
         {r.map((t,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:4,alignItems:"center"}}>
-          <button onClick={()=>togPT(t.cid,t.id)} style={{width:16,height:16,borderRadius:4,border:"1.5px solid #22c55e",background:"rgba(34,197,94,.15)",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:"#22c55e"}}>✓</button>
+          <button onClick={()=>togPT(t.cid,t.id)} style={{width:28,height:28,borderRadius:6,border:"1.5px solid #22c55e",background:"rgba(34,197,94,.15)",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:"#22c55e"}}>✓</button>
           <div><div style={{fontSize:11,color:mt,textDecoration:"line-through"}}>{t.text}</div><div style={{fontSize:9,color:"rgba(224,230,228,.15)"}}>{t.cn}</div></div>
         </div>)}</div>:null})()}
     </div>
@@ -328,13 +357,13 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 
 {/* CLIENTS LIST */}
 {vw==="clients"&&!sub&&(<div>
-  <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+  <div className="mob-col" style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
     <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>
     <select value={fSt} onChange={e=>setFSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Todas</option>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
-    {isA&&<button onClick={()=>goN("clients","cF",setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"10px 18px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>＋ Nuevo</button>}
+    {isA&&<button onClick={()=>goN("clients","cF",setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Nuevo</button>}
   </div>
   {fCl.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin clientes</div>:
-    fCl.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,cursor:"pointer",marginBottom:6}}>
+    fCl.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} className="mob-wrap" style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:6}}>
       <div style={{width:8,height:8,borderRadius:"50%",background:SC[c.stage],flexShrink:0}}/>
       <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700}}>{c.name} {c.company&&<span style={{fontWeight:400,color:s2}}>· {c.company}</span>}</div><div style={{fontSize:10,color:mt,marginTop:1}}>{(c.solutions||[]).join(", ")||"—"}</div></div>
       <div style={{textAlign:"right",flexShrink:0}}><div style={{fontSize:14,fontWeight:800,color:tl}}>{fm(c.amount)}</div><div style={{fontSize:9,color:mt}}>Pagado: {fm(c.amountPaid)}</div></div>
@@ -343,20 +372,20 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>)}
 
 {/* CLIENT FORM */}
-{vw==="clients"&&sub==="cF"&&(<div style={{maxWidth:700}}>
+{vw==="clients"&&sub==="cF"&&(<div style={{maxWidth:700,width:"100%"}}>
   <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar cliente":"Nuevo cliente"}</div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>{[{k:"name",l:"Nombre *",p:"Juan"},{k:"company",l:"Empresa",p:"SA"},{k:"phone",l:"WhatsApp",p:"+52"},{k:"email",l:"Email",p:"@"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={cF[f.k]} onChange={e=>setCF({...cF,[f.k]:e.target.value})} placeholder={f.p} style={iS}/></div>)}</div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>{[{k:"name",l:"Nombre *",p:"Juan"},{k:"company",l:"Empresa",p:"SA"},{k:"phone",l:"WhatsApp",p:"+52"},{k:"email",l:"Email",p:"@"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={cF[f.k]} onChange={e=>setCF({...cF,[f.k]:e.target.value})} placeholder={f.p} style={iS}/></div>)}</div>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Fuente</label><select value={cF.source} onChange={e=>setCF({...cF,source:e.target.value})} style={iS}>{SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
     <div><label style={lb}>Etapa</label><select value={cF.stage} onChange={e=>setCF({...cF,stage:e.target.value})} style={iS}>{STAGES.map(s=><option key={s}>{s}</option>)}</select></div>
   </div>
-  <div style={{marginBottom:16}}><label style={lb}>Soluciones</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{SOLUTIONS.map(sol=>{const sel=(cF.solutions||[]).includes(sol);return <button key={sol} onClick={()=>setCF(p=>({...p,solutions:sel?(p.solutions||[]).filter(s=>s!==sol):[...(p.solutions||[]),sol]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"5px 10px",borderRadius:6,fontSize:10,cursor:"pointer",fontWeight:sel?700:500}}>{sol}</button>})}</div></div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>{[{k:"amount",l:"Monto total"},{k:"amountPaid",l:"Pagado"},{k:"mrr",l:"MRR"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={cF[f.k]} onChange={e=>setCF({...cF,[f.k]:e.target.value})} type="number" placeholder="0" style={iS}/></div>)}</div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div style={{marginBottom:16}}><label style={lb}>Soluciones</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{SOLUTIONS.map(sol=>{const sel=(cF.solutions||[]).includes(sol);return <button key={sol} onClick={()=>setCF(p=>({...p,solutions:sel?(p.solutions||[]).filter(s=>s!==sol):[...(p.solutions||[]),sol]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"8px 12px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:sel?700:500,minHeight:36}}>{sol}</button>})}</div></div>
+  <div className="g3" style={{marginBottom:16}}>{[{k:"amount",l:"Monto total"},{k:"amountPaid",l:"Pagado"},{k:"mrr",l:"MRR"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={cF[f.k]} onChange={e=>setCF({...cF,[f.k]:e.target.value})} type="number" placeholder="0" style={iS}/></div>)}</div>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Stack/mes</label><input value={cF.stackCost} onChange={e=>setCF({...cF,stackCost:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Detalle stack</label><input value={cF.stackDetail} onChange={e=>setCF({...cF,stackDetail:e.target.value})} placeholder="Make, CF..." style={iS}/></div>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Inicio</label><input value={(cF.startDate+"").substring(0,10)} onChange={e=>setCF({...cF,startDate:e.target.value})} type="date" style={iS}/></div>
     <div><label style={lb}>Entrega</label><input value={((cF.estDelivery||"")+"").substring(0,10)} onChange={e=>setCF({...cF,estDelivery:e.target.value})} type="date" style={iS}/></div>
   </div>
@@ -365,21 +394,21 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <button onClick={()=>setCF({...cF,tasks:[...(cF.tasks||[]),{text:"",done:false,id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(78,205,196,.06)",border:`1px dashed ${bd}`,color:s2,padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Tarea</button>
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={cF.notes} onChange={e=>setCF({...cF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
-  <div style={{display:"flex",gap:8}}>
-    <button onClick={()=>sv("clients",cF,setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"10px 24px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Registrar"}</button>
-    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"10px 24px",borderRadius:8,fontSize:13,cursor:"pointer"}}>Cancelar</button>
-    {eid&&isA&&<button onClick={()=>dl("clients",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"10px 18px",borderRadius:8,fontSize:12,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("clients",cF,setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Registrar"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&isA&&<button onClick={()=>dl("clients",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
 </div>)}
 
 {/* PIPELINE */}
-{vw==="pipeline"&&(<div style={{overflowX:"auto"}}><div style={{display:"flex",gap:10,minWidth:900}}>
+{vw==="pipeline"&&(<div style={{overflowX:"auto"}}><div className="mob-col" style={{display:"flex",gap:10}}>
   {STAGES.map(stg=>{const sc=cl.filter(c=>c.stage===stg);return <div key={stg} style={{flex:1,minWidth:140}}>
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}><div style={{width:8,height:8,borderRadius:"50%",background:SC[stg]}}/><span style={{fontSize:11,fontWeight:700}}>{stg}</span><span style={{fontSize:10,color:mt}}>({sc.length})</span></div>
     {sc.map(c=><div key={c.id} style={{background:cd,border:`1px solid ${bd}`,borderRadius:10,padding:12,marginBottom:6}}>
       <div style={{fontSize:12,fontWeight:700,marginBottom:2}}>{c.name}</div>{c.company&&<div style={{fontSize:10,color:s2}}>{c.company}</div>}
       <div style={{fontSize:13,fontWeight:800,color:tl,marginTop:6}}>{fm(c.amount)}</div>
-      {isA&&<div style={{display:"flex",gap:3,marginTop:8,flexWrap:"wrap"}}>{STAGES.filter(s=>s!==stg).map(s=><button key={s} onClick={()=>mvSt(c.id,s)} style={{background:"rgba(78,205,196,.06)",border:`1px solid ${bd}`,color:SC[s],padding:"2px 6px",borderRadius:4,fontSize:8,cursor:"pointer",fontWeight:600}}>→{s.substring(0,4)}</button>)}</div>}
+      {isA&&<div style={{display:"flex",gap:4,marginTop:8,flexWrap:"wrap"}}>{STAGES.filter(s=>s!==stg).map(s=><button key={s} onClick={()=>mvSt(c.id,s)} style={{background:"rgba(78,205,196,.06)",border:`1px solid ${bd}`,color:SC[s],padding:"6px 10px",borderRadius:6,fontSize:10,cursor:"pointer",fontWeight:600,minHeight:32}}>→{s.substring(0,4)}</button>)}</div>}
     </div>)}
   </div>})}
 </div></div>)}
@@ -388,7 +417,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 {vw==="leads"&&(<div>
   <div style={{fontSize:15,fontWeight:800,marginBottom:16}}>Leads desde la web <span style={{color:mt,fontWeight:400}}>({leads.length})</span></div>
   {leads.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin leads — conecta la landing</div>:
-    leads.filter(l=>!l.converted).map(l=><div key={l.id} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,marginBottom:6}}>
+    leads.filter(l=>!l.converted).map(l=><div key={l.id} className="mob-wrap" style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
       <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700}}>{l.name||"Sin nombre"} {l.company&&<span style={{fontWeight:400,color:s2}}>· {l.company}</span>}</div><div style={{fontSize:10,color:mt}}>{l.email} · {l.phone} · {l.source}</div>{l.message&&<div style={{fontSize:11,color:s2,marginTop:4}}>{l.message}</div>}</div>
       <div style={{fontSize:10,color:mt}}>{l.createdAt?(l.createdAt+"").substring(0,10):""}</div>
       {isA&&<button onClick={()=>convLead(l)} style={{background:tl,border:"none",color:bg,padding:"8px 14px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>→ Cliente</button>}
@@ -405,10 +434,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 {vw==="projects"&&!sub&&(<div>
   <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center",flexWrap:"wrap"}}>
     <div style={{fontSize:15,fontWeight:800}}>Proyectos internos <span style={{color:mt,fontWeight:400}}>({pjs.length})</span></div>
-    {isA&&<button onClick={()=>goN("projects","pF",setPF,eP)} style={{background:tl,border:"none",color:bg,padding:"10px 18px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>＋ Nuevo</button>}
+    {isA&&<button onClick={()=>goN("projects","pF",setPF,eP)} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Nuevo</button>}
   </div>
   {pjs.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin proyectos</div>:
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:10}}>
+    <div className="g-auto">
       {pjs.map(p=>{const dn=(p.tasks||[]).filter(t=>t.done).length,tt=(p.tasks||[]).length,pc=tt?Math.round(dn/tt*100):0;return(
         <div key={p.id} onClick={()=>ed(p,setPF,"projects","pF")} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:"pointer"}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
@@ -422,18 +451,18 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>)}
 
 {/* PROJECT FORM */}
-{vw==="projects"&&sub==="pF"&&(<div style={{maxWidth:700}}>
+{vw==="projects"&&sub==="pF"&&(<div style={{maxWidth:700,width:"100%"}}>
   <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar proyecto":"Nuevo proyecto"}</div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Nombre *</label><input value={pF.name} onChange={e=>setPF({...pF,name:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Tipo</label><select value={pF.type} onChange={e=>setPF({...pF,type:e.target.value})} style={iS}>{PT.map(t=><option key={t}>{t}</option>)}</select></div>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g3" style={{marginBottom:16}}>
     <div><label style={lb}>Estado</label><select value={pF.status} onChange={e=>setPF({...pF,status:e.target.value})} style={iS}>{PS.map(s=><option key={s}>{s}</option>)}</select></div>
     <div><label style={lb}>Prioridad</label><select value={pF.priority} onChange={e=>setPF({...pF,priority:e.target.value})} style={iS}>{PP.map(p=><option key={p}>{p}</option>)}</select></div>
     <div><label style={lb}>Responsable</label><select value={pF.owner} onChange={e=>setPF({...pF,owner:e.target.value})} style={iS}><option value="">—</option>{tm.map(m=><option key={m.id} value={m.name}>{m.name}</option>)}</select></div>
   </div>
-  {isA&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:16}}>
+  {isA&&<div className="g4" style={{marginBottom:16}}>
     <div><label style={lb}>Budget</label><input value={pF.budget} onChange={e=>setPF({...pF,budget:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Gastado</label><input value={pF.spent} onChange={e=>setPF({...pF,spent:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Inicio</label><input value={(pF.startDate+"").substring(0,10)} onChange={e=>setPF({...pF,startDate:e.target.value})} type="date" style={iS}/></div>
@@ -444,10 +473,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <button onClick={()=>setPF({...pF,tasks:[...(pF.tasks||[]),{text:"",done:false,id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(139,92,246,.06)",border:"1px dashed rgba(139,92,246,.3)",color:"#8b5cf6",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Tarea</button>
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={pF.notes} onChange={e=>setPF({...pF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
-  <div style={{display:"flex",gap:8}}>
-    <button onClick={()=>sv("projects",pF,setPF,eP)} style={{background:"#8b5cf6",border:"none",color:"#fff",padding:"10px 24px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Crear"}</button>
-    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"10px 24px",borderRadius:8,fontSize:13,cursor:"pointer"}}>Cancelar</button>
-    {eid&&isA&&<button onClick={()=>dl("projects",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"10px 18px",borderRadius:8,fontSize:12,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("projects",pF,setPF,eP)} style={{background:"#8b5cf6",border:"none",color:"#fff",padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Crear"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&isA&&<button onClick={()=>dl("projects",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
 </div>)}
 
@@ -457,9 +486,9 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div style={{display:"flex",gap:4}}>
       {[{k:"curriculum",l:"📚 Curriculum"},{k:"students",l:"🎓 Alumnos"}].map(t=><button key={t.k} onClick={()=>setAcT(t.k)} style={{background:acT===t.k?"rgba(232,121,249,.12)":"transparent",border:"none",color:acT===t.k?"#e879f9":s2,padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.l}</button>)}
     </div>
-    <div style={{display:"flex",gap:8}}>
-      {acT==="curriculum"&&isA&&<button onClick={()=>{setLF({...eL});setEid(null);setSub("lF")}} style={{background:"#e879f9",border:"none",color:bg,padding:"10px 18px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>＋ Lección</button>}
-      {acT==="students"&&isA&&<button onClick={()=>{setSF({...eSt});setEid(null);setSub("sF")}} style={{background:"#e879f9",border:"none",color:bg,padding:"10px 18px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>＋ Alumno</button>}
+    <div className="mob-wrap" style={{display:"flex",gap:8}}>
+      {acT==="curriculum"&&isA&&<button onClick={()=>{setLF({...eL});setEid(null);setSub("lF")}} style={{background:"#e879f9",border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Lección</button>}
+      {acT==="students"&&isA&&<button onClick={()=>{setSF({...eSt});setEid(null);setSub("sF")}} style={{background:"#e879f9",border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Alumno</button>}
     </div>
   </div>
   {acT==="curriculum"&&(<div>{AW.map(w=>{const wL=lsns.filter(l=>l.week===w.n);const rdy=wL.filter(l=>l.status==="Listo").length;return <div key={w.n} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginBottom:10}}>
@@ -494,7 +523,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   </div>})}</div>)}
   {acT==="students"&&(<div>
     {sts.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin alumnos</div>:
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:10}}>
+      <div className="g-auto">
         {sts.map(s=><div key={s.id} onClick={()=>{setSF({...s});setEid(s.id);setSub("sF")}} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:"pointer"}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
             <div><div style={{fontSize:14,fontWeight:700}}>{s.name}</div>{s.email&&<div style={{fontSize:10,color:s2}}>{s.email}</div>}</div>
@@ -520,13 +549,13 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>)}
 
 {/* LESSON FORM */}
-{vw==="academy"&&sub==="lF"&&(<div style={{maxWidth:600}}>
+{vw==="academy"&&sub==="lF"&&(<div style={{maxWidth:600,width:"100%"}}>
   <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar lección":"Nueva lección"}</div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Título *</label><input value={lF.title} onChange={e=>setLF({...lF,title:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Semana</label><select value={lF.week} onChange={e=>setLF({...lF,week:Number(e.target.value)})} style={iS}>{AW.map(w=><option key={w.n} value={w.n}>Sem {w.n} — {w.t}</option>)}</select></div>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g3" style={{marginBottom:16}}>
     <div><label style={lb}>Tipo</label><select value={lF.type} onChange={e=>setLF({...lF,type:e.target.value})} style={iS}>{LT.map(t=><option key={t}>{t}</option>)}</select></div>
     <div><label style={lb}>Status</label><select value={lF.status} onChange={e=>setLF({...lF,status:e.target.value})} style={iS}>{LS.map(s=><option key={s}>{s}</option>)}</select></div>
     <div><label style={lb}>Versión</label><input value={lF.version} onChange={e=>setLF({...lF,version:e.target.value})} style={iS}/></div>
@@ -542,37 +571,37 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <button onClick={()=>setLF({...lF,assets:[...(lF.assets||[]),{name:"",url:"",atype:"Video"}]})} style={{background:"rgba(232,121,249,.06)",border:"1px dashed rgba(232,121,249,.3)",color:"#e879f9",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Recurso</button>
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={lF.notes} onChange={e=>setLF({...lF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
-  <div style={{display:"flex",gap:8}}>
-    <button onClick={()=>sv("lessons",lF,setLF,eL)} style={{background:"#e879f9",border:"none",color:bg,padding:"10px 24px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Crear"}</button>
-    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"10px 24px",borderRadius:8,fontSize:13,cursor:"pointer"}}>Cancelar</button>
-    {eid&&isA&&<button onClick={()=>dl("lessons",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"10px 18px",borderRadius:8,fontSize:12,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("lessons",lF,setLF,eL)} style={{background:"#e879f9",border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Crear"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&isA&&<button onClick={()=>dl("lessons",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
 </div>)}
 
 {/* STUDENT FORM */}
-{vw==="academy"&&sub==="sF"&&(<div style={{maxWidth:600}}>
+{vw==="academy"&&sub==="sF"&&(<div style={{maxWidth:600,width:"100%"}}>
   <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar alumno":"Nuevo alumno"}</div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Nombre *</label><input value={sF.name} onChange={e=>setSF({...sF,name:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Email</label><input value={sF.email} onChange={e=>setSF({...sF,email:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Teléfono</label><input value={sF.phone} onChange={e=>setSF({...sF,phone:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Plan</label><input value={sF.plan} onChange={e=>setSF({...sF,plan:e.target.value})} style={iS}/></div>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g3" style={{marginBottom:16}}>
     <div><label style={lb}>Monto</label><input value={sF.amount} onChange={e=>setSF({...sF,amount:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Pagado</label><input value={sF.amountPaid} onChange={e=>setSF({...sF,amountPaid:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Semana</label><select value={sF.currentWeek} onChange={e=>setSF({...sF,currentWeek:Number(e.target.value)})} style={iS}>{[1,2,3,4].map(n=><option key={n} value={n}>{n}</option>)}</select></div>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g3" style={{marginBottom:16}}>
     <div><label style={lb}>Status</label><select value={sF.status} onChange={e=>setSF({...sF,status:e.target.value})} style={iS}>{SS.map(s=><option key={s}>{s}</option>)}</select></div>
     <div><label style={lb}>Inicio</label><input value={(sF.startDate+"").substring(0,10)} onChange={e=>setSF({...sF,startDate:e.target.value})} type="date" style={iS}/></div>
     <div style={{display:"flex",alignItems:"end",paddingBottom:2}}><label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}><input checked={sF.convertedToClient} onChange={e=>setSF({...sF,convertedToClient:e.target.checked})} type="checkbox" style={{accentColor:tl}}/><span style={{fontSize:11,color:tl,fontWeight:600}}>→ Cliente</span></label></div>
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={sF.notes} onChange={e=>setSF({...sF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
-  <div style={{display:"flex",gap:8}}>
-    <button onClick={()=>sv("students",sF,setSF,eSt)} style={{background:"#e879f9",border:"none",color:bg,padding:"10px 24px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Registrar"}</button>
-    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"10px 24px",borderRadius:8,fontSize:13,cursor:"pointer"}}>Cancelar</button>
-    {eid&&<button onClick={()=>dl("students",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"10px 18px",borderRadius:8,fontSize:12,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("students",sF,setSF,eSt)} style={{background:"#e879f9",border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Registrar"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&<button onClick={()=>dl("students",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
 </div>)}
 
@@ -580,21 +609,22 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 {vw==="investment"&&!sub&&isA&&(<div>
   <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center"}}>
     <div style={{fontSize:15,fontWeight:800}}>Inversión <span style={{color:mt,fontWeight:400}}>({invs.length})</span></div>
-    <button onClick={()=>{setIF({...eI});setEid(null);setSub("iF")}} style={{background:"#22c55e",border:"none",color:bg,padding:"10px 18px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>＋ Movimiento</button>
+    <button onClick={()=>{setIF({...eI});setEid(null);setSub("iF")}} style={{background:"#22c55e",border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Movimiento</button>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8,marginBottom:16}}>
+  <div className="g-inv" style={{marginBottom:16}}>
     {[{l:"Total invertido",v:fm(me.tIA),c:"#22c55e"},{l:"Inyecciones",v:fm(me.tInj),c:"#8b5cf6"},{l:"Stack pagado",v:fm(me.tSP),c:"#ff6b6b"},{l:"Stack activo/mes",v:fm(me.tlCost),c:"#f59e0b"}].map((k,i)=>
       <div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}><div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div><div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div></div>)}
   </div>
   {/* Ledger table */}
-  <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginBottom:16,overflowX:"auto"}}>
-    <div style={hd}>Registro mes a mes</div>
+  <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 0",marginBottom:16}}>
+    <div style={{padding:"0 16px"}}><div style={hd}>Registro mes a mes</div></div>
+    <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",padding:"0 16px"}}>
     {invs.length===0?<div style={{color:mt,fontSize:12}}>Sin movimientos</div>:(()=>{
       const mos=new Set(),tps=new Set();invs.forEach(x=>{if(x.date)mos.add((x.date+"").substring(0,7));tps.add(x.type)});
       const sm=[...mos].sort(),ta=[...tps],tc={"Inyección de capital":"#8b5cf6","Pago de stack mensual":"#ff6b6b","Equipo":"#f59e0b","Otro":"#6b7280"};
       const g={};sm.forEach(m=>{g[m]={};ta.forEach(t=>{g[m][t]=0})});invs.forEach(x=>{if(x.date){const m=(x.date+"").substring(0,7);g[m][x.type]=(g[m][x.type]||0)+Number(x.amount||0)}});
       let acc=0;
-      return <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><thead><tr style={{borderBottom:`2px solid ${bd}`}}>
+      return <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:500}}><thead><tr style={{borderBottom:`2px solid ${bd}`}}>
         <th style={{textAlign:"left",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MES</th>
         {ta.map(t=><th key={t} style={{textAlign:"right",padding:"8px 10px",color:tc[t]||mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>{t==="Inyección de capital"?"INYECCIÓN":t==="Pago de stack mensual"?"STACK":t.toUpperCase()}</th>)}
         <th style={{textAlign:"right",padding:"8px 10px",color:tl,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MES</th>
@@ -611,11 +641,12 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <td style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:tl,fontSize:16}}>{fm(acc)}</td>
         <td style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:"#22c55e",fontSize:16}}>{fm(acc)}</td>
       </tr></tfoot></table>})()}
+    </div>
   </div>
   {/* Movimientos */}
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
     <div style={hd}>Movimientos</div>
-    {[...invs].sort((a,b)=>((b.date||"")+"").localeCompare((a.date||"")+"")).map(inv=><div key={inv.id} onClick={()=>{setIF({...inv});setEid(inv.id);setSub("iF")}} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:cd2,border:`1px solid ${bd}`,borderRadius:8,cursor:"pointer",marginBottom:4}}>
+    {[...invs].sort((a,b)=>((b.date||"")+"").localeCompare((a.date||"")+"")).map(inv=><div key={inv.id} onClick={()=>{setIF({...inv});setEid(inv.id);setSub("iF")}} className="mob-wrap" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:cd2,border:`1px solid ${bd}`,borderRadius:8,cursor:"pointer",marginBottom:4}}>
       <span style={{fontSize:11,color:mt,minWidth:70,fontFamily:"'Geist Mono',monospace"}}>{(inv.date+"").substring(0,10)}</span>
       <span style={bg2(inv.type==="Inyección de capital"?"#8b5cf6":inv.type==="Pago de stack mensual"?"#ff6b6b":"#f59e0b")}>{inv.type}</span>
       <span style={{fontSize:12,color:s2,flex:1}}>{inv.investor||"—"}</span>
@@ -625,24 +656,24 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>)}
 
 {/* INVESTMENT FORM */}
-{vw==="investment"&&sub==="iF"&&isA&&(<div style={{maxWidth:600}}>
+{vw==="investment"&&sub==="iF"&&isA&&(<div style={{maxWidth:600,width:"100%"}}>
   <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar":"Registrar movimiento"}</div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Tipo</label><select value={iF.type} onChange={e=>{const t=e.target.value;setIF({...iF,type:t,amount:t==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:iF.type==="Pago de stack mensual"?0:iF.amount})}} style={iS}>{IT.map(t=><option key={t}>{t}</option>)}</select></div>
     <div><label style={lb}>Monto{iF.type==="Pago de stack mensual"?" (auto)":""}</label>
       {iF.type==="Pago de stack mensual"?<div style={{...iS,display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(34,197,94,.06)",border:"1px solid rgba(34,197,94,.2)"}}><span style={{fontSize:15,fontWeight:800,color:"#22c55e"}}>{fm(me.tlCost)}</span><span style={{fontSize:9,color:mt}}>stack/mes</span></div>:
       <input value={iF.amount} onChange={e=>setIF({...iF,amount:e.target.value})} type="number" style={iS}/>}
     </div>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Inversor</label><select value={iF.investor} onChange={e=>setIF({...iF,investor:e.target.value})} style={iS}><option value="">—</option>{tm.filter(m=>(m.roles||[]).includes("Inversionista")).map(m=><option key={m.id} value={m.name}>{m.name}</option>)}<option value="Otro">Otro</option></select></div>
     <div><label style={lb}>Fecha</label><input value={(iF.date+"").substring(0,10)} onChange={e=>setIF({...iF,date:e.target.value})} type="date" style={iS}/></div>
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={iF.notes} onChange={e=>setIF({...iF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
-  <div style={{display:"flex",gap:8}}>
-    <button onClick={svI} style={{background:"#22c55e",border:"none",color:bg,padding:"10px 24px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Registrar"}</button>
-    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"10px 24px",borderRadius:8,fontSize:13,cursor:"pointer"}}>Cancelar</button>
-    {eid&&<button onClick={()=>dl("investments",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"10px 18px",borderRadius:8,fontSize:12,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={svI} style={{background:"#22c55e",border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Registrar"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&<button onClick={()=>dl("investments",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
 </div>)}
 
@@ -650,10 +681,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 {vw==="team"&&!sub&&(<div>
   <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center"}}>
     <div style={{fontSize:15,fontWeight:800}}>Equipo <span style={{color:mt,fontWeight:400}}>({tm.length})</span></div>
-    {isA&&<button onClick={()=>goN("team","mF",setMF,eM)} style={{background:tl,border:"none",color:bg,padding:"10px 18px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>＋ Agregar</button>}
+    {isA&&<button onClick={()=>goN("team","mF",setMF,eM)} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Agregar</button>}
   </div>
   {tm.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin miembros</div>:
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))",gap:10}}>
+    <div className="g-auto">
       {tm.map(mb=>{const roles=mb.roles||[];return <div key={mb.id} onClick={()=>{if(isA)ed(mb,setMF,"team","mF")}} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:isA?"pointer":"default"}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
           <div><div style={{fontSize:14,fontWeight:700}}>{mb.name}</div><div style={{fontSize:11,color:tl,fontWeight:600}}>{roles.join(" · ")}</div></div>
@@ -669,25 +700,25 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>)}
 
 {/* TEAM FORM */}
-{vw==="team"&&sub==="mF"&&(<div style={{maxWidth:600}}>
+{vw==="team"&&sub==="mF"&&(<div style={{maxWidth:600,width:"100%"}}>
   <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar":"Nuevo miembro"}</div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Nombre *</label><input value={mF.name} onChange={e=>setMF({...mF,name:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Email</label><input value={mF.email} onChange={e=>setMF({...mF,email:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Teléfono</label><input value={mF.phone} onChange={e=>setMF({...mF,phone:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Estado</label><select value={mF.status} onChange={e=>setMF({...mF,status:e.target.value})} style={iS}><option>Activo</option><option>Inactivo</option><option>Pausado</option></select></div>
   </div>
-  <div style={{marginBottom:16}}><label style={lb}>Roles</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ROLES.map(r=>{const sel=(mF.roles||[]).includes(r);return <button key={r} onClick={()=>setMF(p=>({...p,roles:sel?p.roles.filter(x=>x!==r):[...(p.roles||[]),r]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"5px 10px",borderRadius:6,fontSize:10,cursor:"pointer",fontWeight:sel?700:500}}>{r}</button>})}</div></div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+  <div style={{marginBottom:16}}><label style={lb}>Roles</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ROLES.map(r=>{const sel=(mF.roles||[]).includes(r);return <button key={r} onClick={()=>setMF(p=>({...p,roles:sel?p.roles.filter(x=>x!==r):[...(p.roles||[]),r]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"8px 12px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:sel?700:500,minHeight:36}}>{r}</button>})}</div></div>
+  <div className="g3" style={{marginBottom:16}}>
     <div><label style={lb}>Pago</label><input value={mF.rate} onChange={e=>setMF({...mF,rate:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Tipo</label><select value={mF.rateType} onChange={e=>setMF({...mF,rateType:e.target.value})} style={iS}><option>Mensual</option><option>Anual</option><option>Por proyecto</option><option>Por hora</option></select></div>
     <div><label style={lb}>Inversión</label><input value={mF.invested} onChange={e=>setMF({...mF,invested:e.target.value})} type="number" style={iS}/></div>
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={mF.notes} onChange={e=>setMF({...mF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
-  <div style={{display:"flex",gap:8}}>
-    <button onClick={()=>sv("team",mF,setMF,eM)} style={{background:tl,border:"none",color:bg,padding:"10px 24px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Agregar"}</button>
-    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"10px 24px",borderRadius:8,fontSize:13,cursor:"pointer"}}>Cancelar</button>
-    {eid&&isA&&<button onClick={()=>dl("team",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"10px 18px",borderRadius:8,fontSize:12,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("team",mF,setMF,eM)} style={{background:tl,border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Agregar"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&isA&&<button onClick={()=>dl("team",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
 </div>)}
 
@@ -697,7 +728,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div style={{fontSize:15,fontWeight:800}}>Stack <span style={{color:mt,fontWeight:400}}>({tls.length})</span></div>
     <div style={{display:"flex",gap:8,alignItems:"center"}}>
       {isA&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:8,padding:"7px 12px",fontSize:11}}><span style={{color:mt}}>Costo/mes: </span><span style={{fontWeight:800,color:"#ff6b6b"}}>{fm(me.tlCost)}</span></div>}
-      {isA&&<button onClick={()=>goN("stack","tF",setTF,eT)} style={{background:tl,border:"none",color:bg,padding:"10px 18px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>＋ Agregar</button>}
+      {isA&&<button onClick={()=>goN("stack","tF",setTF,eT)} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Agregar</button>}
     </div>
   </div>
   {tls.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin herramientas</div>:<div>
@@ -717,7 +748,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {me.tlCov<100&&<div style={{marginTop:8,fontSize:11,color:"#f59e0b"}}>⚡ Faltan {fm(me.tlP.STRYV)}/mes</div>}
       {me.tlCov>=100&&<div style={{marginTop:8,fontSize:11,color:"#22c55e"}}>✓ Stack 100% cubierto</div>}
     </div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(250px,1fr))",gap:10}}>
+    <div className="g-auto">
       {tls.map(t=>{const pc=t.paidBy==="Cliente"?"#22c55e":t.paidBy==="Inversor"?"#8b5cf6":"#ff6b6b";return <div key={t.id} onClick={()=>{if(isA)ed(t,setTF,"stack","tF")}} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:isA?"pointer":"default"}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
           <div><div style={{fontSize:14,fontWeight:700}}>{t.name}</div><div style={{fontSize:10,color:tl,fontWeight:600}}>{t.category}</div></div>
@@ -737,38 +768,38 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>)}
 
 {/* TOOL FORM */}
-{vw==="stack"&&sub==="tF"&&(<div style={{maxWidth:600}}>
+{vw==="stack"&&sub==="tF"&&(<div style={{maxWidth:600,width:"100%"}}>
   <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar":"Nueva herramienta"}</div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Nombre *</label><input value={tF.name} onChange={e=>setTF({...tF,name:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Categoría</label><select value={tF.category} onChange={e=>setTF({...tF,category:e.target.value})} style={iS}>{TCATS.map(c=><option key={c}>{c}</option>)}</select></div>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g3" style={{marginBottom:16}}>
     <div><label style={lb}>Costo</label><input value={tF.cost} onChange={e=>setTF({...tF,cost:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Ciclo</label><select value={tF.billing} onChange={e=>setTF({...tF,billing:e.target.value})} style={iS}>{BILL.map(b=><option key={b}>{b}</option>)}</select></div>
     <div><label style={lb}>Estado</label><select value={tF.status} onChange={e=>setTF({...tF,status:e.target.value})} style={iS}><option>Activo</option><option>Inactivo</option><option>Trial</option></select></div>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>URL</label><input value={tF.url} onChange={e=>setTF({...tF,url:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Email login</label><input value={tF.loginEmail} onChange={e=>setTF({...tF,loginEmail:e.target.value})} style={iS}/></div>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+  <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>¿Quién paga?</label><select value={tF.paidBy||"STRYV"} onChange={e=>setTF({...tF,paidBy:e.target.value,paidByName:""})} style={iS}><option value="STRYV">STRYV</option><option value="Inversor">Inversor</option><option value="Cliente">Cliente</option></select></div>
     {tF.paidBy==="Cliente"&&<div><label style={lb}>¿Qué cliente?</label><select value={tF.paidByName||""} onChange={e=>setTF({...tF,paidByName:e.target.value})} style={iS}><option value="">—</option>{cl.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}</select></div>}
     {tF.paidBy==="Inversor"&&<div><label style={lb}>¿Qué inversor?</label><select value={tF.paidByName||""} onChange={e=>setTF({...tF,paidByName:e.target.value})} style={iS}><option value="">—</option>{tm.filter(m=>(m.roles||[]).includes("Inversionista")).map(m=><option key={m.id} value={m.name}>{m.name}</option>)}</select></div>}
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={tF.notes} onChange={e=>setTF({...tF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
-  <div style={{display:"flex",gap:8}}>
-    <button onClick={()=>sv("tools",tF,setTF,eT)} style={{background:tl,border:"none",color:bg,padding:"10px 24px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Agregar"}</button>
-    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"10px 24px",borderRadius:8,fontSize:13,cursor:"pointer"}}>Cancelar</button>
-    {eid&&isA&&<button onClick={()=>dl("tools",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"10px 18px",borderRadius:8,fontSize:12,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("tools",tF,setTF,eT)} style={{background:tl,border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Agregar"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&isA&&<button onClick={()=>dl("tools",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
 </div>)}
 
 </div>
 </div>);
 }
-class EB extends React.Component{constructor(p){super(p);this.state={err:null}}static getDerivedStateFromError(e){return{err:e}}componentDidCatch(e,i){console.error("STRYV Error:",e,i)}render(){if(this.state.err)return <div style={{padding:40,textAlign:"center",color:"#ff6b6b",background:"#0a0c10",minHeight:"100vh"}}><h2>Error en el dashboard</h2><pre style={{fontSize:12,color:"#e0e6e4",marginTop:16,textAlign:"left",maxWidth:600,margin:"16px auto",whiteSpace:"pre-wrap"}}>{this.state.err.toString()}</pre><button onClick={()=>this.setState({err:null})} style={{marginTop:16,background:"#4ECDC4",border:"none",color:"#0a0c10",padding:"10px 24px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}>Reintentar</button></div>;return this.props.children}}
+class EB extends React.Component{constructor(p){super(p);this.state={err:null}}static getDerivedStateFromError(e){return{err:e}}componentDidCatch(e,i){console.error("STRYV Error:",e,i)}render(){if(this.state.err)return <div style={{padding:40,textAlign:"center",color:"#ff6b6b",background:"#0a0c10",minHeight:"100vh"}}><h2>Error en el dashboard</h2><pre style={{fontSize:12,color:"#e0e6e4",marginTop:16,textAlign:"left",maxWidth:600,margin:"16px auto",whiteSpace:"pre-wrap"}}>{this.state.err.toString()}</pre><button onClick={()=>this.setState({err:null})} style={{marginTop:16,background:"#4ECDC4",border:"none",color:"#0a0c10",padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>Reintentar</button></div>;return this.props.children}}
 ReactDOM.createRoot(document.getElementById("root")).render(<EB><App/></EB>);
 </script>
 </body>

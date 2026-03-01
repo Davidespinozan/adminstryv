@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4ECDC4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="STRYV">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>STRYV — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.10/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Geist',system-ui,sans-serif;background:#0a0c10;color:#e0e6e4;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#12161e}::-webkit-scrollbar-thumb{background:#2a3040;border-radius:4px}
+::selection{background:#4ECDC4;color:#0a0c10}
+input,select,textarea,button{font-family:inherit;font-size:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── RESPONSIVE GRIDS ─── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.g-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}
+.g-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.g-inv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+
+@media(max-width:768px){
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .g-cards{grid-template-columns:repeat(2,1fr)}
+  .g-auto{grid-template-columns:1fr}
+  .g-inv{grid-template-columns:repeat(2,1fr)}
+  .mob-hide{display:none!important}
+  .mob-col{flex-direction:column!important}
+  .mob-full{width:100%!important;min-width:0!important}
+  .mob-wrap{flex-wrap:wrap!important}
+  .nav-btns{position:fixed;top:56px;left:0;right:0;background:#12161e;border-bottom:1px solid rgba(78,205,196,.12);padding:8px;display:flex;flex-wrap:wrap;gap:4px;z-index:99;justify-content:center}
+  .nav-btns button{padding:10px 12px!important;font-size:12px!important;min-height:40px}
+  .mob-stack{flex-direction:column!important;align-items:stretch!important}
+  .mob-pad{padding-top:60px}
+}
+@media(min-width:769px){
+  .nav-toggle{display:none!important}
+  .nav-btns{display:flex;gap:1px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}</script>
+<script type="text/babel">
+window.addEventListener("unhandledrejection",e=>{console.error("Unhandled async error:",e.reason)});
+const{useState,useEffect,useMemo,useCallback}=React;
+const SB=window.supabase.createClient("https://ltveorvqvvlyivjwxjlc.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dmVvcnZxdnZseWl2and4amxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzODEzNTAsImV4cCI6MjA4Nzk1NzM1MH0.BpBc3lM6VpDyL5299H1MwQK0VBOBjKWQQconfpcCsfU");
+
+const SOLUTIONS=["Sol 01 — Ventas y Entrega","Sol 02 — Atención con IA","Sol 03 — Conversión Local","Sol 04 — Operación Interna","Combo personalizado","Diagnóstico","Mantenimiento mensual"];
+const STAGES=["Lead","Diagnóstico","Propuesta","En desarrollo","Entregado","Mantenimiento"];
+const SC={Lead:"#f59e0b","Diagnóstico":"#8b5cf6",Propuesta:"#3b82f6","En desarrollo":"#4ECDC4",Entregado:"#22c55e",Mantenimiento:"#6b7280"};
+const SOURCES=["Instagram","Referido","WhatsApp directo","Web","Academia","Otro"];
+const ROLES=["Co-founder","Inversionista","Desarrollador","Diseñador","Marketing","Ventas","Soporte","Freelance","Otro"];
+const TCATS=["Automatización","CRM","IA","Hosting","Diseño","Comunicación","Analytics","Pagos","Dev tools","Otro"];
+const BILL=["Mensual","Anual","Lifetime","Gratis"];
+const PT=["Empresa del paraguas","Campaña marketing/ventas","Infraestructura","Evento de conversión","Operación interna","Academia","Otro"];
+const PS=["Planeación","En progreso","Pausado","Completado","Cancelado"];
+const PSC={"Planeación":"#f59e0b","En progreso":"#4ECDC4","Pausado":"#6b7280","Completado":"#22c55e","Cancelado":"#ff6b6b"};
+const PP=["Alta","Media","Baja"];
+const LS=["Borrador","En producción","Grabado","Editado","Listo"];
+const LSC={"Borrador":"#6b7280","En producción":"#f59e0b","Grabado":"#3b82f6","Editado":"#8b5cf6","Listo":"#22c55e"};
+const LT=["Video","Template","Ejercicio","Entregable","Lectura","Live"];
+const SS=["Activo","Completado","Pausado","Abandonó"];
+const _AW=[{n:1,t:"Fundación",s:"¿Qué vas a vender y por qué te van a comprar?"},{n:2,t:"Sistema de Ventas",s:"Listo para cobrar aunque sea poquito"},{n:3,t:"Entrega y Automatización",s:"Que opere sin ti"},{n:4,t:"Medición, Tráfico y Control",s:"Crecer sin colapsar"}];
+const IT=["Inyección de capital","Pago de stack mensual","Equipo","Otro"];
+
+const fm=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0})+" USD";
+const fmShort=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0});
+const MO=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const bg="#0a0c10",cd="#12161e",cd2="#181d27",bd="rgba(78,205,196,.12)",tl="#4ECDC4",tx="#e0e6e4",s2="rgba(224,230,228,.55)",mt="rgba(224,230,228,.3)";
+const lb={display:"block",fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:mt,marginBottom:6,fontFamily:"'Geist Mono',monospace"};
+const iS={width:"100%",background:cd,border:`1px solid ${bd}`,color:tx,borderRadius:8,padding:"10px 14px",fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+const hd={fontSize:11,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:mt,marginBottom:16,fontFamily:"'Geist Mono',monospace"};
+const bg2=c=>({background:`${c}22`,color:c,padding:"3px 10px",borderRadius:20,fontSize:10,fontWeight:600,height:"fit-content",flexShrink:0});
+
+const toSn=o=>{const r={};for(const k in o)r[k.replace(/([A-Z])/g,"_$1").toLowerCase()]=o[k];return r};
+const toCa=o=>{if(!o)return o;const r={};for(const k in o)r[k.replace(/_([a-z])/g,(_,l)=>l.toUpperCase())]=o[k];return r};
+const toCaA=a=>(a||[]).map(toCa);
+async function dSel(t){
+  const{data,error,count}=await SB.from(t).select("*",{count:"exact"}).order("created_at",{ascending:true}).limit(2000);
+  if(!error&&count>2000)console.warn(`⚠ ${t}: ${count} rows, mostrando 2000`);
+  return error?[]:toCaA(data);
+}
+async function dIns(t,row){const c={...toSn(row)};delete c.id;delete c.created_at;delete c.updated_at;const{data,error}=await SB.from(t).insert(c).select();if(error){console.error("INSERT error",t,error.message,error.details,error.hint,c);alert("Error DB: "+error.message);return null}return toCa(data[0])}
+async function dUpd(t,id,row){const c={...toSn(row)};delete c.id;delete c.created_at;delete c.updated_at;const{data,error}=await SB.from(t).update(c).eq("id",id).select();if(error){console.error("UPDATE error",t,error.message,error.details,error.hint,c);alert("Error DB: "+error.message);return null}return toCa(data[0])}
+const _softDelTables=["clients","team","tools","projects","investments"];
+async function dDel(t,id){
+  if(_softDelTables.includes(t)){
+    const{error}=await SB.from(t).update({deleted_at:new Date().toISOString()}).eq("id",id);
+    if(error){console.error("soft delete error",t,error);return false}
+    return true;
+  }else{
+    const{error}=await SB.from(t).delete().eq("id",id);
+    if(error){console.error("delete error",t,error);return false}
+    return true;
+  }
+}
+
+const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,stackCost:0,stackDetail:"",startDate:"",estDelivery:"",notes:"",tasks:[],currency:"USD"};
+const _eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:"",currency:"USD"};
+const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",paidBy:"STRYV",paidByName:"",currency:"USD"};
+const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,startDate:"",deadline:"",description:"",tasks:[],notes:"",currency:"USD"};
+const _eL={week:1,title:"",description:"",type:"Video",status:"Borrador",version:"v1",assets:[],notes:""};
+const _eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:"",convertedToClient:false,notes:"",currency:"USD"};
+const _eI={type:"Inyección de capital",investor:"",amount:0,date:"",notes:"",currency:"USD"};
+const today=()=>new Date().toISOString().split("T")[0];
+const CurSel=({val,onChange})=><select value={val||"USD"} onChange={e=>onChange(e.target.value)} style={{background:cd2,border:`1px solid ${bd}`,color:val==="MXN"?"#f59e0b":tl,borderRadius:6,padding:"4px 6px",fontSize:10,fontWeight:700,cursor:"pointer",outline:"none"}}><option value="USD">USD</option><option value="MXN">MXN</option></select>;
+
+function App(){
+const[user,setUser]=useState(null);const[prof,setProf]=useState(null);const[aL,setAL]=useState(true);
+const[aErr,setAErr]=useState("");const[aEm,setAEm]=useState("");const[aPw,setAPw]=useState("");
+const[chPw,setChPw]=useState(false);const[nPw,setNPw]=useState("");const[pwMsg,setPwMsg]=useState("");
+const[navOpen,setNavOpen]=useState(false);
+const isA=prof?.role==="admin";
+
+const lProf=async u=>{const{data}=await SB.from("profiles").select("*").eq("id",u).single();setProf(data?toCa(data):null);setAL(false)};
+
+// Fix 6: Only onAuthStateChange, no duplicate getSession
+useEffect(()=>{
+  const{data:{subscription}}=SB.auth.onAuthStateChange((_,s)=>{setUser(s?.user||null);if(s?.user)lProf(s.user.id);else{setProf(null);setAL(false)}});
+  return()=>subscription.unsubscribe();
+},[]);
+const login=async()=>{setAErr("");const{error}=await SB.auth.signInWithPassword({email:aEm,password:aPw});if(error)setAErr(error.message);else{setAPw("");setAEm("")}};
+const logout=async()=>{await SB.auth.signOut();setProf(null);setD({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[]})};
+const chPassTimer=React.useRef(null);
+const chPass=async()=>{setPwMsg("");const{error}=await SB.auth.updateUser({password:nPw});if(error)setPwMsg(error.message);else{setPwMsg("✓ Actualizada");setNPw("");clearTimeout(chPassTimer.current);chPassTimer.current=setTimeout(()=>{setChPw(false);setPwMsg("")},2000)}};
+useEffect(()=>()=>clearTimeout(chPassTimer.current),[]);
+
+const[D,setD]=useState({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[]});
+const isInv=useMemo(()=>{if(isA)return true;const u=user?.email;if(!u)return false;const mb=D.team.find(m=>m.email&&m.email.toLowerCase()===u.toLowerCase());return mb&&(mb.roles||[]).includes("Inversionista")},[isA,user,D.team]);
+const[tcMXN,setTcMXN]=useState(()=>{try{const v=localStorage.getItem("stryv_tc");return v?Number(v):20.5}catch(e){return 20.5}});
+const saveTc=v=>{const n=Number(v);if(n>0){setTcMXN(n);try{localStorage.setItem("stryv_tc",n)}catch(e){}}};
+const toUSD=(val,cur)=>{const n=Number(val||0);return cur==="MXN"?Math.round(n/tcMXN*100)/100:n};
+const[ld,setLd]=useState(false);const[vw,setVw]=useState("dashboard");const[sub,setSub]=useState(null);
+const[AW,setAW]=useState(()=>{try{const v=localStorage.getItem("stryv_aw");return v?JSON.parse(v):_AW}catch(e){return _AW}});
+const saveAW=(idx,field,val)=>{const nw=[...AW];nw[idx]={...nw[idx],[field]:val};setAW(nw);try{localStorage.setItem("stryv_aw",JSON.stringify(nw))}catch(e){}};
+const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");
+const loadLock=React.useRef(false);
+
+// Fix 1: templates from outside, add today() for dates
+const eC={..._eC,startDate:today()};
+const eM={..._eM};
+const eT={..._eT};
+const eP={..._eP,startDate:today()};
+const eL={..._eL};
+const eSt={..._eSt,startDate:today()};
+const eI={..._eI,date:today()};
+
+const[cF,setCF]=useState({...eC});const[mF,setMF]=useState({...eM});const[tF,setTF]=useState({...eT});
+const[pF,setPF]=useState({...eP});const[lF,setLF]=useState({...eL});const[sF,setSF]=useState({...eSt});const[iF,setIF]=useState({...eI});
+
+const cl=D.clients,tm=D.team,tls=D.tools,pjs=D.projects,lsns=D.lessons,sts=D.students,invs=D.investments,leads=D.leads;
+
+const loadAll=useCallback(async()=>{
+  if(loadLock.current)return;
+  loadLock.current=true;
+  setLd(true);
+  try{
+    const[clients,team,tools,projects,lessons,students,investments,leads]=await Promise.all([dSel("clients"),dSel("team"),dSel("tools"),dSel("projects"),dSel("lessons"),dSel("students"),dSel("investments"),dSel("leads")]);
+    setD({clients,team,tools,projects,lessons,students,investments,leads});
+  }catch(err){console.error("loadAll error",err)}
+  setLd(false);
+  loadLock.current=false;
+},[]);
+useEffect(()=>{if(user)loadAll()},[user,loadAll]);
+
+const sv=async(t,f,sf,e)=>{
+  if(t==="lessons"){if(!f.title){alert("Título requerido");return}}
+  else if(!f.name){alert("Nombre requerido");return}
+  const res=eid?await dUpd(t,eid,f):await dIns(t,f);
+  if(!res){alert("Error al guardar");return}
+  sf({...e});setEid(null);setSub(null);await loadAll();
+};
+const dl=async(t,id)=>{if(!confirm("¿Eliminar?"))return;await dDel(t,id);setEid(null);setSub(null);await loadAll()};
+const ed=(item,sf,v,s)=>{sf(JSON.parse(JSON.stringify(item)));setEid(item.id);setVw(v);setSub(s)};
+const goN=(v,s,sf,e)=>{setEid(null);setVw(v);setSub(s);sf({...e})};
+const svI=async()=>{const amt=iF.type==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:Number(iF.amount||0);if(!amt){alert("Monto requerido");return}const rec={...iF,amount:amt};if(eid)await dUpd("investments",eid,rec);else await dIns("investments",rec);setIF({...eI});setEid(null);setSub(null);await loadAll()};
+const mvSt=async(id,s)=>{
+  const prev=cl.find(x=>x.id===id)?.stage;
+  setD(p=>({...p,clients:p.clients.map(c=>c.id===id?{...c,stage:s}:c)}));
+  const res=await dUpd("clients",id,{stage:s});
+  if(!res){setD(p=>({...p,clients:p.clients.map(c=>c.id===id?{...c,stage:prev}:c)}));alert("Error al mover etapa")}
+};
+const togT=async(cid,tid)=>{
+  const c=cl.find(x=>x.id===cid);if(!c)return;
+  const oldTasks=c.tasks||[];
+  const newTasks=oldTasks.map(t=>t.id===tid?{...t,done:!t.done}:t);
+  setD(p=>({...p,clients:p.clients.map(x=>x.id===cid?{...x,tasks:newTasks}:x)}));
+  const res=await dUpd("clients",cid,{tasks:newTasks});
+  if(!res){setD(p=>({...p,clients:p.clients.map(x=>x.id===cid?{...x,tasks:oldTasks}:x)}));alert("Error al actualizar tarea")}
+};
+const togPT=async(pid,tid)=>{
+  const p=pjs.find(x=>x.id===pid);if(!p)return;
+  const oldTasks=p.tasks||[];
+  const newTasks=oldTasks.map(t=>t.id===tid?{...t,done:!t.done}:t);
+  setD(prev=>({...prev,projects:prev.projects.map(x=>x.id===pid?{...x,tasks:newTasks}:x)}));
+  const res=await dUpd("projects",pid,{tasks:newTasks});
+  if(!res){setD(prev=>({...prev,projects:prev.projects.map(x=>x.id===pid?{...x,tasks:oldTasks}:x)}));alert("Error al actualizar tarea")}
+};
+const convLead=async l=>{
+  try{
+    const{data:ins,error:e1}=await SB.from("clients").insert({name:(l.name||"").trim(),email:l.email||"",phone:l.phone||"",company:l.company||"",source:l.source||"Web",stage:"Lead",amount:0,amount_paid:0,mrr:0,stack_cost:0,solutions:[],tasks:[]}).select();
+    if(e1){alert("Error al crear cliente: "+e1.message);return}
+    const newCl=ins&&ins[0];
+    if(newCl){
+      const{error:e2}=await SB.from("leads").update({converted:true,converted_client_id:newCl.id}).eq("id",l.id);
+      if(e2)alert("Cliente creado pero error al marcar lead: "+e2.message);
+    }
+    await loadAll();
+  }catch(err){alert("Error: "+err.message)}};
+
+const me=useMemo(()=>{
+  const tRev=cl.reduce((s,c)=>s+toUSD(c.amount,c.currency),0),tPaid=cl.reduce((s,c)=>s+toUSD(c.amountPaid,c.currency),0);
+  const tMRR=cl.filter(c=>Number(c.mrr||0)>0).reduce((s,c)=>s+toUSD(c.mrr,c.currency),0);
+  const byStg={};STAGES.forEach(s=>{byStg[s]=cl.filter(c=>c.stage===s).length});
+  const byMo={};cl.forEach(c=>{if(c.startDate){const ds=(c.startDate+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(m)byMo[m]=(byMo[m]||0)+toUSD(c.amountPaid,c.currency)}});
+  const cTasks=[],pTasks=[];
+  cl.forEach(c=>{(c.tasks||[]).forEach(t=>{if(!t.done)cTasks.push({...t,cn:c.name,cid:c.id})})});
+  pjs.forEach(p=>{(p.tasks||[]).forEach(t=>{if(!t.done)pTasks.push({...t,cn:p.name,cid:p.id})})});
+  const tmCost=tm.filter(x=>x.status==="Activo").reduce((s,x)=>{const ro=x.roles||[];if(ro.length===1&&ro[0]==="Inversionista")return s;const r=toUSD(x.rate,x.currency);return s+(x.rateType==="Anual"?r/12:x.rateType==="Por proyecto"||x.rateType==="Por hora"?0:r)},0);
+  const tlP={STRYV:0,Inversor:0,Cliente:0};
+  tls.filter(x=>x.status==="Activo").forEach(x=>{const c=toUSD(x.cost,x.currency);const mo=x.billing==="Anual"?c/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:c;const pk=x.paidBy||"STRYV";tlP[pk]=(tlP[pk]||0)+mo});
+  const tlCost=Object.values(tlP).reduce((s,v)=>s+v,0);
+  const tlCov=tlCost?Math.round(((tlP.Cliente+tlP.Inversor)/tlCost)*100):100;
+  const totCost=tmCost+tlCost,clSt=cl.reduce((s,c)=>s+toUSD(c.stackCost,c.currency),0);
+  const acaMRR=sts.filter(x=>x.status==="Activo").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
+  const acaRev=sts.reduce((s,x)=>s+toUSD(x.amountPaid,x.currency),0),acaAct=sts.filter(x=>x.status==="Activo").length,acaCnv=sts.filter(x=>x.convertedToClient).length;
+  const lR=lsns.filter(x=>x.status==="Listo").length;
+  const tInj=invs.filter(x=>x.type==="Inyección de capital").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
+  const tSP=invs.filter(x=>x.type==="Pago de stack mensual").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
+  const tIA=invs.reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
+  const iMo={},iT={},iInv={};
+  invs.forEach(x=>{if(!x.date)return;const ds=(x.date+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(!m)return;const a=toUSD(x.amount,x.currency);iMo[m]=(iMo[m]||0)+a;iT[x.type]=(iT[x.type]||0)+a;const inv=x.investor||"Sin asignar";iInv[inv]=(iInv[inv]||0)+a});
+  const nL=leads.filter(l=>!l.converted).length;
+  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,totCost,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,clSt,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,iMo,iT,iInv,tlP,tlCov,nL};
+},[cl,tm,tls,pjs,lsns,sts,invs,leads,tcMXN]);
+
+const fCl=useMemo(()=>cl.filter(c=>{const ms=!srch||c.name?.toLowerCase().includes(srch.toLowerCase())||(c.company||"").toLowerCase().includes(srch.toLowerCase());return ms&&(fSt==="Todos"||c.stage===fSt)}),[cl,srch,fSt]);
+const mxMoVals=Object.values(me.byMo);const mxMo=mxMoVals.length?mxMoVals.reduce((a,b)=>a>b?a:b,1):1;
+
+if(aL)return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:bg}}><div style={{animation:"spin 1s linear infinite",width:30,height:30,border:`3px solid ${bd}`,borderTop:`3px solid ${tl}`,borderRadius:"50%"}}/></div>;
+if(!user)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:bg}}>
+  <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:36,width:"90%",maxWidth:340,textAlign:"center"}}>
+    <div style={{fontWeight:800,fontSize:18,letterSpacing:".12em",color:tl,fontFamily:"'Geist Mono',monospace",marginBottom:6}}>STRYV</div>
+    <div style={{fontSize:12,color:mt,marginBottom:24}}>Centro de comando</div>
+    <input value={aEm} onChange={e=>setAEm(e.target.value)} placeholder="Email" type="email" style={{...iS,marginBottom:10}} onKeyDown={e=>e.key==="Enter"&&login()}/>
+    <input value={aPw} onChange={e=>setAPw(e.target.value)} placeholder="Contraseña" type="password" style={{...iS,marginBottom:12}} onKeyDown={e=>e.key==="Enter"&&login()}/>
+    {aErr&&<div style={{color:"#ff6b6b",fontSize:11,marginBottom:10}}>{aErr}</div>}
+    <button onClick={login} style={{background:tl,border:"none",color:bg,padding:"12px",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",width:"100%"}}>Entrar</button>
+  </div>
+</div>);
+
+return(<div style={{minHeight:"100vh",background:bg}}>
+{/* NAV */}
+<div style={{background:cd,borderBottom:`1px solid ${bd}`,padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between",height:56,position:"sticky",top:0,zIndex:100}}>
+  <div style={{display:"flex",alignItems:"center",gap:12}}>
+    <span style={{fontWeight:800,fontSize:15,letterSpacing:".12em",color:tl,fontFamily:"'Geist Mono',monospace",cursor:"pointer"}} onClick={()=>{setVw("dashboard");setSub(null);setNavOpen(false)}}>STRYV</span>
+    <button className="nav-toggle" onClick={()=>setNavOpen(!navOpen)} style={{background:"none",border:`1px solid ${bd}`,color:tl,padding:"6px 10px",borderRadius:6,fontSize:16,cursor:"pointer",lineHeight:1}}>{navOpen?"✕":"☰"}</button>
+    <div className={`nav-btns${navOpen?"":" mob-hide"}`}>
+      {[{k:"dashboard",l:"Dashboard"},{k:"clients",l:"Clientes"},{k:"pipeline",l:"Pipeline"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},{k:"projects",l:"Proyectos"},{k:"academy",l:"Academia"},
+        ...(isInv?[{k:"investment",l:"Inversión"}]:[]),{k:"team",l:"Equipo"},{k:"stack",l:"Stack"}].map(n=>
+        <button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false)}} style={{background:vw===n.k?"rgba(78,205,196,.12)":"transparent",border:"none",color:vw===n.k?tl:s2,padding:"8px 10px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer"}}>{n.l}</button>)}
+    </div>
+  </div>
+  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+    {ld&&<div style={{animation:"spin .8s linear infinite",width:14,height:14,border:`2px solid ${bd}`,borderTop:`2px solid ${tl}`,borderRadius:"50%"}}/>}
+    <span className="mob-hide" style={{fontSize:10,color:mt}}>{user?.email}</span>
+    {isA&&<div className="mob-hide" style={{display:"flex",alignItems:"center",gap:3,background:cd2,border:`1px solid ${bd}`,borderRadius:6,padding:"3px 6px"}}>
+      <span style={{fontSize:8,color:mt,fontWeight:600}}>TC</span>
+      <input value={tcMXN} onChange={e=>saveTc(e.target.value)} type="number" step="0.1" style={{width:50,background:"transparent",border:"none",color:tl,fontSize:11,fontWeight:700,outline:"none",textAlign:"center",padding:0}}/>
+      <span style={{fontSize:8,color:mt}}>MXN</span>
+    </div>}
+    {isA&&<span style={{background:"rgba(78,205,196,.12)",color:tl,padding:"2px 8px",borderRadius:10,fontSize:9,fontWeight:700}}>Admin</span>}
+    <button onClick={()=>setChPw(true)} style={{background:"none",border:`1px solid ${bd}`,color:mt,padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36}}>🔑</button>
+    <button onClick={logout} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.2)",color:"#ff6b6b",padding:"6px 12px",borderRadius:6,fontSize:11,cursor:"pointer",minHeight:36}}>Salir</button>
+  </div>
+</div>
+{chPw&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setChPw(false)}>
+  <div onClick={e=>e.stopPropagation()} style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:28,width:"90%",maxWidth:320,textAlign:"center"}}>
+    <div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Cambiar contraseña</div>
+    <input value={nPw} onChange={e=>setNPw(e.target.value)} type="password" placeholder="Nueva (mín 6)" style={{...iS,marginBottom:10}} onKeyDown={e=>e.key==="Enter"&&chPass()}/>
+    {pwMsg&&<div style={{color:pwMsg.startsWith("✓")?"#22c55e":"#ff6b6b",fontSize:11,marginBottom:10}}>{pwMsg}</div>}
+    <button onClick={chPass} style={{background:tl,border:"none",color:bg,padding:"10px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer",width:"100%"}}>Actualizar</button>
+  </div>
+</div>}
+
+<div className={navOpen?"mob-pad":""} style={{maxWidth:1200,margin:"0 auto",padding:"20px 16px"}}>
+
+{/* DASHBOARD */}
+{vw==="dashboard"&&!sub&&(<div>
+  {isA&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+    <div style={{display:"flex",alignItems:"center",gap:6,background:cd,border:`1px solid ${bd}`,borderRadius:8,padding:"8px 12px"}}>
+      <span style={{fontSize:10,color:mt,fontWeight:600,fontFamily:"'Geist Mono',monospace"}}>TIPO DE CAMBIO</span>
+      <input value={tcMXN} onChange={e=>saveTc(e.target.value)} type="number" step="0.1" style={{width:60,background:cd2,border:`1px solid ${bd}`,color:tl,fontSize:14,fontWeight:700,borderRadius:6,padding:"4px 8px",outline:"none",textAlign:"center"}}/>
+      <span style={{fontSize:11,color:mt}}>MXN = 1 USD</span>
+    </div>
+    <span style={{fontSize:9,color:mt}}>Todo se muestra en USD</span>
+  </div>}
+  <div className="g-cards" style={{marginBottom:16}}>
+    {[{l:"Revenue total",v:fm(me.tRev),c:tl},{l:"Cobrado",v:fm(me.tPaid),c:"#22c55e"},{l:"Pendiente",v:fm(me.tPend),c:me.tPend>0?"#f59e0b":"#22c55e"},{l:"MRR clientes",v:fm(me.tMRR),c:"#8b5cf6"},{l:"MRR academia",v:fm(me.acaMRR),c:"#e879f9"},
+      ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#ff6b6b"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?"#22c55e":"#ff6b6b"},{l:"Inversión total",v:fm(me.tIA),c:"#22c55e"},{l:"Stack clientes",v:fm(me.clSt),c:"#f59e0b"}]:[]),
+      {l:"Leads",v:me.nLeads,c:"#f59e0b"},{l:"Leads web",v:me.nL,c:"#e879f9"},{l:"Proy. clientes",v:me.active,c:tl},{l:"Equipo",v:me.aTm,c:"#3b82f6"},
+      {l:"Alumnos",v:me.acaAct,c:"#e879f9"},...(isA?[{l:"Rev. academia",v:fm(me.acaRev),c:"#e879f9"}]:[]),
+      {l:"Lecciones",v:`${me.lR}/${me.lT}`,c:me.lR===me.lT&&me.lT>0?"#22c55e":"#f59e0b"}
+    ].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}>
+      <div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div>
+      <div style={{fontSize:20,fontWeight:800,color:k.c,letterSpacing:"-.03em"}}>{k.v}</div>
+    </div>)}
+  </div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
+      <div style={hd}>Pipeline</div>
+      {STAGES.map(s=><div key={s} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:SC[s]}}/><span style={{fontSize:12,color:s2,flex:1}}>{s}</span>
+        <div style={{background:"rgba(78,205,196,.08)",borderRadius:20,height:6,flex:2,overflow:"hidden"}}><div style={{height:"100%",background:SC[s],borderRadius:20,width:`${me.tot?(me.byStg[s]/me.tot)*100:0}%`}}/></div>
+        <span style={{fontSize:13,fontWeight:700,minWidth:18,textAlign:"right"}}>{me.byStg[s]}</span>
+      </div>)}
+    </div>
+    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
+      <div style={hd}>Cobrado/mes</div>
+      {Object.keys(me.byMo).length===0?<div style={{color:mt,fontSize:12}}>Sin datos.</div>:
+        Object.entries(me.byMo).sort().slice(-6).map(([mo,v])=><div key={mo} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+          <span style={{fontSize:11,color:s2,width:45,flexShrink:0}}>{MO[parseInt(mo.split("-")[1])-1]} {mo.split("-")[0].slice(2)}</span>
+          <div style={{flex:1,background:"rgba(78,205,196,.08)",borderRadius:4,height:18,overflow:"hidden"}}><div style={{height:"100%",background:`linear-gradient(90deg,${tl},rgba(78,205,196,.4))`,borderRadius:4,width:`${(v/mxMo)*100}%`}}/></div>
+          <span style={{fontSize:12,fontWeight:700,color:tl,minWidth:60,textAlign:"right"}}>{fm(v)}</span>
+        </div>)}
+    </div>
+  </div>
+  <div className="g-auto">
+    {isA&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
+      <div style={hd}>Costos/mes</div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:12,color:s2}}>Equipo</span><span style={{fontSize:13,fontWeight:700,color:"#ff6b6b"}}>{fm(me.tmCost)}</span></div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:12,color:s2}}>Tools</span><span style={{fontSize:13,fontWeight:700,color:"#ff6b6b"}}>{fm(me.tlCost)}</span></div>
+      <div style={{borderTop:`1px solid ${bd}`,marginTop:6,paddingTop:6,display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:700}}>Total</span><span style={{fontSize:15,fontWeight:800,color:"#ff6b6b"}}>{fm(me.totCost)}</span></div>
+    </div>}
+    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
+      <div style={hd}>Tareas clientes ({me.cTasks.length})</div>
+      <div style={{maxHeight:160,overflowY:"auto"}}>{me.cTasks.slice(0,6).map((t,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
+        <button onClick={()=>togT(t.cid,t.id)} style={{width:28,height:28,borderRadius:6,border:`1.5px solid ${tl}`,background:"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:tl}}/>
+        <div><div style={{fontSize:11}}>{t.text}</div><div style={{fontSize:9,color:mt}}>{t.cn}</div></div>
+      </div>)}{me.cTasks.length===0&&<div style={{color:mt,fontSize:11}}>Todo al día 🎉</div>}</div>
+      {(()=>{const done=[];cl.forEach(c=>{(c.tasks||[]).forEach(t=>{if(t.done)done.push({...t,cn:c.name,cid:c.id})})});const r=done.slice(-3).reverse();return r.length>0?<div style={{borderTop:`1px solid ${bd}`,marginTop:8,paddingTop:8}}>
+        <div style={{fontSize:9,color:mt,marginBottom:4,fontWeight:600}}>✓ COMPLETADAS</div>
+        {r.map((t,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:4,alignItems:"center"}}>
+          <button onClick={()=>togT(t.cid,t.id)} style={{width:28,height:28,borderRadius:6,border:"1.5px solid #22c55e",background:"rgba(34,197,94,.15)",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:"#22c55e"}}>✓</button>
+          <div><div style={{fontSize:11,color:mt,textDecoration:"line-through"}}>{t.text}</div><div style={{fontSize:9,color:"rgba(224,230,228,.15)"}}>{t.cn}</div></div>
+        </div>)}</div>:null})()}
+    </div>
+    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
+      <div style={hd}>Tareas internas ({me.pTasks.length})</div>
+      <div style={{maxHeight:160,overflowY:"auto"}}>{me.pTasks.slice(0,6).map((t,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
+        <button onClick={()=>togPT(t.cid,t.id)} style={{width:28,height:28,borderRadius:6,border:"1.5px solid #8b5cf6",background:"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:"#8b5cf6"}}/>
+        <div><div style={{fontSize:11}}>{t.text}</div><div style={{fontSize:9,color:mt}}>{t.cn}</div></div>
+      </div>)}{me.pTasks.length===0&&<div style={{color:mt,fontSize:11}}>Sin pendientes 🎉</div>}</div>
+      {(()=>{const done=[];pjs.forEach(p=>{(p.tasks||[]).forEach(t=>{if(t.done)done.push({...t,cn:p.name,cid:p.id})})});const r=done.slice(-3).reverse();return r.length>0?<div style={{borderTop:`1px solid ${bd}`,marginTop:8,paddingTop:8}}>
+        <div style={{fontSize:9,color:mt,marginBottom:4,fontWeight:600}}>✓ COMPLETADAS</div>
+        {r.map((t,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:4,alignItems:"center"}}>
+          <button onClick={()=>togPT(t.cid,t.id)} style={{width:28,height:28,borderRadius:6,border:"1.5px solid #22c55e",background:"rgba(34,197,94,.15)",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0,fontSize:9,color:"#22c55e"}}>✓</button>
+          <div><div style={{fontSize:11,color:mt,textDecoration:"line-through"}}>{t.text}</div><div style={{fontSize:9,color:"rgba(224,230,228,.15)"}}>{t.cn}</div></div>
+        </div>)}</div>:null})()}
+    </div>
+  </div>
+</div>)}
+
+{/* CLIENTS LIST */}
+{vw==="clients"&&!sub&&(<div>
+  <div className="mob-col" style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+    <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>
+    <select value={fSt} onChange={e=>setFSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Todas</option>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
+    {isA&&<button onClick={()=>goN("clients","cF",setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Nuevo</button>}
+  </div>
+  {fCl.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin clientes</div>:
+    fCl.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} className="mob-wrap" style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:6}}>
+      <div style={{width:8,height:8,borderRadius:"50%",background:SC[c.stage],flexShrink:0}}/>
+      <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700}}>{c.name} {c.company&&<span style={{fontWeight:400,color:s2}}>· {c.company}</span>}</div><div style={{fontSize:10,color:mt,marginTop:1}}>{(c.solutions||[]).join(", ")||"—"}</div></div>
+      <div style={{textAlign:"right",flexShrink:0}}><div style={{fontSize:14,fontWeight:800,color:tl}}>{fm(c.amount)}</div><div style={{fontSize:9,color:mt}}>Pagado: {fm(c.amountPaid)}</div></div>
+      <span style={bg2(SC[c.stage])}>{c.stage}</span>
+    </div>)}
+</div>)}
+
+{/* CLIENT FORM */}
+{vw==="clients"&&sub==="cF"&&(<div style={{maxWidth:700,width:"100%"}}>
+  <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar cliente":"Nuevo cliente"}</div>
+  <div className="g2" style={{marginBottom:16}}>{[{k:"name",l:"Nombre *",p:"Juan"},{k:"company",l:"Empresa",p:"SA"},{k:"phone",l:"WhatsApp",p:"+52"},{k:"email",l:"Email",p:"@"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={cF[f.k]} onChange={e=>setCF({...cF,[f.k]:e.target.value})} placeholder={f.p} style={iS}/></div>)}</div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Fuente</label><select value={cF.source} onChange={e=>setCF({...cF,source:e.target.value})} style={iS}>{SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
+    <div><label style={lb}>Etapa</label><select value={cF.stage} onChange={e=>setCF({...cF,stage:e.target.value})} style={iS}>{STAGES.map(s=><option key={s}>{s}</option>)}</select></div>
+  </div>
+  <div style={{marginBottom:16}}><label style={lb}>Soluciones</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{SOLUTIONS.map(sol=>{const sel=(cF.solutions||[]).includes(sol);return <button key={sol} onClick={()=>setCF(p=>({...p,solutions:sel?(p.solutions||[]).filter(s=>s!==sol):[...(p.solutions||[]),sol]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"8px 12px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:sel?700:500,minHeight:36}}>{sol}</button>})}</div></div>
+  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g3">{[{k:"amount",l:"Monto total"},{k:"amountPaid",l:"Pagado"},{k:"mrr",l:"MRR"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={cF[f.k]} onChange={e=>setCF({...cF,[f.k]:e.target.value})} type="number" placeholder="0" style={iS}/></div>)}</div></div><div style={{paddingTop:16}}><CurSel val={cF.currency} onChange={v=>setCF({...cF,currency:v})}/>{cF.currency==="MXN"&&<div style={{fontSize:8,color:mt,marginTop:2}}>≈ {fmShort(toUSD(cF.amount,cF.currency))} USD</div>}</div></div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Stack/mes</label><input value={cF.stackCost} onChange={e=>setCF({...cF,stackCost:e.target.value})} type="number" style={iS}/></div>
+    <div><label style={lb}>Detalle stack</label><input value={cF.stackDetail} onChange={e=>setCF({...cF,stackDetail:e.target.value})} placeholder="Make, CF..." style={iS}/></div>
+  </div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Inicio</label><input value={(cF.startDate+"").substring(0,10)} onChange={e=>setCF({...cF,startDate:e.target.value})} type="date" style={iS}/></div>
+    <div><label style={lb}>Entrega</label><input value={((cF.estDelivery||"")+"").substring(0,10)} onChange={e=>setCF({...cF,estDelivery:e.target.value})} type="date" style={iS}/></div>
+  </div>
+  <div style={{marginBottom:16}}><label style={lb}>Tareas</label>
+    {(cF.tasks||[]).map((t,i)=><div key={t.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}><input checked={t.done} onChange={()=>{const ts=[...cF.tasks];ts[i]={...ts[i],done:!ts[i].done};setCF({...cF,tasks:ts})}} type="checkbox" style={{accentColor:tl}}/><input value={t.text} onChange={e=>{const ts=[...cF.tasks];ts[i]={...ts[i],text:e.target.value};setCF({...cF,tasks:ts})}} placeholder="Tarea..." style={{...iS,flex:1}}/><button onClick={()=>setCF({...cF,tasks:cF.tasks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button></div>)}
+    <button onClick={()=>setCF({...cF,tasks:[...(cF.tasks||[]),{text:"",done:false,id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(78,205,196,.06)",border:`1px dashed ${bd}`,color:s2,padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Tarea</button>
+  </div>
+  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={cF.notes} onChange={e=>setCF({...cF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("clients",cF,setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Registrar"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&isA&&<button onClick={()=>dl("clients",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  </div>
+</div>)}
+
+{/* PIPELINE */}
+{vw==="pipeline"&&(<div style={{overflowX:"auto"}}><div className="mob-col" style={{display:"flex",gap:10}}>
+  {STAGES.map(stg=>{const sc=cl.filter(c=>c.stage===stg);return <div key={stg} style={{flex:1,minWidth:140}}>
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}><div style={{width:8,height:8,borderRadius:"50%",background:SC[stg]}}/><span style={{fontSize:11,fontWeight:700}}>{stg}</span><span style={{fontSize:10,color:mt}}>({sc.length})</span></div>
+    {sc.map(c=><div key={c.id} style={{background:cd,border:`1px solid ${bd}`,borderRadius:10,padding:12,marginBottom:6}}>
+      <div style={{fontSize:12,fontWeight:700,marginBottom:2}}>{c.name}</div>{c.company&&<div style={{fontSize:10,color:s2}}>{c.company}</div>}
+      <div style={{fontSize:13,fontWeight:800,color:tl,marginTop:6}}>{fm(c.amount)}</div>
+      {isA&&<div style={{display:"flex",gap:4,marginTop:8,flexWrap:"wrap"}}>{STAGES.filter(s=>s!==stg).map(s=><button key={s} onClick={()=>mvSt(c.id,s)} style={{background:"rgba(78,205,196,.06)",border:`1px solid ${bd}`,color:SC[s],padding:"6px 10px",borderRadius:6,fontSize:10,cursor:"pointer",fontWeight:600,minHeight:32}}>→{s.substring(0,4)}</button>)}</div>}
+    </div>)}
+  </div>})}
+</div></div>)}
+
+{/* LEADS */}
+{vw==="leads"&&(<div>
+  <div style={{fontSize:15,fontWeight:800,marginBottom:16}}>Leads desde la web <span style={{color:mt,fontWeight:400}}>({leads.length})</span></div>
+  {leads.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin leads — conecta la landing</div>:
+    leads.filter(l=>!l.converted).map(l=><div key={l.id} className="mob-wrap" style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+      <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700}}>{l.name||"Sin nombre"} {l.company&&<span style={{fontWeight:400,color:s2}}>· {l.company}</span>}</div><div style={{fontSize:10,color:mt}}>{l.email} · {l.phone} · {l.source}</div>{l.message&&<div style={{fontSize:11,color:s2,marginTop:4}}>{l.message}</div>}</div>
+      <div style={{fontSize:10,color:mt}}>{l.createdAt?(l.createdAt+"").substring(0,10):""}</div>
+      {isA&&<button onClick={()=>convLead(l)} style={{background:tl,border:"none",color:bg,padding:"8px 14px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>→ Cliente</button>}
+    </div>)}
+  {leads.filter(l=>l.converted).length>0&&<div style={{marginTop:16}}>
+    <div style={{fontSize:12,color:mt,fontWeight:700,marginBottom:8}}>✓ CONVERTIDOS</div>
+    {leads.filter(l=>l.converted).map(l=><div key={l.id} style={{background:cd2,border:`1px solid ${bd}`,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:4,opacity:.6}}>
+      <span style={{fontSize:12,textDecoration:"line-through"}}>{l.name||"—"}</span><span style={{fontSize:10,color:"#22c55e"}}>→ Cliente</span>
+    </div>)}
+  </div>}
+</div>)}
+
+{/* PROJECTS */}
+{vw==="projects"&&!sub&&(<div>
+  <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center",flexWrap:"wrap"}}>
+    <div style={{fontSize:15,fontWeight:800}}>Proyectos internos <span style={{color:mt,fontWeight:400}}>({pjs.length})</span></div>
+    {isA&&<button onClick={()=>goN("projects","pF",setPF,eP)} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Nuevo</button>}
+  </div>
+  {pjs.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin proyectos</div>:
+    <div className="g-auto">
+      {pjs.map(p=>{const dn=(p.tasks||[]).filter(t=>t.done).length,tt=(p.tasks||[]).length,pc=tt?Math.round(dn/tt*100):0;return(
+        <div key={p.id} onClick={()=>ed(p,setPF,"projects","pF")} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:"pointer"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+            <div><div style={{fontSize:14,fontWeight:700}}>{p.name}</div><div style={{fontSize:10,color:"#8b5cf6",fontWeight:600}}>{p.type}</div></div>
+            <div style={{display:"flex",gap:4}}><span style={bg2(PSC[p.status]||"#6b7280")}>{p.status}</span><span style={bg2(p.priority==="Alta"?"#ff6b6b":p.priority==="Media"?"#f59e0b":"#22c55e")}>{p.priority}</span></div>
+          </div>
+          {tt>0&&<div style={{marginBottom:6}}><div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:mt,marginBottom:3}}><span>Progreso</span><span>{dn}/{tt} ({pc}%)</span></div><div style={{background:"rgba(78,205,196,.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",background:tl,borderRadius:20,width:`${pc}%`}}/></div></div>}
+          {isA&&<div style={{borderTop:`1px solid ${bd}`,paddingTop:8,display:"flex",justifyContent:"space-between"}}><span style={{fontSize:10,color:mt}}>Gastado: <span style={{color:"#ff6b6b",fontWeight:700}}>{fm(p.spent)}</span></span><span style={{fontSize:10,color:mt}}>Budget: <span style={{color:"#8b5cf6",fontWeight:700}}>{fm(p.budget)}</span></span></div>}
+        </div>)})}
+    </div>}
+</div>)}
+
+{/* PROJECT FORM */}
+{vw==="projects"&&sub==="pF"&&(<div style={{maxWidth:700,width:"100%"}}>
+  <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar proyecto":"Nuevo proyecto"}</div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Nombre *</label><input value={pF.name} onChange={e=>setPF({...pF,name:e.target.value})} style={iS}/></div>
+    <div><label style={lb}>Tipo</label><select value={pF.type} onChange={e=>setPF({...pF,type:e.target.value})} style={iS}>{PT.map(t=><option key={t}>{t}</option>)}</select></div>
+  </div>
+  <div className="g3" style={{marginBottom:16}}>
+    <div><label style={lb}>Estado</label><select value={pF.status} onChange={e=>setPF({...pF,status:e.target.value})} style={iS}>{PS.map(s=><option key={s}>{s}</option>)}</select></div>
+    <div><label style={lb}>Prioridad</label><select value={pF.priority} onChange={e=>setPF({...pF,priority:e.target.value})} style={iS}>{PP.map(p=><option key={p}>{p}</option>)}</select></div>
+    <div><label style={lb}>Responsable</label><select value={pF.owner} onChange={e=>setPF({...pF,owner:e.target.value})} style={iS}><option value="">—</option>{tm.map(m=><option key={m.id} value={m.name}>{m.name}</option>)}</select></div>
+  </div>
+  {isA&&<div style={{display:"flex",gap:8,alignItems:"start",marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g4">
+    <div><label style={lb}>Budget</label><input value={pF.budget} onChange={e=>setPF({...pF,budget:e.target.value})} type="number" style={iS}/></div>
+    <div><label style={lb}>Gastado</label><input value={pF.spent} onChange={e=>setPF({...pF,spent:e.target.value})} type="number" style={iS}/></div>
+    <div><label style={lb}>Inicio</label><input value={(pF.startDate+"").substring(0,10)} onChange={e=>setPF({...pF,startDate:e.target.value})} type="date" style={iS}/></div>
+    <div><label style={lb}>Deadline</label><input value={((pF.deadline||"")+"").substring(0,10)} onChange={e=>setPF({...pF,deadline:e.target.value})} type="date" style={iS}/></div>
+  </div></div><div style={{paddingTop:16}}><CurSel val={pF.currency} onChange={v=>setPF({...pF,currency:v})}/></div></div>}
+  <div style={{marginBottom:16}}><label style={lb}>Tareas</label>
+    {(pF.tasks||[]).map((t,i)=><div key={t.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}><input checked={t.done} onChange={()=>{const ts=[...pF.tasks];ts[i]={...ts[i],done:!ts[i].done};setPF({...pF,tasks:ts})}} type="checkbox" style={{accentColor:"#8b5cf6"}}/><input value={t.text} onChange={e=>{const ts=[...pF.tasks];ts[i]={...ts[i],text:e.target.value};setPF({...pF,tasks:ts})}} style={{...iS,flex:1}}/><button onClick={()=>setPF({...pF,tasks:pF.tasks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button></div>)}
+    <button onClick={()=>setPF({...pF,tasks:[...(pF.tasks||[]),{text:"",done:false,id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(139,92,246,.06)",border:"1px dashed rgba(139,92,246,.3)",color:"#8b5cf6",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Tarea</button>
+  </div>
+  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={pF.notes} onChange={e=>setPF({...pF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("projects",pF,setPF,eP)} style={{background:"#8b5cf6",border:"none",color:"#fff",padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Crear"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&isA&&<button onClick={()=>dl("projects",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  </div>
+</div>)}
+
+{/* ACADEMY */}
+{vw==="academy"&&!sub&&(<div>
+  <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center",flexWrap:"wrap"}}>
+    <div style={{display:"flex",gap:4}}>
+      {[{k:"curriculum",l:"📚 Curriculum"},{k:"students",l:"🎓 Alumnos"}].map(t=><button key={t.k} onClick={()=>setAcT(t.k)} style={{background:acT===t.k?"rgba(232,121,249,.12)":"transparent",border:"none",color:acT===t.k?"#e879f9":s2,padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.l}</button>)}
+    </div>
+    <div className="mob-wrap" style={{display:"flex",gap:8}}>
+      {acT==="curriculum"&&isA&&<button onClick={()=>{setLF({...eL});setEid(null);setSub("lF")}} style={{background:"#e879f9",border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Lección</button>}
+      {acT==="students"&&isA&&<button onClick={()=>{setSF({...eSt});setEid(null);setSub("sF")}} style={{background:"#e879f9",border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Alumno</button>}
+    </div>
+  </div>
+  {acT==="curriculum"&&(<div>{AW.map((w,wi)=>{const wL=lsns.filter(l=>l.week===w.n);const rdy=wL.filter(l=>l.status==="Listo").length;return <div key={w.n} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginBottom:10}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+      <div style={{flex:1,minWidth:0}}><span style={{fontSize:14,fontWeight:800,color:"#e879f9"}}>Semana {w.n} </span>
+        {isA?<input value={w.t} onChange={e=>saveAW(wi,"t",e.target.value)} style={{background:"transparent",border:"none",borderBottom:`1px solid ${bd}`,color:tx,fontSize:13,fontWeight:600,outline:"none",padding:"2px 4px",width:"auto",maxWidth:"60%"}}/>:<span style={{fontSize:13,fontWeight:600}}>{w.t}</span>}
+        {isA?<div><input value={w.s} onChange={e=>saveAW(wi,"s",e.target.value)} style={{background:"transparent",border:"none",borderBottom:`1px solid ${bd}`,color:mt,fontSize:10,outline:"none",padding:"2px 4px",marginTop:2,width:"100%"}}/></div>:<div style={{fontSize:10,color:mt,marginTop:2}}>{w.s}</div>}
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:11,color:rdy===wL.length&&wL.length>0?"#22c55e":mt}}>{rdy}/{wL.length}</span>{wL.length>0&&<div style={{width:60,background:"rgba(232,121,249,.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",background:"#e879f9",borderRadius:20,width:`${(rdy/wL.length)*100}%`}}/></div>}</div>
+    </div>
+    {wL.length===0?<div style={{color:mt,fontSize:11,padding:"8px 0"}}>Sin lecciones</div>:
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {wL.map(l=>{const assets=(l.assets||[]).map(a=>typeof a==="string"?{name:a,url:"",atype:"Otro"}:a);return <div key={l.id} style={{background:cd2,border:`1px solid ${bd}`,borderRadius:8,padding:"10px 14px",cursor:isA?"pointer":"default"}}>
+          <div onClick={()=>{if(isA){setLF({...l});setEid(l.id);setSub("lF")}}} style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:10,color:mt,fontWeight:600,minWidth:55}}>{l.type}</span><span style={{fontSize:12,fontWeight:600,flex:1}}>{l.title}</span><span style={bg2(LSC[l.status])}>{l.status}</span>{l.version&&<span style={{fontSize:9,color:mt}}>{l.version}</span>}
+          </div>
+          {l.description&&<div style={{fontSize:11,color:s2,marginTop:6,lineHeight:1.5}}>{l.description.substring(0,200)}</div>}
+          {assets.length>0&&<div style={{marginTop:8,display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:8}}>
+            {assets.map((a,ai)=>{const url=a.url||"";const isImg=url.match(/\.(jpg|jpeg|png|gif|webp|svg)/i)||a.atype==="Imagen";const isVid=url.match(/\.(mp4|mov|webm)/i)||a.atype==="Video";const isAud=url.match(/\.(mp3|wav|ogg)/i)||a.atype==="Audio";const isPdf=url.match(/\.pdf/i)||a.atype==="PDF"||a.atype==="Slides";
+            return <div key={ai} style={{background:"rgba(232,121,249,.04)",border:"1px solid rgba(232,121,249,.12)",borderRadius:8,overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
+              {url&&isImg&&<img src={url} style={{width:"100%",maxHeight:200,objectFit:"cover",display:"block"}} onError={e=>{e.target.style.display="none"}}/>}
+              {url&&isVid&&<video src={url} controls style={{width:"100%",maxHeight:220,display:"block",background:"#000"}} preload="metadata"/>}
+              {url&&isAud&&<div style={{padding:"10px 12px"}}><audio src={url} controls style={{width:"100%",height:36}}/></div>}
+              {url&&isPdf&&<div style={{position:"relative",paddingTop:"56%",background:"rgba(0,0,0,.3)"}}><iframe src={url} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}/></div>}
+              {url&&!isImg&&!isVid&&!isPdf&&!isAud&&<a href={url} target="_blank" rel="noopener" style={{display:"block",padding:"16px 12px",textAlign:"center",color:"#e879f9",fontSize:11,textDecoration:"none"}}>↗ Abrir</a>}
+              {!url&&<div style={{padding:"20px 12px",textAlign:"center",color:mt,fontSize:11}}>⏳ Pendiente</div>}
+              <div style={{padding:"8px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",borderTop:"1px solid rgba(232,121,249,.08)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:12}}>{a.atype==="Video"?"🎬":a.atype==="Slides"?"📊":a.atype==="Imagen"?"🖼":a.atype==="PDF"?"📄":a.atype==="Template"?"📋":a.atype==="Audio"?"🎙":"📎"}</span><span style={{fontSize:11,fontWeight:600}}>{a.name||a.atype}</span></div>
+                {url&&<a href={url} target="_blank" rel="noopener" style={{fontSize:9,color:"#e879f9",textDecoration:"none",fontWeight:600}}>Abrir ↗</a>}
+              </div>
+            </div>})}
+          </div>}
+        </div>})}
+      </div>}
+  </div>})}</div>)}
+  {acT==="students"&&(<div>
+    {sts.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin alumnos</div>:
+      <div className="g-auto">
+        {sts.map(s=><div key={s.id} onClick={()=>{setSF({...s});setEid(s.id);setSub("sF")}} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:"pointer"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+            <div><div style={{fontSize:14,fontWeight:700}}>{s.name}</div>{s.email&&<div style={{fontSize:10,color:s2}}>{s.email}</div>}</div>
+            <div style={{display:"flex",gap:4}}><span style={bg2(s.status==="Activo"?"#22c55e":s.status==="Completado"?"#8b5cf6":"#6b7280")}>{s.status}</span>{s.convertedToClient&&<span style={bg2(tl)}>→ Cliente</span>}</div>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{fontSize:11,color:mt}}>Semana {s.currentWeek}/4</div>
+            <div style={{width:60,background:"rgba(232,121,249,.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",background:"#e879f9",borderRadius:20,width:`${(s.currentWeek/4)*100}%`}}/></div>
+            {isA&&<span style={{fontSize:13,fontWeight:800,color:tl}}>{fm(s.amountPaid)}</span>}
+          </div>
+        </div>)}
+      </div>}
+    {isA&&sts.length>0&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginTop:12}}>
+      <div style={hd}>Métricas academia</div>
+      <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
+        <div><span style={{fontSize:10,color:mt}}>Activos</span><div style={{fontSize:18,fontWeight:800,color:"#e879f9"}}>{me.acaAct}</div></div>
+        <div><span style={{fontSize:10,color:mt}}>Revenue</span><div style={{fontSize:18,fontWeight:800,color:tl}}>{fm(me.acaRev)}</div></div>
+        <div><span style={{fontSize:10,color:mt}}>→ Clientes</span><div style={{fontSize:18,fontWeight:800,color:"#22c55e"}}>{me.acaCnv}</div></div>
+        <div><span style={{fontSize:10,color:mt}}>Conversión</span><div style={{fontSize:18,fontWeight:800,color:"#f59e0b"}}>{sts.length?Math.round(me.acaCnv/sts.length*100):0}%</div></div>
+      </div>
+    </div>}
+  </div>)}
+</div>)}
+
+{/* LESSON FORM */}
+{vw==="academy"&&sub==="lF"&&(<div style={{maxWidth:600,width:"100%"}}>
+  <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar lección":"Nueva lección"}</div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Título *</label><input value={lF.title} onChange={e=>setLF({...lF,title:e.target.value})} style={iS}/></div>
+    <div><label style={lb}>Semana</label><select value={lF.week} onChange={e=>setLF({...lF,week:Number(e.target.value)})} style={iS}>{AW.map(w=><option key={w.n} value={w.n}>Sem {w.n} — {w.t}</option>)}</select></div>
+  </div>
+  <div className="g3" style={{marginBottom:16}}>
+    <div><label style={lb}>Tipo</label><select value={lF.type} onChange={e=>setLF({...lF,type:e.target.value})} style={iS}>{LT.map(t=><option key={t}>{t}</option>)}</select></div>
+    <div><label style={lb}>Status</label><select value={lF.status} onChange={e=>setLF({...lF,status:e.target.value})} style={iS}>{LS.map(s=><option key={s}>{s}</option>)}</select></div>
+    <div><label style={lb}>Versión</label><input value={lF.version} onChange={e=>setLF({...lF,version:e.target.value})} style={iS}/></div>
+  </div>
+  <div style={{marginBottom:16}}><label style={lb}>Descripción</label><textarea value={lF.description} onChange={e=>setLF({...lF,description:e.target.value})} rows={3} style={{...iS,resize:"vertical"}}/></div>
+  <div style={{marginBottom:16}}><label style={lb}>Recursos (Cloudinary links)</label>
+    {(lF.assets||[]).map((a,i)=>{const asset=typeof a==="string"?{name:a,url:"",atype:"Otro"}:a;return <div key={i} style={{display:"flex",gap:5,marginBottom:5,alignItems:"center"}}>
+      <select value={asset.atype||"Otro"} onChange={e=>{const as=[...lF.assets];as[i]={...asset,atype:e.target.value};setLF({...lF,assets:as})}} style={{...iS,width:90,flexShrink:0,fontSize:10,padding:"8px 6px"}}>{["Video","Slides","Imagen","PDF","Template","Audio","Otro"].map(t=><option key={t}>{t}</option>)}</select>
+      <input value={asset.name||""} onChange={e=>{const as=[...lF.assets];as[i]={...asset,name:e.target.value};setLF({...lF,assets:as})}} placeholder="Nombre" style={{...iS,flex:1}}/>
+      <input value={asset.url||""} onChange={e=>{const as=[...lF.assets];as[i]={...asset,url:e.target.value};setLF({...lF,assets:as})}} placeholder="https://res.cloudinary.com/..." style={{...iS,flex:2,fontSize:11}}/>
+      <button onClick={()=>setLF({...lF,assets:lF.assets.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button>
+    </div>})}
+    <button onClick={()=>setLF({...lF,assets:[...(lF.assets||[]),{name:"",url:"",atype:"Video"}]})} style={{background:"rgba(232,121,249,.06)",border:"1px dashed rgba(232,121,249,.3)",color:"#e879f9",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Recurso</button>
+  </div>
+  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={lF.notes} onChange={e=>setLF({...lF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("lessons",lF,setLF,eL)} style={{background:"#e879f9",border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Crear"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&isA&&<button onClick={()=>dl("lessons",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  </div>
+</div>)}
+
+{/* STUDENT FORM */}
+{vw==="academy"&&sub==="sF"&&(<div style={{maxWidth:600,width:"100%"}}>
+  <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar alumno":"Nuevo alumno"}</div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Nombre *</label><input value={sF.name} onChange={e=>setSF({...sF,name:e.target.value})} style={iS}/></div>
+    <div><label style={lb}>Email</label><input value={sF.email} onChange={e=>setSF({...sF,email:e.target.value})} style={iS}/></div>
+    <div><label style={lb}>Teléfono</label><input value={sF.phone} onChange={e=>setSF({...sF,phone:e.target.value})} style={iS}/></div>
+    <div><label style={lb}>Plan</label><input value={sF.plan} onChange={e=>setSF({...sF,plan:e.target.value})} style={iS}/></div>
+  </div>
+  <div style={{display:"flex",gap:8,alignItems:"start",marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g3">
+    <div><label style={lb}>Monto</label><input value={sF.amount} onChange={e=>setSF({...sF,amount:e.target.value})} type="number" style={iS}/></div>
+    <div><label style={lb}>Pagado</label><input value={sF.amountPaid} onChange={e=>setSF({...sF,amountPaid:e.target.value})} type="number" style={iS}/></div>
+    <div><label style={lb}>Semana</label><select value={sF.currentWeek} onChange={e=>setSF({...sF,currentWeek:Number(e.target.value)})} style={iS}>{[1,2,3,4].map(n=><option key={n} value={n}>{n}</option>)}</select></div>
+  </div></div><div style={{paddingTop:16}}><CurSel val={sF.currency} onChange={v=>setSF({...sF,currency:v})}/></div></div>
+  <div className="g3" style={{marginBottom:16}}>
+    <div><label style={lb}>Status</label><select value={sF.status} onChange={e=>setSF({...sF,status:e.target.value})} style={iS}>{SS.map(s=><option key={s}>{s}</option>)}</select></div>
+    <div><label style={lb}>Inicio</label><input value={(sF.startDate+"").substring(0,10)} onChange={e=>setSF({...sF,startDate:e.target.value})} type="date" style={iS}/></div>
+    <div style={{display:"flex",alignItems:"end",paddingBottom:2}}><label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}><input checked={sF.convertedToClient} onChange={e=>setSF({...sF,convertedToClient:e.target.checked})} type="checkbox" style={{accentColor:tl}}/><span style={{fontSize:11,color:tl,fontWeight:600}}>→ Cliente</span></label></div>
+  </div>
+  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={sF.notes} onChange={e=>setSF({...sF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("students",sF,setSF,eSt)} style={{background:"#e879f9",border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Registrar"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&<button onClick={()=>dl("students",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  </div>
+</div>)}
+
+{/* INVESTMENT */}
+{vw==="investment"&&!sub&&isInv&&(<div>
+  <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center"}}>
+    <div style={{fontSize:15,fontWeight:800}}>Inversión <span style={{color:mt,fontWeight:400}}>({invs.length})</span></div>
+    {isA&&<button onClick={()=>{setIF({...eI});setEid(null);setSub("iF")}} style={{background:"#22c55e",border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Movimiento</button>}
+  </div>
+  <div className="g-inv" style={{marginBottom:16}}>
+    {[{l:"Total invertido",v:fm(me.tIA),c:"#22c55e"},{l:"Inyecciones",v:fm(me.tInj),c:"#8b5cf6"},{l:"Stack pagado",v:fm(me.tSP),c:"#ff6b6b"},{l:"Stack activo/mes",v:fm(me.tlCost),c:"#f59e0b"}].map((k,i)=>
+      <div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}><div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div><div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div></div>)}
+  </div>
+  {/* Ledger table */}
+  <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 0",marginBottom:16}}>
+    <div style={{padding:"0 16px"}}><div style={hd}>Registro mes a mes</div></div>
+    <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",padding:"0 16px"}}>
+    {invs.length===0?<div style={{color:mt,fontSize:12}}>Sin movimientos</div>:(()=>{
+      const mos=new Set(),tps=new Set();invs.forEach(x=>{if(x.date)mos.add((x.date+"").substring(0,7));tps.add(x.type)});
+      const sm=[...mos].sort(),ta=[...tps],tc={"Inyección de capital":"#8b5cf6","Pago de stack mensual":"#ff6b6b","Equipo":"#f59e0b","Otro":"#6b7280"};
+      const g={};sm.forEach(m=>{g[m]={};ta.forEach(t=>{g[m][t]=0})});invs.forEach(x=>{if(x.date){const m=(x.date+"").substring(0,7);g[m][x.type]=(g[m][x.type]||0)+Number(x.amount||0)}});
+      let acc=0;
+      return <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:500}}><thead><tr style={{borderBottom:`2px solid ${bd}`}}>
+        <th style={{textAlign:"left",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MES</th>
+        {ta.map(t=><th key={t} style={{textAlign:"right",padding:"8px 10px",color:tc[t]||mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>{t==="Inyección de capital"?"INYECCIÓN":t==="Pago de stack mensual"?"STACK":t.toUpperCase()}</th>)}
+        <th style={{textAlign:"right",padding:"8px 10px",color:tl,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MES</th>
+        <th style={{textAlign:"right",padding:"8px 10px",color:"#22c55e",fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>ACUMULADO</th>
+      </tr></thead><tbody>{sm.map(m=>{const mt2=ta.reduce((s,t)=>s+(g[m][t]||0),0);acc+=mt2;return <tr key={m} style={{borderBottom:`1px solid ${bd}`}}>
+        <td style={{padding:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>{MO[parseInt(m.split("-")[1])-1]} {m.split("-")[0]}</td>
+        {ta.map(t=><td key={t} style={{textAlign:"right",padding:10,color:g[m][t]?tc[t]||s2:mt,fontWeight:g[m][t]?700:400}}>{g[m][t]?fm(g[m][t]):"—"}</td>)}
+        <td style={{textAlign:"right",padding:10,fontWeight:800,color:tl,fontSize:14}}>{fm(mt2)}</td>
+        <td style={{textAlign:"right",padding:10,fontWeight:800,color:"#22c55e",fontSize:14}}>{fm(acc)}</td>
+      </tr>})}</tbody>
+      <tfoot><tr style={{borderTop:`2px solid ${bd}`,background:"rgba(78,205,196,.03)"}}>
+        <td style={{padding:"12px 10px",fontWeight:800,fontSize:13}}>TOTAL</td>
+        {ta.map(t=>{const tot=sm.reduce((s,m)=>s+(g[m][t]||0),0);return <td key={t} style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:tc[t],fontSize:14}}>{fm(tot)}</td>})}
+        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:tl,fontSize:16}}>{fm(acc)}</td>
+        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:"#22c55e",fontSize:16}}>{fm(acc)}</td>
+      </tr></tfoot></table>})()}
+    </div>
+  </div>
+  {/* Movimientos */}
+  <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
+    <div style={hd}>Movimientos</div>
+    {[...invs].sort((a,b)=>((b.date||"")+"").localeCompare((a.date||"")+"")).map(inv=><div key={inv.id} onClick={()=>{if(isA){setIF({...inv});setEid(inv.id);setSub("iF")}}} className="mob-wrap" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:cd2,border:`1px solid ${bd}`,borderRadius:8,cursor:isA?"pointer":"default",marginBottom:4}}>
+      <span style={{fontSize:11,color:mt,minWidth:70,fontFamily:"'Geist Mono',monospace"}}>{(inv.date+"").substring(0,10)}</span>
+      <span style={bg2(inv.type==="Inyección de capital"?"#8b5cf6":inv.type==="Pago de stack mensual"?"#ff6b6b":"#f59e0b")}>{inv.type}</span>
+      <span style={{fontSize:12,color:s2,flex:1}}>{inv.investor||"—"}</span>
+      <span style={{fontSize:15,fontWeight:800,color:"#22c55e"}}>{fm(inv.amount)}</span>
+    </div>)}
+  </div>
+</div>)}
+
+{/* INVESTMENT FORM */}
+{vw==="investment"&&sub==="iF"&&isA&&(<div style={{maxWidth:600,width:"100%"}}>
+  <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar":"Registrar movimiento"}</div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Tipo</label><select value={iF.type} onChange={e=>{const t=e.target.value;setIF({...iF,type:t,amount:t==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:iF.type==="Pago de stack mensual"?0:iF.amount})}} style={iS}>{IT.map(t=><option key={t}>{t}</option>)}</select></div>
+    <div><label style={lb}>Monto{iF.type==="Pago de stack mensual"?" (auto)":""}</label>
+      {iF.type==="Pago de stack mensual"?<div style={{...iS,display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(34,197,94,.06)",border:"1px solid rgba(34,197,94,.2)"}}><span style={{fontSize:15,fontWeight:800,color:"#22c55e"}}>{fm(me.tlCost)}</span><span style={{fontSize:9,color:mt}}>stack/mes</span></div>:
+      <div style={{display:"flex",gap:4}}><input value={iF.amount} onChange={e=>setIF({...iF,amount:e.target.value})} type="number" style={{...iS,flex:1}}/><CurSel val={iF.currency} onChange={v=>setIF({...iF,currency:v})}/></div>}
+      {iF.currency==="MXN"&&iF.type!=="Pago de stack mensual"&&<div style={{fontSize:8,color:mt,marginTop:2}}>≈ {fmShort(toUSD(iF.amount,iF.currency))} USD</div>}
+    </div>
+  </div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Inversor</label><select value={iF.investor} onChange={e=>setIF({...iF,investor:e.target.value})} style={iS}><option value="">—</option>{tm.filter(m=>(m.roles||[]).includes("Inversionista")).map(m=><option key={m.id} value={m.name}>{m.name}</option>)}<option value="Otro">Otro</option></select></div>
+    <div><label style={lb}>Fecha</label><input value={(iF.date+"").substring(0,10)} onChange={e=>setIF({...iF,date:e.target.value})} type="date" style={iS}/></div>
+  </div>
+  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={iF.notes} onChange={e=>setIF({...iF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={svI} style={{background:"#22c55e",border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Registrar"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&<button onClick={()=>dl("investments",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  </div>
+</div>)}
+
+{/* TEAM */}
+{vw==="team"&&!sub&&(<div>
+  <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center"}}>
+    <div style={{fontSize:15,fontWeight:800}}>Equipo <span style={{color:mt,fontWeight:400}}>({tm.length})</span></div>
+    {isA&&<button onClick={()=>goN("team","mF",setMF,eM)} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Agregar</button>}
+  </div>
+  {tm.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin miembros</div>:
+    <div className="g-auto">
+      {tm.map(mb=>{const roles=mb.roles||[];return <div key={mb.id} onClick={()=>{if(isA)ed(mb,setMF,"team","mF")}} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:isA?"pointer":"default"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+          <div><div style={{fontSize:14,fontWeight:700}}>{mb.name}</div><div style={{fontSize:11,color:tl,fontWeight:600}}>{roles.join(" · ")}</div></div>
+          <span style={bg2(mb.status==="Activo"?"#22c55e":"#6b7280")}>{mb.status}</span>
+        </div>
+        {mb.email&&<div style={{fontSize:10,color:s2}}>{mb.email}</div>}
+        {mb.notes&&<div style={{fontSize:10,color:mt,marginTop:6,lineHeight:1.4,borderTop:`1px solid ${bd}`,paddingTop:6}}>{mb.notes}</div>}
+        {isA&&<div style={{borderTop:`1px solid ${bd}`,paddingTop:8,marginTop:8}}>
+          {Number(mb.rate)>0&&<div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:10,color:mt}}>Pago ({mb.rateType})</span><span style={{fontSize:14,fontWeight:800,color:tl}}>{fm(mb.rate)}</span></div>}
+          {Number(mb.invested)>0&&<div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:10,color:mt}}>Inversión</span><span style={{fontSize:14,fontWeight:800,color:"#22c55e"}}>{fm(mb.invested)}</span></div>}
+        </div>}
+      </div>})}
+    </div>}
+</div>)}
+
+{/* TEAM FORM */}
+{vw==="team"&&sub==="mF"&&(<div style={{maxWidth:600,width:"100%"}}>
+  <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar":"Nuevo miembro"}</div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Nombre *</label><input value={mF.name} onChange={e=>setMF({...mF,name:e.target.value})} style={iS}/></div>
+    <div><label style={lb}>Email</label><input value={mF.email} onChange={e=>setMF({...mF,email:e.target.value})} style={iS}/></div>
+    <div><label style={lb}>Teléfono</label><input value={mF.phone} onChange={e=>setMF({...mF,phone:e.target.value})} style={iS}/></div>
+    <div><label style={lb}>Estado</label><select value={mF.status} onChange={e=>setMF({...mF,status:e.target.value})} style={iS}><option>Activo</option><option>Inactivo</option><option>Pausado</option></select></div>
+  </div>
+  <div style={{marginBottom:16}}><label style={lb}>Roles</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ROLES.map(r=>{const sel=(mF.roles||[]).includes(r);return <button key={r} onClick={()=>setMF(p=>({...p,roles:sel?p.roles.filter(x=>x!==r):[...(p.roles||[]),r]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"8px 12px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:sel?700:500,minHeight:36}}>{r}</button>})}</div></div>
+  <div style={{display:"flex",gap:8,alignItems:"start",marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g3">
+    <div><label style={lb}>Pago</label><input value={mF.rate} onChange={e=>setMF({...mF,rate:e.target.value})} type="number" style={iS}/></div>
+    <div><label style={lb}>Tipo</label><select value={mF.rateType} onChange={e=>setMF({...mF,rateType:e.target.value})} style={iS}><option>Mensual</option><option>Anual</option><option>Por proyecto</option><option>Por hora</option></select></div>
+    <div><label style={lb}>Inversión</label><input value={mF.invested} onChange={e=>setMF({...mF,invested:e.target.value})} type="number" style={iS}/></div>
+  </div></div><div style={{paddingTop:16}}><CurSel val={mF.currency} onChange={v=>setMF({...mF,currency:v})}/></div></div>
+  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={mF.notes} onChange={e=>setMF({...mF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("team",mF,setMF,eM)} style={{background:tl,border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Agregar"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&isA&&<button onClick={()=>dl("team",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  </div>
+</div>)}
+
+{/* STACK */}
+{vw==="stack"&&!sub&&(<div>
+  <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center",flexWrap:"wrap"}}>
+    <div style={{fontSize:15,fontWeight:800}}>Stack <span style={{color:mt,fontWeight:400}}>({tls.length})</span></div>
+    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+      {isA&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:8,padding:"7px 12px",fontSize:11}}><span style={{color:mt}}>Costo/mes: </span><span style={{fontWeight:800,color:"#ff6b6b"}}>{fm(me.tlCost)}</span></div>}
+      {isA&&<button onClick={()=>goN("stack","tF",setTF,eT)} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Agregar</button>}
+    </div>
+  </div>
+  {tls.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin herramientas</div>:<div>
+    {isA&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginBottom:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={hd}>Cobertura del stack</div>
+        <span style={{fontSize:20,fontWeight:800,color:me.tlCov>=100?"#22c55e":me.tlCov>=50?tl:"#f59e0b"}}>{me.tlCov}%</span>
+      </div>
+      <div style={{background:"rgba(78,205,196,.08)",borderRadius:20,height:10,overflow:"hidden",marginBottom:10}}>
+        <div style={{height:"100%",borderRadius:20,background:me.tlCov>=100?"#22c55e":me.tlCov>=50?tl:"#f59e0b",width:`${Math.min(me.tlCov,100)}%`}}/>
+      </div>
+      <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+        <div><span style={{fontSize:10,color:mt}}>STRYV</span><div style={{fontSize:15,fontWeight:800,color:"#ff6b6b"}}>{fm(me.tlP.STRYV)}/mes</div></div>
+        <div><span style={{fontSize:10,color:mt}}>Inversor</span><div style={{fontSize:15,fontWeight:800,color:"#8b5cf6"}}>{fm(me.tlP.Inversor)}/mes</div></div>
+        <div><span style={{fontSize:10,color:mt}}>Clientes</span><div style={{fontSize:15,fontWeight:800,color:"#22c55e"}}>{fm(me.tlP.Cliente)}/mes</div></div>
+      </div>
+      {me.tlCov<100&&<div style={{marginTop:8,fontSize:11,color:"#f59e0b"}}>⚡ Faltan {fm(me.tlP.STRYV)}/mes</div>}
+      {me.tlCov>=100&&<div style={{marginTop:8,fontSize:11,color:"#22c55e"}}>✓ Stack 100% cubierto</div>}
+    </div>}
+    <div className="g-auto">
+      {tls.map(t=>{const pc=t.paidBy==="Cliente"?"#22c55e":t.paidBy==="Inversor"?"#8b5cf6":"#ff6b6b";return <div key={t.id} onClick={()=>{if(isA)ed(t,setTF,"stack","tF")}} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:isA?"pointer":"default"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+          <div><div style={{fontSize:14,fontWeight:700}}>{t.name}</div><div style={{fontSize:10,color:tl,fontWeight:600}}>{t.category}</div></div>
+          <span style={bg2(t.status==="Activo"?"#22c55e":"#6b7280")}>{t.status}</span>
+        </div>
+        {isA?<div>
+          {t.url&&<div style={{fontSize:10,color:s2,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.url}</div>}
+          {t.loginEmail&&<div style={{fontSize:9,color:mt,marginBottom:4}}>Login: {t.loginEmail}</div>}
+          <div style={{borderTop:`1px solid ${bd}`,paddingTop:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div><span style={{fontSize:10,color:mt}}>{t.billing}</span><div style={{fontSize:14,fontWeight:800,color:t.billing==="Gratis"?"#22c55e":"#ff6b6b"}}>{t.billing==="Gratis"?"Gratis":fm(t.cost)}{t.billing==="Mensual"?"/mes":t.billing==="Anual"?"/año":""}</div></div>
+            <div style={{textAlign:"right"}}><span style={{fontSize:9,color:mt}}>Paga:</span><div style={{fontSize:11,fontWeight:700,color:pc}}>{t.paidBy==="Cliente"?t.paidByName||"Cliente":t.paidBy==="Inversor"?t.paidByName||"Inversor":"STRYV"}</div></div>
+          </div>
+        </div>:<div style={{borderTop:`1px solid ${bd}`,paddingTop:8,fontSize:10,color:mt}}>🔒 Restringido</div>}
+      </div>})}
+    </div>
+  </div>}
+</div>)}
+
+{/* TOOL FORM */}
+{vw==="stack"&&sub==="tF"&&(<div style={{maxWidth:600,width:"100%"}}>
+  <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar":"Nueva herramienta"}</div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Nombre *</label><input value={tF.name} onChange={e=>setTF({...tF,name:e.target.value})} style={iS}/></div>
+    <div><label style={lb}>Categoría</label><select value={tF.category} onChange={e=>setTF({...tF,category:e.target.value})} style={iS}>{TCATS.map(c=><option key={c}>{c}</option>)}</select></div>
+  </div>
+  <div className="g3" style={{marginBottom:16}}>
+    <div><label style={lb}>Costo</label><div style={{display:"flex",gap:4}}><input value={tF.cost} onChange={e=>setTF({...tF,cost:e.target.value})} type="number" style={{...iS,flex:1}}/><CurSel val={tF.currency} onChange={v=>setTF({...tF,currency:v})}/></div>{tF.currency==="MXN"&&<div style={{fontSize:8,color:mt,marginTop:2}}>≈ {fmShort(toUSD(tF.cost,tF.currency))} USD</div>}</div>
+    <div><label style={lb}>Ciclo</label><select value={tF.billing} onChange={e=>setTF({...tF,billing:e.target.value})} style={iS}>{BILL.map(b=><option key={b}>{b}</option>)}</select></div>
+    <div><label style={lb}>Estado</label><select value={tF.status} onChange={e=>setTF({...tF,status:e.target.value})} style={iS}><option>Activo</option><option>Inactivo</option><option>Trial</option></select></div>
+  </div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>URL</label><input value={tF.url} onChange={e=>setTF({...tF,url:e.target.value})} style={iS}/></div>
+    <div><label style={lb}>Email login</label><input value={tF.loginEmail} onChange={e=>setTF({...tF,loginEmail:e.target.value})} style={iS}/></div>
+  </div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>¿Quién paga?</label><select value={tF.paidBy||"STRYV"} onChange={e=>setTF({...tF,paidBy:e.target.value,paidByName:""})} style={iS}><option value="STRYV">STRYV</option><option value="Inversor">Inversor</option><option value="Cliente">Cliente</option></select></div>
+    {tF.paidBy==="Cliente"&&<div><label style={lb}>¿Qué cliente?</label><select value={tF.paidByName||""} onChange={e=>setTF({...tF,paidByName:e.target.value})} style={iS}><option value="">—</option>{cl.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}</select></div>}
+    {tF.paidBy==="Inversor"&&<div><label style={lb}>¿Qué inversor?</label><select value={tF.paidByName||""} onChange={e=>setTF({...tF,paidByName:e.target.value})} style={iS}><option value="">—</option>{tm.filter(m=>(m.roles||[]).includes("Inversionista")).map(m=><option key={m.id} value={m.name}>{m.name}</option>)}</select></div>}
+  </div>
+  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={tF.notes} onChange={e=>setTF({...tF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
+  <div className="mob-wrap" style={{display:"flex",gap:8}}>
+    <button onClick={()=>sv("tools",tF,setTF,eT)} style={{background:tl,border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Agregar"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&isA&&<button onClick={()=>dl("tools",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  </div>
+</div>)}
+
+</div>
+</div>);
+}
+class EB extends React.Component{constructor(p){super(p);this.state={err:null}}static getDerivedStateFromError(e){return{err:e}}componentDidCatch(e,i){console.error("STRYV Error:",e,i)}render(){if(this.state.err)return <div style={{padding:40,textAlign:"center",color:"#ff6b6b",background:"#0a0c10",minHeight:"100vh"}}><h2>Error en el dashboard</h2><pre style={{fontSize:12,color:"#e0e6e4",marginTop:16,textAlign:"left",maxWidth:600,margin:"16px auto",whiteSpace:"pre-wrap"}}>{this.state.err.toString()}</pre><button onClick={()=>this.setState({err:null})} style={{marginTop:16,background:"#4ECDC4",border:"none",color:"#0a0c10",padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>Reintentar</button></div>;return this.props.children}}
+ReactDOM.createRoot(document.getElementById("root")).render(<EB><App/></EB>);
+</script>
+</body>
+</html>

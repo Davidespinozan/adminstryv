@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4ECDC4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="STRYV">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <title>STRYV — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
@@ -47,6 +53,7 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 </head>
 <body>
 <div id="root"></div>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}</script>
 <script type="text/babel">
 window.addEventListener("unhandledrejection",e=>{console.error("Unhandled async error:",e.reason)});
 const{useState,useEffect,useMemo,useCallback}=React;
@@ -87,8 +94,8 @@ async function dSel(t){
   if(!error&&count>2000)console.warn(`⚠ ${t}: ${count} rows, mostrando 2000`);
   return error?[]:toCaA(data);
 }
-async function dIns(t,row){const c={...toSn(row)};delete c.id;delete c.created_at;delete c.updated_at;const{data,error}=await SB.from(t).insert(c).select();return error?null:toCa(data[0])}
-async function dUpd(t,id,row){const c={...toSn(row)};delete c.id;delete c.created_at;delete c.updated_at;const{data,error}=await SB.from(t).update(c).eq("id",id).select();return error?null:toCa(data[0])}
+async function dIns(t,row){const c={...toSn(row)};delete c.id;delete c.created_at;delete c.updated_at;const{data,error}=await SB.from(t).insert(c).select();if(error){console.error("INSERT error",t,error.message,error.details,error.hint,c);alert("Error DB: "+error.message);return null}return toCa(data[0])}
+async function dUpd(t,id,row){const c={...toSn(row)};delete c.id;delete c.created_at;delete c.updated_at;const{data,error}=await SB.from(t).update(c).eq("id",id).select();if(error){console.error("UPDATE error",t,error.message,error.details,error.hint,c);alert("Error DB: "+error.message);return null}return toCa(data[0])}
 const _softDelTables=["clients","team","tools","projects","investments"];
 async function dDel(t,id){
   if(_softDelTables.includes(t)){

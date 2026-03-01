@@ -67,10 +67,11 @@ const LS=["Borrador","En producción","Grabado","Editado","Listo"];
 const LSC={"Borrador":"#6b7280","En producción":"#f59e0b","Grabado":"#3b82f6","Editado":"#8b5cf6","Listo":"#22c55e"};
 const LT=["Video","Template","Ejercicio","Entregable","Lectura","Live"];
 const SS=["Activo","Completado","Pausado","Abandonó"];
-const AW=[{n:1,t:"Fundación",s:"¿Qué vas a vender y por qué te van a comprar?"},{n:2,t:"Sistema de Ventas",s:"Listo para cobrar aunque sea poquito"},{n:3,t:"Entrega y Automatización",s:"Que opere sin ti"},{n:4,t:"Medición, Tráfico y Control",s:"Crecer sin colapsar"}];
+const _AW=[{n:1,t:"Fundación",s:"¿Qué vas a vender y por qué te van a comprar?"},{n:2,t:"Sistema de Ventas",s:"Listo para cobrar aunque sea poquito"},{n:3,t:"Entrega y Automatización",s:"Que opere sin ti"},{n:4,t:"Medición, Tráfico y Control",s:"Crecer sin colapsar"}];
 const IT=["Inyección de capital","Pago de stack mensual","Equipo","Otro"];
 
-const fm=n=>"$"+Number(n||0).toLocaleString("es-MX",{minimumFractionDigits:0});
+const fm=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0})+" USD";
+const fmShort=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0});
 const MO=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const bg="#0a0c10",cd="#12161e",cd2="#181d27",bd="rgba(78,205,196,.12)",tl="#4ECDC4",tx="#e0e6e4",s2="rgba(224,230,228,.55)",mt="rgba(224,230,228,.3)";
 const lb={display:"block",fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:mt,marginBottom:6,fontFamily:"'Geist Mono',monospace"};
@@ -101,14 +102,15 @@ async function dDel(t,id){
   }
 }
 
-const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,stackCost:0,stackDetail:"",startDate:"",estDelivery:"",notes:"",tasks:[]};
-const _eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:""};
-const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",paidBy:"STRYV",paidByName:""};
-const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,startDate:"",deadline:"",description:"",tasks:[],notes:""};
+const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,stackCost:0,stackDetail:"",startDate:"",estDelivery:"",notes:"",tasks:[],currency:"USD"};
+const _eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:"",currency:"USD"};
+const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",paidBy:"STRYV",paidByName:"",currency:"USD"};
+const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,startDate:"",deadline:"",description:"",tasks:[],notes:"",currency:"USD"};
 const _eL={week:1,title:"",description:"",type:"Video",status:"Borrador",version:"v1",assets:[],notes:""};
-const _eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:"",convertedToClient:false,notes:""};
-const _eI={type:"Inyección de capital",investor:"",amount:0,date:"",notes:""};
+const _eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:"",convertedToClient:false,notes:"",currency:"USD"};
+const _eI={type:"Inyección de capital",investor:"",amount:0,date:"",notes:"",currency:"USD"};
 const today=()=>new Date().toISOString().split("T")[0];
+const CurSel=({val,onChange})=><select value={val||"USD"} onChange={e=>onChange(e.target.value)} style={{background:cd2,border:`1px solid ${bd}`,color:val==="MXN"?"#f59e0b":tl,borderRadius:6,padding:"4px 6px",fontSize:10,fontWeight:700,cursor:"pointer",outline:"none"}}><option value="USD">USD</option><option value="MXN">MXN</option></select>;
 
 function App(){
 const[user,setUser]=useState(null);const[prof,setProf]=useState(null);const[aL,setAL]=useState(true);
@@ -131,7 +133,13 @@ const chPass=async()=>{setPwMsg("");const{error}=await SB.auth.updateUser({passw
 useEffect(()=>()=>clearTimeout(chPassTimer.current),[]);
 
 const[D,setD]=useState({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[]});
+const isInv=useMemo(()=>{if(isA)return true;const u=user?.email;if(!u)return false;const mb=D.team.find(m=>m.email&&m.email.toLowerCase()===u.toLowerCase());return mb&&(mb.roles||[]).includes("Inversionista")},[isA,user,D.team]);
+const[tcMXN,setTcMXN]=useState(()=>{try{const v=localStorage.getItem("stryv_tc");return v?Number(v):20.5}catch(e){return 20.5}});
+const saveTc=v=>{const n=Number(v);if(n>0){setTcMXN(n);try{localStorage.setItem("stryv_tc",n)}catch(e){}}};
+const toUSD=(val,cur)=>{const n=Number(val||0);return cur==="MXN"?Math.round(n/tcMXN*100)/100:n};
 const[ld,setLd]=useState(false);const[vw,setVw]=useState("dashboard");const[sub,setSub]=useState(null);
+const[AW,setAW]=useState(()=>{try{const v=localStorage.getItem("stryv_aw");return v?JSON.parse(v):_AW}catch(e){return _AW}});
+const saveAW=(idx,field,val)=>{const nw=[...AW];nw[idx]={...nw[idx],[field]:val};setAW(nw);try{localStorage.setItem("stryv_aw",JSON.stringify(nw))}catch(e){}};
 const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");
 const loadLock=React.useRef(false);
 
@@ -208,38 +216,30 @@ const convLead=async l=>{
   }catch(err){alert("Error: "+err.message)}};
 
 const me=useMemo(()=>{
-  const tRev=cl.reduce((s,c)=>s+Number(c.amount||0),0),tPaid=cl.reduce((s,c)=>s+Number(c.amountPaid||0),0);
-  // Fix 1: MRR cuenta cualquier cliente con mrr>0 sin importar etapa
-  const tMRR=cl.filter(c=>Number(c.mrr||0)>0).reduce((s,c)=>s+Number(c.mrr||0),0);
+  const tRev=cl.reduce((s,c)=>s+toUSD(c.amount,c.currency),0),tPaid=cl.reduce((s,c)=>s+toUSD(c.amountPaid,c.currency),0);
+  const tMRR=cl.filter(c=>Number(c.mrr||0)>0).reduce((s,c)=>s+toUSD(c.mrr,c.currency),0);
   const byStg={};STAGES.forEach(s=>{byStg[s]=cl.filter(c=>c.stage===s).length});
-  // Fix 5: Revenue por mes usa amountPaid (dinero real cobrado) no amount (contratado)
-  const byMo={};cl.forEach(c=>{if(c.startDate){const ds=(c.startDate+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(m)byMo[m]=(byMo[m]||0)+Number(c.amountPaid||0)}});
+  const byMo={};cl.forEach(c=>{if(c.startDate){const ds=(c.startDate+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(m)byMo[m]=(byMo[m]||0)+toUSD(c.amountPaid,c.currency)}});
   const cTasks=[],pTasks=[];
   cl.forEach(c=>{(c.tasks||[]).forEach(t=>{if(!t.done)cTasks.push({...t,cn:c.name,cid:c.id})})});
   pjs.forEach(p=>{(p.tasks||[]).forEach(t=>{if(!t.done)pTasks.push({...t,cn:p.name,cid:p.id})})});
-  // Fix 2: "Por hora" excluido igual que "Por proyecto"
-  const tmCost=tm.filter(x=>x.status==="Activo").reduce((s,x)=>{const ro=x.roles||[];if(ro.length===1&&ro[0]==="Inversionista")return s;const r=Number(x.rate||0);return s+(x.rateType==="Anual"?r/12:x.rateType==="Por proyecto"||x.rateType==="Por hora"?0:r)},0);
-  // Fix 3: tlCost derivado de tlP para evitar divergencia
+  const tmCost=tm.filter(x=>x.status==="Activo").reduce((s,x)=>{const ro=x.roles||[];if(ro.length===1&&ro[0]==="Inversionista")return s;const r=toUSD(x.rate,x.currency);return s+(x.rateType==="Anual"?r/12:x.rateType==="Por proyecto"||x.rateType==="Por hora"?0:r)},0);
   const tlP={STRYV:0,Inversor:0,Cliente:0};
-  tls.filter(x=>x.status==="Activo").forEach(x=>{const c=Number(x.cost||0);const mo=x.billing==="Anual"?c/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:c;const pk=x.paidBy||"STRYV";tlP[pk]=(tlP[pk]||0)+mo});
+  tls.filter(x=>x.status==="Activo").forEach(x=>{const c=toUSD(x.cost,x.currency);const mo=x.billing==="Anual"?c/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:c;const pk=x.paidBy||"STRYV";tlP[pk]=(tlP[pk]||0)+mo});
   const tlCost=Object.values(tlP).reduce((s,v)=>s+v,0);
-  // Fix 4: Si no hay costo, cobertura es 100%
   const tlCov=tlCost?Math.round(((tlP.Cliente+tlP.Inversor)/tlCost)*100):100;
-  const totCost=tmCost+tlCost,clSt=cl.reduce((s,c)=>s+Number(c.stackCost||0),0);
-  // Fix 7: MRR de academia (alumnos activos)
-  const acaMRR=sts.filter(x=>x.status==="Activo").reduce((s,x)=>s+Number(x.amount||0),0);
-  const acaRev=sts.reduce((s,x)=>s+Number(x.amountPaid||0),0),acaAct=sts.filter(x=>x.status==="Activo").length,acaCnv=sts.filter(x=>x.convertedToClient).length;
+  const totCost=tmCost+tlCost,clSt=cl.reduce((s,c)=>s+toUSD(c.stackCost,c.currency),0);
+  const acaMRR=sts.filter(x=>x.status==="Activo").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
+  const acaRev=sts.reduce((s,x)=>s+toUSD(x.amountPaid,x.currency),0),acaAct=sts.filter(x=>x.status==="Activo").length,acaCnv=sts.filter(x=>x.convertedToClient).length;
   const lR=lsns.filter(x=>x.status==="Listo").length;
-  const tInj=invs.filter(x=>x.type==="Inyección de capital").reduce((s,x)=>s+Number(x.amount||0),0);
-  const tSP=invs.filter(x=>x.type==="Pago de stack mensual").reduce((s,x)=>s+Number(x.amount||0),0);
-  const tIA=invs.reduce((s,x)=>s+Number(x.amount||0),0);
-  // Fix 8: Inversiones sin fecha se ignoran en todos los desgloces
+  const tInj=invs.filter(x=>x.type==="Inyección de capital").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
+  const tSP=invs.filter(x=>x.type==="Pago de stack mensual").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
+  const tIA=invs.reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
   const iMo={},iT={},iInv={};
-  invs.forEach(x=>{if(!x.date)return;const ds=(x.date+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(!m)return;iMo[m]=(iMo[m]||0)+Number(x.amount||0);iT[x.type]=(iT[x.type]||0)+Number(x.amount||0);const inv=x.investor||"Sin asignar";iInv[inv]=(iInv[inv]||0)+Number(x.amount||0)});
+  invs.forEach(x=>{if(!x.date)return;const ds=(x.date+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(!m)return;const a=toUSD(x.amount,x.currency);iMo[m]=(iMo[m]||0)+a;iT[x.type]=(iT[x.type]||0)+a;const inv=x.investor||"Sin asignar";iInv[inv]=(iInv[inv]||0)+a});
   const nL=leads.filter(l=>!l.converted).length;
-  // Fix 7b: profit incluye MRR de academia
   return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,totCost,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,clSt,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,iMo,iT,iInv,tlP,tlCov,nL};
-},[cl,tm,tls,pjs,lsns,sts,invs,leads]);
+},[cl,tm,tls,pjs,lsns,sts,invs,leads,tcMXN]);
 
 const fCl=useMemo(()=>cl.filter(c=>{const ms=!srch||c.name?.toLowerCase().includes(srch.toLowerCase())||(c.company||"").toLowerCase().includes(srch.toLowerCase());return ms&&(fSt==="Todos"||c.stage===fSt)}),[cl,srch,fSt]);
 const mxMoVals=Object.values(me.byMo);const mxMo=mxMoVals.length?mxMoVals.reduce((a,b)=>a>b?a:b,1):1;
@@ -264,13 +264,18 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <button className="nav-toggle" onClick={()=>setNavOpen(!navOpen)} style={{background:"none",border:`1px solid ${bd}`,color:tl,padding:"6px 10px",borderRadius:6,fontSize:16,cursor:"pointer",lineHeight:1}}>{navOpen?"✕":"☰"}</button>
     <div className={`nav-btns${navOpen?"":" mob-hide"}`}>
       {[{k:"dashboard",l:"Dashboard"},{k:"clients",l:"Clientes"},{k:"pipeline",l:"Pipeline"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},{k:"projects",l:"Proyectos"},{k:"academy",l:"Academia"},
-        ...(isA?[{k:"investment",l:"Inversión"}]:[]),{k:"team",l:"Equipo"},{k:"stack",l:"Stack"}].map(n=>
+        ...(isInv?[{k:"investment",l:"Inversión"}]:[]),{k:"team",l:"Equipo"},{k:"stack",l:"Stack"}].map(n=>
         <button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false)}} style={{background:vw===n.k?"rgba(78,205,196,.12)":"transparent",border:"none",color:vw===n.k?tl:s2,padding:"8px 10px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer"}}>{n.l}</button>)}
     </div>
   </div>
   <div style={{display:"flex",gap:6,alignItems:"center"}}>
     {ld&&<div style={{animation:"spin .8s linear infinite",width:14,height:14,border:`2px solid ${bd}`,borderTop:`2px solid ${tl}`,borderRadius:"50%"}}/>}
     <span className="mob-hide" style={{fontSize:10,color:mt}}>{user?.email}</span>
+    {isA&&<div className="mob-hide" style={{display:"flex",alignItems:"center",gap:3,background:cd2,border:`1px solid ${bd}`,borderRadius:6,padding:"3px 6px"}}>
+      <span style={{fontSize:8,color:mt,fontWeight:600}}>TC</span>
+      <input value={tcMXN} onChange={e=>saveTc(e.target.value)} type="number" step="0.1" style={{width:50,background:"transparent",border:"none",color:tl,fontSize:11,fontWeight:700,outline:"none",textAlign:"center",padding:0}}/>
+      <span style={{fontSize:8,color:mt}}>MXN</span>
+    </div>}
     {isA&&<span style={{background:"rgba(78,205,196,.12)",color:tl,padding:"2px 8px",borderRadius:10,fontSize:9,fontWeight:700}}>Admin</span>}
     <button onClick={()=>setChPw(true)} style={{background:"none",border:`1px solid ${bd}`,color:mt,padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36}}>🔑</button>
     <button onClick={logout} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.2)",color:"#ff6b6b",padding:"6px 12px",borderRadius:6,fontSize:11,cursor:"pointer",minHeight:36}}>Salir</button>
@@ -289,6 +294,14 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 
 {/* DASHBOARD */}
 {vw==="dashboard"&&!sub&&(<div>
+  {isA&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+    <div style={{display:"flex",alignItems:"center",gap:6,background:cd,border:`1px solid ${bd}`,borderRadius:8,padding:"8px 12px"}}>
+      <span style={{fontSize:10,color:mt,fontWeight:600,fontFamily:"'Geist Mono',monospace"}}>TIPO DE CAMBIO</span>
+      <input value={tcMXN} onChange={e=>saveTc(e.target.value)} type="number" step="0.1" style={{width:60,background:cd2,border:`1px solid ${bd}`,color:tl,fontSize:14,fontWeight:700,borderRadius:6,padding:"4px 8px",outline:"none",textAlign:"center"}}/>
+      <span style={{fontSize:11,color:mt}}>MXN = 1 USD</span>
+    </div>
+    <span style={{fontSize:9,color:mt}}>Todo se muestra en USD</span>
+  </div>}
   <div className="g-cards" style={{marginBottom:16}}>
     {[{l:"Revenue total",v:fm(me.tRev),c:tl},{l:"Cobrado",v:fm(me.tPaid),c:"#22c55e"},{l:"Pendiente",v:fm(me.tPend),c:me.tPend>0?"#f59e0b":"#22c55e"},{l:"MRR clientes",v:fm(me.tMRR),c:"#8b5cf6"},{l:"MRR academia",v:fm(me.acaMRR),c:"#e879f9"},
       ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#ff6b6b"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?"#22c55e":"#ff6b6b"},{l:"Inversión total",v:fm(me.tIA),c:"#22c55e"},{l:"Stack clientes",v:fm(me.clSt),c:"#f59e0b"}]:[]),
@@ -380,7 +393,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Etapa</label><select value={cF.stage} onChange={e=>setCF({...cF,stage:e.target.value})} style={iS}>{STAGES.map(s=><option key={s}>{s}</option>)}</select></div>
   </div>
   <div style={{marginBottom:16}}><label style={lb}>Soluciones</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{SOLUTIONS.map(sol=>{const sel=(cF.solutions||[]).includes(sol);return <button key={sol} onClick={()=>setCF(p=>({...p,solutions:sel?(p.solutions||[]).filter(s=>s!==sol):[...(p.solutions||[]),sol]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"8px 12px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:sel?700:500,minHeight:36}}>{sol}</button>})}</div></div>
-  <div className="g3" style={{marginBottom:16}}>{[{k:"amount",l:"Monto total"},{k:"amountPaid",l:"Pagado"},{k:"mrr",l:"MRR"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={cF[f.k]} onChange={e=>setCF({...cF,[f.k]:e.target.value})} type="number" placeholder="0" style={iS}/></div>)}</div>
+  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g3">{[{k:"amount",l:"Monto total"},{k:"amountPaid",l:"Pagado"},{k:"mrr",l:"MRR"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={cF[f.k]} onChange={e=>setCF({...cF,[f.k]:e.target.value})} type="number" placeholder="0" style={iS}/></div>)}</div></div><div style={{paddingTop:16}}><CurSel val={cF.currency} onChange={v=>setCF({...cF,currency:v})}/>{cF.currency==="MXN"&&<div style={{fontSize:8,color:mt,marginTop:2}}>≈ {fmShort(toUSD(cF.amount,cF.currency))} USD</div>}</div></div>
   <div className="g2" style={{marginBottom:16}}>
     <div><label style={lb}>Stack/mes</label><input value={cF.stackCost} onChange={e=>setCF({...cF,stackCost:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Detalle stack</label><input value={cF.stackDetail} onChange={e=>setCF({...cF,stackDetail:e.target.value})} placeholder="Make, CF..." style={iS}/></div>
@@ -462,12 +475,12 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Prioridad</label><select value={pF.priority} onChange={e=>setPF({...pF,priority:e.target.value})} style={iS}>{PP.map(p=><option key={p}>{p}</option>)}</select></div>
     <div><label style={lb}>Responsable</label><select value={pF.owner} onChange={e=>setPF({...pF,owner:e.target.value})} style={iS}><option value="">—</option>{tm.map(m=><option key={m.id} value={m.name}>{m.name}</option>)}</select></div>
   </div>
-  {isA&&<div className="g4" style={{marginBottom:16}}>
+  {isA&&<div style={{display:"flex",gap:8,alignItems:"start",marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g4">
     <div><label style={lb}>Budget</label><input value={pF.budget} onChange={e=>setPF({...pF,budget:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Gastado</label><input value={pF.spent} onChange={e=>setPF({...pF,spent:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Inicio</label><input value={(pF.startDate+"").substring(0,10)} onChange={e=>setPF({...pF,startDate:e.target.value})} type="date" style={iS}/></div>
     <div><label style={lb}>Deadline</label><input value={((pF.deadline||"")+"").substring(0,10)} onChange={e=>setPF({...pF,deadline:e.target.value})} type="date" style={iS}/></div>
-  </div>}
+  </div></div><div style={{paddingTop:16}}><CurSel val={pF.currency} onChange={v=>setPF({...pF,currency:v})}/></div></div>}
   <div style={{marginBottom:16}}><label style={lb}>Tareas</label>
     {(pF.tasks||[]).map((t,i)=><div key={t.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}><input checked={t.done} onChange={()=>{const ts=[...pF.tasks];ts[i]={...ts[i],done:!ts[i].done};setPF({...pF,tasks:ts})}} type="checkbox" style={{accentColor:"#8b5cf6"}}/><input value={t.text} onChange={e=>{const ts=[...pF.tasks];ts[i]={...ts[i],text:e.target.value};setPF({...pF,tasks:ts})}} style={{...iS,flex:1}}/><button onClick={()=>setPF({...pF,tasks:pF.tasks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button></div>)}
     <button onClick={()=>setPF({...pF,tasks:[...(pF.tasks||[]),{text:"",done:false,id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(139,92,246,.06)",border:"1px dashed rgba(139,92,246,.3)",color:"#8b5cf6",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Tarea</button>
@@ -491,9 +504,12 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {acT==="students"&&isA&&<button onClick={()=>{setSF({...eSt});setEid(null);setSub("sF")}} style={{background:"#e879f9",border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Alumno</button>}
     </div>
   </div>
-  {acT==="curriculum"&&(<div>{AW.map(w=>{const wL=lsns.filter(l=>l.week===w.n);const rdy=wL.filter(l=>l.status==="Listo").length;return <div key={w.n} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginBottom:10}}>
+  {acT==="curriculum"&&(<div>{AW.map((w,wi)=>{const wL=lsns.filter(l=>l.week===w.n);const rdy=wL.filter(l=>l.status==="Listo").length;return <div key={w.n} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginBottom:10}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-      <div><span style={{fontSize:14,fontWeight:800,color:"#e879f9"}}>Semana {w.n}</span><span style={{fontSize:13,fontWeight:600,marginLeft:8}}>{w.t}</span><div style={{fontSize:10,color:mt,marginTop:2}}>{w.s}</div></div>
+      <div style={{flex:1,minWidth:0}}><span style={{fontSize:14,fontWeight:800,color:"#e879f9"}}>Semana {w.n} </span>
+        {isA?<input value={w.t} onChange={e=>saveAW(wi,"t",e.target.value)} style={{background:"transparent",border:"none",borderBottom:`1px solid ${bd}`,color:tx,fontSize:13,fontWeight:600,outline:"none",padding:"2px 4px",width:"auto",maxWidth:"60%"}}/>:<span style={{fontSize:13,fontWeight:600}}>{w.t}</span>}
+        {isA?<div><input value={w.s} onChange={e=>saveAW(wi,"s",e.target.value)} style={{background:"transparent",border:"none",borderBottom:`1px solid ${bd}`,color:mt,fontSize:10,outline:"none",padding:"2px 4px",marginTop:2,width:"100%"}}/></div>:<div style={{fontSize:10,color:mt,marginTop:2}}>{w.s}</div>}
+      </div>
       <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:11,color:rdy===wL.length&&wL.length>0?"#22c55e":mt}}>{rdy}/{wL.length}</span>{wL.length>0&&<div style={{width:60,background:"rgba(232,121,249,.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",background:"#e879f9",borderRadius:20,width:`${(rdy/wL.length)*100}%`}}/></div>}</div>
     </div>
     {wL.length===0?<div style={{color:mt,fontSize:11,padding:"8px 0"}}>Sin lecciones</div>:
@@ -587,11 +603,11 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Teléfono</label><input value={sF.phone} onChange={e=>setSF({...sF,phone:e.target.value})} style={iS}/></div>
     <div><label style={lb}>Plan</label><input value={sF.plan} onChange={e=>setSF({...sF,plan:e.target.value})} style={iS}/></div>
   </div>
-  <div className="g3" style={{marginBottom:16}}>
+  <div style={{display:"flex",gap:8,alignItems:"start",marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g3">
     <div><label style={lb}>Monto</label><input value={sF.amount} onChange={e=>setSF({...sF,amount:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Pagado</label><input value={sF.amountPaid} onChange={e=>setSF({...sF,amountPaid:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Semana</label><select value={sF.currentWeek} onChange={e=>setSF({...sF,currentWeek:Number(e.target.value)})} style={iS}>{[1,2,3,4].map(n=><option key={n} value={n}>{n}</option>)}</select></div>
-  </div>
+  </div></div><div style={{paddingTop:16}}><CurSel val={sF.currency} onChange={v=>setSF({...sF,currency:v})}/></div></div>
   <div className="g3" style={{marginBottom:16}}>
     <div><label style={lb}>Status</label><select value={sF.status} onChange={e=>setSF({...sF,status:e.target.value})} style={iS}>{SS.map(s=><option key={s}>{s}</option>)}</select></div>
     <div><label style={lb}>Inicio</label><input value={(sF.startDate+"").substring(0,10)} onChange={e=>setSF({...sF,startDate:e.target.value})} type="date" style={iS}/></div>
@@ -606,10 +622,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>)}
 
 {/* INVESTMENT */}
-{vw==="investment"&&!sub&&isA&&(<div>
+{vw==="investment"&&!sub&&isInv&&(<div>
   <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center"}}>
     <div style={{fontSize:15,fontWeight:800}}>Inversión <span style={{color:mt,fontWeight:400}}>({invs.length})</span></div>
-    <button onClick={()=>{setIF({...eI});setEid(null);setSub("iF")}} style={{background:"#22c55e",border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Movimiento</button>
+    {isA&&<button onClick={()=>{setIF({...eI});setEid(null);setSub("iF")}} style={{background:"#22c55e",border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Movimiento</button>}
   </div>
   <div className="g-inv" style={{marginBottom:16}}>
     {[{l:"Total invertido",v:fm(me.tIA),c:"#22c55e"},{l:"Inyecciones",v:fm(me.tInj),c:"#8b5cf6"},{l:"Stack pagado",v:fm(me.tSP),c:"#ff6b6b"},{l:"Stack activo/mes",v:fm(me.tlCost),c:"#f59e0b"}].map((k,i)=>
@@ -646,7 +662,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   {/* Movimientos */}
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
     <div style={hd}>Movimientos</div>
-    {[...invs].sort((a,b)=>((b.date||"")+"").localeCompare((a.date||"")+"")).map(inv=><div key={inv.id} onClick={()=>{setIF({...inv});setEid(inv.id);setSub("iF")}} className="mob-wrap" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:cd2,border:`1px solid ${bd}`,borderRadius:8,cursor:"pointer",marginBottom:4}}>
+    {[...invs].sort((a,b)=>((b.date||"")+"").localeCompare((a.date||"")+"")).map(inv=><div key={inv.id} onClick={()=>{if(isA){setIF({...inv});setEid(inv.id);setSub("iF")}}} className="mob-wrap" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:cd2,border:`1px solid ${bd}`,borderRadius:8,cursor:isA?"pointer":"default",marginBottom:4}}>
       <span style={{fontSize:11,color:mt,minWidth:70,fontFamily:"'Geist Mono',monospace"}}>{(inv.date+"").substring(0,10)}</span>
       <span style={bg2(inv.type==="Inyección de capital"?"#8b5cf6":inv.type==="Pago de stack mensual"?"#ff6b6b":"#f59e0b")}>{inv.type}</span>
       <span style={{fontSize:12,color:s2,flex:1}}>{inv.investor||"—"}</span>
@@ -662,7 +678,8 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Tipo</label><select value={iF.type} onChange={e=>{const t=e.target.value;setIF({...iF,type:t,amount:t==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:iF.type==="Pago de stack mensual"?0:iF.amount})}} style={iS}>{IT.map(t=><option key={t}>{t}</option>)}</select></div>
     <div><label style={lb}>Monto{iF.type==="Pago de stack mensual"?" (auto)":""}</label>
       {iF.type==="Pago de stack mensual"?<div style={{...iS,display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(34,197,94,.06)",border:"1px solid rgba(34,197,94,.2)"}}><span style={{fontSize:15,fontWeight:800,color:"#22c55e"}}>{fm(me.tlCost)}</span><span style={{fontSize:9,color:mt}}>stack/mes</span></div>:
-      <input value={iF.amount} onChange={e=>setIF({...iF,amount:e.target.value})} type="number" style={iS}/>}
+      <div style={{display:"flex",gap:4}}><input value={iF.amount} onChange={e=>setIF({...iF,amount:e.target.value})} type="number" style={{...iS,flex:1}}/><CurSel val={iF.currency} onChange={v=>setIF({...iF,currency:v})}/></div>}
+      {iF.currency==="MXN"&&iF.type!=="Pago de stack mensual"&&<div style={{fontSize:8,color:mt,marginTop:2}}>≈ {fmShort(toUSD(iF.amount,iF.currency))} USD</div>}
     </div>
   </div>
   <div className="g2" style={{marginBottom:16}}>
@@ -710,11 +727,11 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Estado</label><select value={mF.status} onChange={e=>setMF({...mF,status:e.target.value})} style={iS}><option>Activo</option><option>Inactivo</option><option>Pausado</option></select></div>
   </div>
   <div style={{marginBottom:16}}><label style={lb}>Roles</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ROLES.map(r=>{const sel=(mF.roles||[]).includes(r);return <button key={r} onClick={()=>setMF(p=>({...p,roles:sel?p.roles.filter(x=>x!==r):[...(p.roles||[]),r]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"8px 12px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:sel?700:500,minHeight:36}}>{r}</button>})}</div></div>
-  <div className="g3" style={{marginBottom:16}}>
+  <div style={{display:"flex",gap:8,alignItems:"start",marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g3">
     <div><label style={lb}>Pago</label><input value={mF.rate} onChange={e=>setMF({...mF,rate:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Tipo</label><select value={mF.rateType} onChange={e=>setMF({...mF,rateType:e.target.value})} style={iS}><option>Mensual</option><option>Anual</option><option>Por proyecto</option><option>Por hora</option></select></div>
     <div><label style={lb}>Inversión</label><input value={mF.invested} onChange={e=>setMF({...mF,invested:e.target.value})} type="number" style={iS}/></div>
-  </div>
+  </div></div><div style={{paddingTop:16}}><CurSel val={mF.currency} onChange={v=>setMF({...mF,currency:v})}/></div></div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={mF.notes} onChange={e=>setMF({...mF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
   <div className="mob-wrap" style={{display:"flex",gap:8}}>
     <button onClick={()=>sv("team",mF,setMF,eM)} style={{background:tl,border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Agregar"}</button>
@@ -776,7 +793,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Categoría</label><select value={tF.category} onChange={e=>setTF({...tF,category:e.target.value})} style={iS}>{TCATS.map(c=><option key={c}>{c}</option>)}</select></div>
   </div>
   <div className="g3" style={{marginBottom:16}}>
-    <div><label style={lb}>Costo</label><input value={tF.cost} onChange={e=>setTF({...tF,cost:e.target.value})} type="number" style={iS}/></div>
+    <div><label style={lb}>Costo</label><div style={{display:"flex",gap:4}}><input value={tF.cost} onChange={e=>setTF({...tF,cost:e.target.value})} type="number" style={{...iS,flex:1}}/><CurSel val={tF.currency} onChange={v=>setTF({...tF,currency:v})}/></div>{tF.currency==="MXN"&&<div style={{fontSize:8,color:mt,marginTop:2}}>≈ {fmShort(toUSD(tF.cost,tF.currency))} USD</div>}</div>
     <div><label style={lb}>Ciclo</label><select value={tF.billing} onChange={e=>setTF({...tF,billing:e.target.value})} style={iS}>{BILL.map(b=><option key={b}>{b}</option>)}</select></div>
     <div><label style={lb}>Estado</label><select value={tF.status} onChange={e=>setTF({...tF,status:e.target.value})} style={iS}><option>Activo</option><option>Inactivo</option><option>Trial</option></select></div>
   </div>

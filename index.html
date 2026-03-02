@@ -774,16 +774,17 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {me.tlCov>=100&&<div style={{marginTop:8,fontSize:11,color:"#22c55e"}}>✓ Stack 100% cubierto</div>}
     </div>}
     <div className="g-auto">
-      {tls.map(t=>{const pc=t.paidBy==="Cliente"?"#22c55e":t.paidBy==="Inversor"?"#8b5cf6":"#ff6b6b";return <div key={t.id} onClick={()=>{if(isA)ed(t,setTF,"stack","tF")}} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:isA?"pointer":"default"}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-          <div><div style={{fontSize:14,fontWeight:700}}>{t.name}</div><div style={{fontSize:10,color:tl,fontWeight:600}}>{t.category}</div></div>
+      {tls.map(t=>{const pc=t.paidBy==="Cliente"?"#22c55e":t.paidBy==="Inversor"?"#8b5cf6":"#ff6b6b";return <div key={t.id} onClick={()=>{if(isA)ed(t,setTF,"stack","tF")}} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:isA?"pointer":"default",overflow:"hidden"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,gap:8}}>
+          <div style={{minWidth:0,flex:1}}><div style={{fontSize:14,fontWeight:700}}>{t.name}</div><div style={{fontSize:10,color:tl,fontWeight:600}}>{t.category}</div></div>
           <span style={bg2(t.status==="Activo"?"#22c55e":"#6b7280")}>{t.status}</span>
         </div>
-        {isA?<div>
-          {t.url&&<div style={{fontSize:10,color:s2,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.url}</div>}
-          {t.loginEmail&&<div style={{fontSize:9,color:mt,marginBottom:4}}>Login: {t.loginEmail}</div>}
-          <div style={{borderTop:`1px solid ${bd}`,paddingTop:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div><span style={{fontSize:10,color:mt}}>{t.billing}</span><div style={{fontSize:14,fontWeight:800,color:t.billing==="Gratis"?"#22c55e":"#ff6b6b"}}>{t.billing==="Gratis"?"Gratis":fm(t.cost)}{t.billing==="Mensual"?"/mes":t.billing==="Anual"?"/año":""}</div></div>
+        {isA?<div style={{minWidth:0}}>
+          {t.url&&<div style={{fontSize:10,color:s2,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>{t.url}</div>}
+          {t.loginEmail&&<div style={{fontSize:9,color:mt,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Login: {t.loginEmail}</div>}
+          {t.notes&&<div style={{fontSize:9,color:mt,marginBottom:6,lineHeight:1.4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{t.notes}</div>}
+          <div style={{borderTop:`1px solid ${bd}`,paddingTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
+            <div><span style={{fontSize:10,color:mt}}>{t.billing}</span><div style={{fontSize:14,fontWeight:800,color:t.billing==="Gratis"?"#22c55e":"#ff6b6b"}}>{t.billing==="Gratis"?"Gratis":fm(t.cost)}{t.billing==="Mensual"?"/mes":t.billing==="Anual"?"/año":""}</div>{t.currency==="MXN"&&<div style={{fontSize:8,color:mt}}>≈ {fmShort(toUSD(t.cost,t.currency))} USD</div>}</div>
             <div style={{textAlign:"right"}}><span style={{fontSize:9,color:mt}}>Paga:</span><div style={{fontSize:11,fontWeight:700,color:pc}}>{t.paidBy==="Cliente"?t.paidByName||"Cliente":t.paidBy==="Inversor"?t.paidByName||"Inversor":"STRYV"}</div></div>
           </div>
         </div>:<div style={{borderTop:`1px solid ${bd}`,paddingTop:8,fontSize:10,color:mt}}>🔒 Restringido</div>}

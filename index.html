@@ -660,37 +660,47 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       </div>)}
     </div>)}
   </div>}
-  {/* Ledger table */}
+  {/* Historial completo mes a mes */}
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 0",marginBottom:16}}>
-    <div style={{padding:"0 16px"}}><div style={hd}>Registro mes a mes</div></div>
+    <div style={{padding:"0 16px"}}><div style={hd}>Historial de inversión mes a mes</div></div>
     <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",padding:"0 16px"}}>
-    {invs.length===0?<div style={{color:mt,fontSize:12}}>Sin movimientos</div>:(()=>{
-      const mos=new Set(),tps=new Set();invs.forEach(x=>{if(x.date)mos.add((x.date+"").substring(0,7));tps.add(x.type)});
-      const sm=[...mos].sort(),ta=[...tps];
-      const g={};sm.forEach(m=>{g[m]={};ta.forEach(t=>{g[m][t]=0})});invs.forEach(x=>{if(x.date){const m=(x.date+"").substring(0,7);g[m][x.type]=(g[m][x.type]||0)+Number(x.amount||0)}});
+    {(()=>{
+      const rows=[];
+      invs.forEach(x=>{if(!x.date)return;const m=(x.date+"").substring(0,7);rows.push({month:m,investor:x.investor||"Sin asignar",concept:x.type,amount:toUSD(x.amount,x.currency),detail:x.notes||"",src:"mov"})});
+      tls.filter(tlAct).filter(x=>x.paidBy==="Inversor").forEach(x=>{const inv=x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(mo<=0)return;const cm=new Date().toISOString().substring(0,7);const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;const ms=[];let cur=start;while(cur<=cm){ms.push(cur);const [y,m2]=cur.split("-").map(Number);const nd=new Date(y,m2,1);cur=nd.toISOString().substring(0,7)}ms.forEach(m=>{rows.push({month:m,investor:inv,concept:"Herramienta: "+x.name,amount:mo,detail:x.billing,src:"tool"})})});
+      if(rows.length===0)return <div style={{color:mt,fontSize:12}}>Sin movimientos</div>;
+      const byMo={};rows.forEach(r=>{if(!byMo[r.month])byMo[r.month]=[];byMo[r.month].push(r)});
+      const months=Object.keys(byMo).sort();
       let acc=0;
-      return <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:500}}><thead><tr style={{borderBottom:`2px solid ${bd}`}}>
-        <th style={{textAlign:"left",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MES</th>
-        {ta.map(t=><th key={t} style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>{t==="Inyección de capital"?"INYECCIÓN":t==="Pago de stack mensual"?"STACK":t.toUpperCase()}</th>)}
-        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MES</th>
-        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>ACUMULADO</th>
-      </tr></thead><tbody>{sm.map(m=>{const mt2=ta.reduce((s,t)=>s+(g[m][t]||0),0);acc+=mt2;return <tr key={m} style={{borderBottom:`1px solid ${bd}`}}>
-        <td style={{padding:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>{MO[parseInt(m.split("-")[1])-1]} {m.split("-")[0]}</td>
-        {ta.map(t=><td key={t} style={{textAlign:"right",padding:10,color:g[m][t]?tx:mt,fontWeight:g[m][t]?700:400}}>{g[m][t]?fm(g[m][t]):"—"}</td>)}
-        <td style={{textAlign:"right",padding:10,fontWeight:800,color:tx,fontSize:14}}>{fm(mt2)}</td>
-        <td style={{textAlign:"right",padding:10,fontWeight:800,color:tx,fontSize:14}}>{fm(acc)}</td>
-      </tr>})}</tbody>
-      <tfoot><tr style={{borderTop:`2px solid ${bd}`,background:"rgba(78,205,196,.03)"}}>
-        <td style={{padding:"12px 10px",fontWeight:800,fontSize:13}}>TOTAL</td>
-        {ta.map(t=>{const tot=sm.reduce((s,m)=>s+(g[m][t]||0),0);return <td key={t} style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:tx,fontSize:14}}>{fm(tot)}</td>})}
-        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:tx,fontSize:16}}>{fm(acc)}</td>
-        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:tx,fontSize:16}}>{fm(acc)}</td>
-      </tr></tfoot></table>})()}
+      return <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:600}}>
+        <thead><tr style={{borderBottom:`2px solid ${bd}`}}>
+          <th style={{textAlign:"left",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MES</th>
+          <th style={{textAlign:"left",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>INVERSOR</th>
+          <th style={{textAlign:"left",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>CONCEPTO</th>
+          <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MONTO</th>
+        </tr></thead>
+        <tbody>{months.map(m=>{const items=byMo[m];const moTotal=items.reduce((s,r)=>s+r.amount,0);acc+=moTotal;return <React.Fragment key={m}>
+          {items.sort((a,b)=>a.investor.localeCompare(b.investor)||a.concept.localeCompare(b.concept)).map((r,i)=><tr key={i} style={{borderBottom:`1px solid ${bd}`,opacity:r.src==="tool"?.8:1}}>
+            {i===0?<td rowSpan={items.length+1} style={{padding:"10px 10px",fontWeight:700,fontFamily:"'Geist Mono',monospace",verticalAlign:"top",borderRight:`1px solid ${bd}`}}>{MO[parseInt(m.split("-")[1])-1]} {m.split("-")[0]}</td>:null}
+            <td style={{padding:"6px 10px",color:"#b392f0",fontWeight:600,fontSize:11}}>{r.investor}</td>
+            <td style={{padding:"6px 10px",color:r.src==="tool"?s2:tx,fontSize:11}}>{r.src==="tool"?"🔧 ":""}{r.concept}</td>
+            <td style={{textAlign:"right",padding:"6px 10px",fontWeight:700,color:tx}}>{fm(r.amount)}</td>
+          </tr>)}
+          <tr style={{borderBottom:`2px solid ${bd}`,background:"rgba(179,146,240,.04)"}}>
+            <td colSpan={2} style={{padding:"8px 10px",fontWeight:800,fontSize:11,color:s2,textAlign:"right"}}>Subtotal mes</td>
+            <td style={{textAlign:"right",padding:"8px 10px",fontWeight:800,color:"#b392f0",fontSize:13}}>{fm(moTotal)}</td>
+          </tr>
+        </React.Fragment>})}</tbody>
+        <tfoot><tr style={{borderTop:`2px solid ${bd}`,background:"rgba(78,205,196,.03)"}}>
+          <td colSpan={3} style={{padding:"12px 10px",fontWeight:800,fontSize:13}}>TOTAL ACUMULADO</td>
+          <td style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:"#b392f0",fontSize:16}}>{fm(acc)}</td>
+        </tr></tfoot>
+      </table>})()}
     </div>
   </div>
   {/* Movimientos */}
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
-    <div style={hd}>Movimientos</div>
+    <div style={hd}>Movimientos registrados</div>
     {[...invs].sort((a,b)=>((b.date||"")+"").localeCompare((a.date||"")+"")).map(inv=><div key={inv.id} onClick={()=>{if(isA){setIF({...inv});setEid(inv.id);setSub("iF")}}} className="mob-wrap" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:cd2,border:`1px solid ${bd}`,borderRadius:8,cursor:isA?"pointer":"default",marginBottom:4}}>
       <span style={{fontSize:11,color:mt,minWidth:70,fontFamily:"'Geist Mono',monospace"}}>{(inv.date+"").substring(0,10)}</span>
       <span style={bg2()}>{inv.type}</span>

@@ -667,7 +667,8 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     {(()=>{
       const rows=[];
       invs.forEach(x=>{if(!x.date)return;const m=(x.date+"").substring(0,7);rows.push({month:m,investor:x.investor||"Sin asignar",concept:x.type,amount:toUSD(x.amount,x.currency),detail:x.notes||"",src:"mov"})});
-      tls.filter(tlAct).filter(x=>x.paidBy==="Inversor").forEach(x=>{const inv=x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(mo<=0)return;const cm=new Date().toISOString().substring(0,7);const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;const ms=[];let cur=start;while(cur<=cm){ms.push(cur);const [y,m2]=cur.split("-").map(Number);const nd=new Date(y,m2,1);cur=nd.toISOString().substring(0,7)}ms.forEach(m=>{rows.push({month:m,investor:inv,concept:"Herramienta: "+x.name,amount:mo,detail:x.billing,src:"tool"})})});
+      const _cm=new Date().toISOString().substring(0,7);
+      tls.filter(t=>t.status==="Activo"&&(!t.cancelDate||t.cancelDate.substring(0,7)>=_cm)).filter(x=>x.paidBy==="Inversor").forEach(x=>{const inv=x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(mo<=0)return;const cm=_cm;const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;const ms=[];let cur=start;while(cur<=cm){ms.push(cur);const [y,m2]=cur.split("-").map(Number);const nd=new Date(y,m2,1);cur=nd.toISOString().substring(0,7)}ms.forEach(m=>{rows.push({month:m,investor:inv,concept:"Herramienta: "+x.name,amount:mo,detail:x.billing,src:"tool"})})});
       if(rows.length===0)return <div style={{color:mt,fontSize:12}}>Sin movimientos</div>;
       const byMo={};rows.forEach(r=>{if(!byMo[r.month])byMo[r.month]=[];byMo[r.month].push(r)});
       const months=Object.keys(byMo).sort();

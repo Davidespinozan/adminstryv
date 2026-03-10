@@ -250,8 +250,10 @@ const me=useMemo(()=>{
   const tIA=invs.reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
   const iMo={},iT={},iInv={};
   invs.forEach(x=>{if(!x.date)return;const ds=(x.date+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(!m)return;const a=toUSD(x.amount,x.currency);iMo[m]=(iMo[m]||0)+a;iT[x.type]=(iT[x.type]||0)+a;const inv=x.investor||"Sin asignar";iInv[inv]=(iInv[inv]||0)+a});
+  const invStTools={};tls.filter(tlAct).filter(x=>x.paidBy==="Inversor").forEach(x=>{const inv=x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(!invStTools[inv])invStTools[inv]={tools:[],total:0};invStTools[inv].tools.push({name:x.name,cost:mo,billing:x.billing});invStTools[inv].total+=mo;iInv[inv]=(iInv[inv]||0)+mo});
+  const tISt=Object.values(invStTools).reduce((s,v)=>s+v.total,0);
   const nL=leads.filter(l=>!l.converted).length;
-  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,totCost,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,clSt,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,iMo,iT,iInv,tlP,tlCov,nL};
+  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,totCost,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,clSt,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
 },[cl,tm,tls,pjs,lsns,sts,invs,leads,tcMXN]);
 
 const fCl=useMemo(()=>cl.filter(c=>{const ms=!srch||c.name?.toLowerCase().includes(srch.toLowerCase())||(c.company||"").toLowerCase().includes(srch.toLowerCase());return ms&&(fSt==="Todos"||c.stage===fSt)}),[cl,srch,fSt]);
@@ -317,7 +319,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   </div>}
   <div className="g-cards" style={{marginBottom:16}}>
     {[{l:"Revenue total",v:fm(me.tRev),c:tl},{l:"Cobrado",v:fm(me.tPaid),c:tl},{l:"Pendiente",v:fm(me.tPend),c:"#e5a84b"},{l:"MRR clientes",v:fm(me.tMRR),c:tl},{l:"MRR academia",v:fm(me.acaMRR),c:tl},
-      ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#ff7b72"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?tl:"#f47067"},{l:"Inversión total",v:fm(me.tIA),c:"#b392f0"},{l:"Stack clientes",v:fm(me.clSt),c:"#56d4a0"}]:[]),
+      ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#ff7b72"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?tl:"#f47067"},{l:"Inversión total",v:fm(me.tIA+me.tISt),c:"#b392f0"},{l:"Stack clientes",v:fm(me.clSt),c:"#56d4a0"}]:[]),
       {l:"Leads",v:me.nLeads},{l:"Leads web",v:me.nL},{l:"Proy. clientes",v:me.active},{l:"Equipo",v:me.aTm},
       {l:"Alumnos",v:me.acaAct},...(isA?[{l:"Rev. academia",v:fm(me.acaRev),c:tl}]:[]),
       {l:"Lecciones",v:`${me.lR}/${me.lT}`}
@@ -641,9 +643,23 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     {isA&&<button onClick={()=>{setIF({...eI});setEid(null);setSub("iF")}} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Movimiento</button>}
   </div>
   <div className="g-inv" style={{marginBottom:16}}>
-    {[{l:"Total invertido",v:fm(me.tIA),c:"#b392f0"},{l:"Inyecciones",v:fm(me.tInj),c:"#b392f0"},{l:"Stack pagado",v:fm(me.tSP),c:"#e5a84b"},{l:"Stack activo/mes",v:fm(me.tlCost),c:"#ff7b72"}].map((k,i)=>
+    {[{l:"Total invertido",v:fm(me.tIA+me.tISt),c:"#b392f0"},{l:"Inyecciones",v:fm(me.tInj),c:"#b392f0"},{l:"Stack pagado (mov.)",v:fm(me.tSP),c:"#e5a84b"},{l:"Stack inversores/mes",v:fm(me.tISt),c:"#b392f0"},{l:"Stack activo/mes",v:fm(me.tlCost),c:"#ff7b72"}].map((k,i)=>
       <div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}><div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div><div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div></div>)}
   </div>
+  {/* Stack por inversores */}
+  {Object.keys(me.invStTools).length>0&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginBottom:16}}>
+    <div style={hd}>Stack pagado por inversores <span style={{color:"#b392f0",fontWeight:800}}>{fm(me.tISt)}/mes</span></div>
+    {Object.entries(me.invStTools).map(([inv,d])=><div key={inv} style={{marginBottom:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+        <span style={{fontSize:13,fontWeight:700,color:"#b392f0"}}>{inv}</span>
+        <span style={{fontSize:13,fontWeight:800,color:tx}}>{fm(d.total)}/mes</span>
+      </div>
+      {d.tools.map((t,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:i<d.tools.length-1?`1px solid ${bd}`:"none"}}>
+        <span style={{fontSize:11,color:s2}}>{t.name}</span>
+        <span style={{fontSize:11,fontWeight:700,color:tx}}>{fm(t.cost)}/mes</span>
+      </div>)}
+    </div>)}
+  </div>}
   {/* Ledger table */}
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 0",marginBottom:16}}>
     <div style={{padding:"0 16px"}}><div style={hd}>Registro mes a mes</div></div>

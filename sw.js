@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stryv-v1';
+const CACHE_NAME = 'stryv-v2';
 const OFFLINE_URL = '/';
 
 self.addEventListener('install', event => {

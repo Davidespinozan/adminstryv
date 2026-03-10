@@ -316,10 +316,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <span style={{fontSize:9,color:mt}}>Todo se muestra en USD</span>
   </div>}
   <div className="g-cards" style={{marginBottom:16}}>
-    {[{l:"Revenue total",v:fm(me.tRev),c:tx},{l:"Cobrado",v:fm(me.tPaid),c:tx},{l:"Pendiente",v:fm(me.tPend),c:tx},{l:"MRR clientes",v:fm(me.tMRR),c:tx},{l:"MRR academia",v:fm(me.acaMRR),c:tx},
-      ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:tx},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?tl:"#c0706f"},{l:"Inversión total",v:fm(me.tIA),c:tx},{l:"Stack clientes",v:fm(me.clSt),c:tx}]:[]),
+    {[{l:"Revenue total",v:fm(me.tRev),c:tl},{l:"Cobrado",v:fm(me.tPaid),c:tl},{l:"Pendiente",v:fm(me.tPend),c:"#c9a86c"},{l:"MRR clientes",v:fm(me.tMRR),c:tl},{l:"MRR academia",v:fm(me.acaMRR),c:tl},
+      ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#cf8882"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?tl:"#c0706f"},{l:"Inversión total",v:fm(me.tIA),c:"#b8a0d4"},{l:"Stack clientes",v:fm(me.clSt),c:"#7dba8f"}]:[]),
       {l:"Leads",v:me.nLeads,c:tx},{l:"Leads web",v:me.nL,c:tx},{l:"Proy. clientes",v:me.active,c:tx},{l:"Equipo",v:me.aTm,c:tx},
-      {l:"Alumnos",v:me.acaAct,c:tx},...(isA?[{l:"Rev. academia",v:fm(me.acaRev),c:tx}]:[]),
+      {l:"Alumnos",v:me.acaAct,c:tx},...(isA?[{l:"Rev. academia",v:fm(me.acaRev),c:tl}]:[]),
       {l:"Lecciones",v:`${me.lR}/${me.lT}`,c:tx}
     ].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}>
       <div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div>
@@ -348,9 +348,9 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   <div className="g-auto">
     {isA&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
       <div style={hd}>Costos/mes</div>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:12,color:s2}}>Equipo</span><span style={{fontSize:13,fontWeight:700,color:tx}}>{fm(me.tmCost)}</span></div>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:12,color:s2}}>Tools</span><span style={{fontSize:13,fontWeight:700,color:tx}}>{fm(me.tlCost)}</span></div>
-      <div style={{borderTop:`1px solid ${bd}`,marginTop:6,paddingTop:6,display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:700}}>Total</span><span style={{fontSize:15,fontWeight:800,color:tx}}>{fm(me.totCost)}</span></div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:12,color:s2}}>Equipo</span><span style={{fontSize:13,fontWeight:700,color:"#cf8882"}}>{fm(me.tmCost)}</span></div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:12,color:s2}}>Tools</span><span style={{fontSize:13,fontWeight:700,color:"#cf8882"}}>{fm(me.tlCost)}</span></div>
+      <div style={{borderTop:`1px solid ${bd}`,marginTop:6,paddingTop:6,display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:700}}>Total</span><span style={{fontSize:15,fontWeight:800,color:"#cf8882"}}>{fm(me.totCost)}</span></div>
     </div>}
     <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
       <div style={hd}>Tareas clientes ({me.cTasks.length})</div>
@@ -568,10 +568,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     {isA&&sts.length>0&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginTop:12}}>
       <div style={hd}>Métricas academia</div>
       <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
-        <div><span style={{fontSize:10,color:mt}}>Activos</span><div style={{fontSize:18,fontWeight:800,color:tx}}>{me.acaAct}</div></div>
-        <div><span style={{fontSize:10,color:mt}}>Revenue</span><div style={{fontSize:18,fontWeight:800,color:tx}}>{fm(me.acaRev)}</div></div>
-        <div><span style={{fontSize:10,color:mt}}>→ Clientes</span><div style={{fontSize:18,fontWeight:800,color:tx}}>{me.acaCnv}</div></div>
-        <div><span style={{fontSize:10,color:mt}}>Conversión</span><div style={{fontSize:18,fontWeight:800,color:tx}}>{sts.length?Math.round(me.acaCnv/sts.length*100):0}%</div></div>
+        <div><span style={{fontSize:10,color:mt}}>Activos</span><div style={{fontSize:18,fontWeight:800,color:tl}}>{me.acaAct}</div></div>
+        <div><span style={{fontSize:10,color:mt}}>Revenue</span><div style={{fontSize:18,fontWeight:800,color:tl}}>{fm(me.acaRev)}</div></div>
+        <div><span style={{fontSize:10,color:mt}}>→ Clientes</span><div style={{fontSize:18,fontWeight:800,color:"#7dba8f"}}>{me.acaCnv}</div></div>
+        <div><span style={{fontSize:10,color:mt}}>Conversión</span><div style={{fontSize:18,fontWeight:800,color:"#c9a86c"}}>{sts.length?Math.round(me.acaCnv/sts.length*100):0}%</div></div>
       </div>
     </div>}
   </div>)}
@@ -641,8 +641,8 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     {isA&&<button onClick={()=>{setIF({...eI});setEid(null);setSub("iF")}} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Movimiento</button>}
   </div>
   <div className="g-inv" style={{marginBottom:16}}>
-    {[{l:"Total invertido",v:fm(me.tIA)},{l:"Inyecciones",v:fm(me.tInj)},{l:"Stack pagado",v:fm(me.tSP)},{l:"Stack activo/mes",v:fm(me.tlCost)}].map((k,i)=>
-      <div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}><div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div><div style={{fontSize:22,fontWeight:800,color:tx}}>{k.v}</div></div>)}
+    {[{l:"Total invertido",v:fm(me.tIA),c:"#b8a0d4"},{l:"Inyecciones",v:fm(me.tInj),c:"#b8a0d4"},{l:"Stack pagado",v:fm(me.tSP),c:"#c9a86c"},{l:"Stack activo/mes",v:fm(me.tlCost),c:"#cf8882"}].map((k,i)=>
+      <div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}><div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div><div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div></div>)}
   </div>
   {/* Ledger table */}
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 0",marginBottom:16}}>
@@ -813,9 +813,9 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {(()=>{const sorted=[...snaps].sort((a,b)=>(a.month||"").localeCompare(b.month||"")); const last=sorted[sorted.length-1]; const prev=sorted.length>1?sorted[sorted.length-2]:null;
         const delta=(k)=>prev?Number(last[k]||0)-Number(prev[k]||0):0;
         const arr=(k)=>{const d=delta(k); return d>0?"+"+fmShort(d):d<0?fmShort(d):"="};
-        return [{l:"Último MRR",v:fm(Number(last.mrrClientes||0)+Number(last.mrrAcademia||0)),d:arr("mrrClientes")},{l:"Última utilidad",v:fm(last.utilidad),d:arr("utilidad")},{l:"Último costo",v:fm(last.costoTotal),d:arr("costoTotal")},{l:"Meses registrados",v:sorted.length,d:""}].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}>
+        return [{l:"Último MRR",v:fm(Number(last.mrrClientes||0)+Number(last.mrrAcademia||0)),d:arr("mrrClientes"),c:tl},{l:"Última utilidad",v:fm(last.utilidad),d:arr("utilidad"),c:Number(last.utilidad||0)>=0?tl:"#c0706f"},{l:"Último costo",v:fm(last.costoTotal),d:arr("costoTotal"),c:"#cf8882"},{l:"Meses registrados",v:sorted.length,d:"",c:tx}].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}>
           <div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div>
-          <div style={{fontSize:20,fontWeight:800,color:tx}}>{k.v}</div>
+          <div style={{fontSize:20,fontWeight:800,color:k.c}}>{k.v}</div>
           {k.d&&<div style={{fontSize:10,color:k.d.startsWith("+")?tl:k.d==="="?mt:"#c0706f",marginTop:2}}>{k.d} vs mes anterior</div>}
         </div>)})()}
     </div>
@@ -841,9 +841,9 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <div style={{height:"100%",borderRadius:20,background:tl,opacity:.6,width:`${Math.min(me.tlCov,100)}%`}}/>
       </div>
       <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
-        <div><span style={{fontSize:10,color:mt}}>STRYV</span><div style={{fontSize:15,fontWeight:800,color:tx}}>{fm(me.tlP.STRYV)}/mes</div></div>
-        <div><span style={{fontSize:10,color:mt}}>Inversor</span><div style={{fontSize:15,fontWeight:800,color:tx}}>{fm(me.tlP.Inversor)}/mes</div></div>
-        <div><span style={{fontSize:10,color:mt}}>Clientes</span><div style={{fontSize:15,fontWeight:800,color:tx}}>{fm(me.tlP.Cliente)}/mes</div></div>
+        <div><span style={{fontSize:10,color:mt}}>STRYV</span><div style={{fontSize:15,fontWeight:800,color:"#cf8882"}}>{fm(me.tlP.STRYV)}/mes</div></div>
+        <div><span style={{fontSize:10,color:mt}}>Inversor</span><div style={{fontSize:15,fontWeight:800,color:"#b8a0d4"}}>{fm(me.tlP.Inversor)}/mes</div></div>
+        <div><span style={{fontSize:10,color:mt}}>Clientes</span><div style={{fontSize:15,fontWeight:800,color:"#7dba8f"}}>{fm(me.tlP.Cliente)}/mes</div></div>
       </div>
       {me.tlCov<100&&<div style={{marginTop:8,fontSize:11,color:s2}}>Faltan {fm(me.tlP.STRYV)}/mes por cubrir</div>}
       {me.tlCov>=100&&<div style={{marginTop:8,fontSize:11,color:s2}}>✓ Stack 100% cubierto</div>}
@@ -861,8 +861,8 @@ return(<div style={{minHeight:"100vh",background:bg}}>
           {isCancelling&&<div style={{fontSize:10,color:s2,marginBottom:4}}>{isPast?"⊘ Cancelado desde":"⏳ Se cancela el"} {t.cancelDate}</div>}
           {t.renewDate&&t.status==="Activo"&&!isPast&&(()=>{const rd=new Date(t.renewDate+"T00:00:00");const now=new Date();const diff=Math.ceil((rd-now)/(1000*60*60*24));const urgent=diff<=7&&diff>=0;const past=diff<0;return <div style={{fontSize:10,color:urgent?"#c0706f":s2,marginBottom:4}}>{past?"↻ Renovar fecha":urgent?`Renueva en ${diff} día${diff!==1?"s":""}`:diff<=30?`↻ Renueva en ${diff} días`:"↻ Renueva el"} {!past&&t.renewDate}</div>})()}
           <div style={{borderTop:`1px solid ${bd}`,paddingTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
-            <div><span style={{fontSize:10,color:mt}}>{t.billing}</span><div style={{fontSize:14,fontWeight:800,color:tx}}>{t.billing==="Gratis"?"Gratis":fm(t.cost)}{t.billing==="Mensual"?"/mes":t.billing==="Anual"?"/año":""}</div>{t.currency==="MXN"&&<div style={{fontSize:8,color:mt}}>≈ {fmShort(toUSD(t.cost,t.currency))} USD</div>}</div>
-            <div style={{textAlign:"right"}}><span style={{fontSize:9,color:mt}}>Paga:</span><div style={{fontSize:11,fontWeight:700,color:s2}}>{t.paidBy==="Cliente"?t.paidByName||"Cliente":t.paidBy==="Inversor"?t.paidByName||"Inversor":"STRYV"}</div></div>
+            <div><span style={{fontSize:10,color:mt}}>{t.billing}</span><div style={{fontSize:14,fontWeight:800,color:t.billing==="Gratis"?"#7dba8f":tx}}>{t.billing==="Gratis"?"Gratis":fm(t.cost)}{t.billing==="Mensual"?"/mes":t.billing==="Anual"?"/año":""}</div>{t.currency==="MXN"&&<div style={{fontSize:8,color:mt}}>≈ {fmShort(toUSD(t.cost,t.currency))} USD</div>}</div>
+            <div style={{textAlign:"right"}}><span style={{fontSize:9,color:mt}}>Paga:</span><div style={{fontSize:11,fontWeight:700,color:t.paidBy==="Cliente"?"#7dba8f":t.paidBy==="Inversor"?"#b8a0d4":"#cf8882"}}>{t.paidBy==="Cliente"?t.paidByName||"Cliente":t.paidBy==="Inversor"?t.paidByName||"Inversor":"STRYV"}</div></div>
           </div>
         </div>:<div style={{borderTop:`1px solid ${bd}`,paddingTop:8,fontSize:10,color:mt}}>🔒 Restringido</div>}
       </div>})}

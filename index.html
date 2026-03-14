@@ -105,12 +105,16 @@ async function dUpd(t,id,row){const c={...toSn(row)};delete c.id;delete c.create
 const _softDelTables=["clients","team","tools","projects","investments"];
 async function dDel(t,id){
   if(_softDelTables.includes(t)){
-    const{error}=await SB.from(t).update({deleted_at:new Date().toISOString()}).eq("id",id);
-    if(error){console.error("soft delete error",t,error);return false}
+    const{data,error}=await SB.from(t).update({deleted_at:new Date().toISOString()}).eq("id",id).select();
+    if(error||!data||data.length===0){
+      console.warn("soft delete failed, trying hard delete",t,error);
+      const{error:e2}=await SB.from(t).delete().eq("id",id);
+      if(e2){console.error("hard delete error",t,e2);alert("Error al eliminar: "+e2.message);return false}
+    }
     return true;
   }else{
     const{error}=await SB.from(t).delete().eq("id",id);
-    if(error){console.error("delete error",t,error);return false}
+    if(error){console.error("delete error",t,error);alert("Error al eliminar: "+error.message);return false}
     return true;
   }
 }
@@ -190,7 +194,7 @@ const sv=async(t,f,sf,e)=>{
   if(!res){alert("Error al guardar");return}
   sf({...e});setEid(null);setSub(null);await loadAll();
 };
-const dl=async(t,id)=>{if(!confirm("¿Eliminar?"))return;await dDel(t,id);setEid(null);setSub(null);await loadAll()};
+const dl=async(t,id)=>{if(!confirm("¿Eliminar?"))return;const ok=await dDel(t,id);if(!ok){alert("No se pudo eliminar");return}setEid(null);setSub(null);await loadAll()};
 const ed=(item,sf,v,s)=>{sf(JSON.parse(JSON.stringify(item)));setEid(item.id);setVw(v);setSub(s)};
 const goN=(v,s,sf,e)=>{setEid(null);setVw(v);setSub(s);sf({...e})};
 const svI=async()=>{const amt=iF.type==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:Number(iF.amount||0);if(!amt){alert("Monto requerido");return}const rec={...iF,amount:amt};if(eid)await dUpd("investments",eid,rec);else await dIns("investments",rec);setIF({...eI});setEid(null);setSub(null);await loadAll()};

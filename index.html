@@ -93,7 +93,10 @@ const toSn=o=>{const r={};for(const k in o)r[k.replace(/([A-Z])/g,"_$1").toLower
 const toCa=o=>{if(!o)return o;const r={};for(const k in o)r[k.replace(/_([a-z])/g,(_,l)=>l.toUpperCase())]=o[k];return r};
 const toCaA=a=>(a||[]).map(toCa);
 async function dSel(t){
-  const{data,error,count}=await SB.from(t).select("*",{count:"exact"}).order("created_at",{ascending:true}).limit(2000);
+  let q=SB.from(t).select("*",{count:"exact"});
+  if(_softDelTables.includes(t))q=q.is("deleted_at",null);
+  q=q.order("created_at",{ascending:true}).limit(2000);
+  const{data,error,count}=await q;
   if(!error&&count>2000)console.warn(`⚠ ${t}: ${count} rows, mostrando 2000`);
   return error?[]:toCaA(data);
 }

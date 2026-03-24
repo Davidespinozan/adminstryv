@@ -12,25 +12,40 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <title>STRYV — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.26.10/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Geist',system-ui,sans-serif;background:#0a0c10;color:#e0e6e4;overflow-x:hidden}
-::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#12161e}::-webkit-scrollbar-thumb{background:#2a3040;border-radius:4px}
+body{
+  font-family:'Geist',system-ui,sans-serif;
+  background:
+    radial-gradient(ellipse 70% 50% at 0% 0%,   rgba(78,205,196,.055) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 35% at 100% 90%, rgba(78,205,196,.035) 0%, transparent 55%),
+    #0a0c10;
+  color:#e0e6e4;overflow-x:hidden;-webkit-font-smoothing:antialiased
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(78,205,196,.18);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:rgba(78,205,196,.30)}
 ::selection{background:#4ECDC4;color:#0a0c10}
-input,select,textarea,button{font-family:inherit;font-size:16px}
+input,select,textarea,button{font-family:inherit;font-size:16px;-webkit-tap-highlight-color:transparent}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes ds-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── INTERACTIVE CARDS ─── */
+.card-row{transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
+.card-row:hover{border-color:rgba(78,205,196,.26)!important;box-shadow:0 4px 20px rgba(78,205,196,.07)!important}
 
 /* ─── RESPONSIVE GRIDS ─── */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
-.g-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}
-.g-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+.g-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.g-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .g-inv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 
 @media(max-width:768px){
@@ -42,7 +57,7 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
   .mob-col{flex-direction:column!important}
   .mob-full{width:100%!important;min-width:0!important}
   .mob-wrap{flex-wrap:wrap!important}
-  .nav-btns{position:fixed;top:56px;left:0;right:0;background:#12161e;border-bottom:1px solid rgba(78,205,196,.12);padding:8px;display:flex;flex-wrap:wrap;gap:4px;z-index:99;justify-content:center}
+  .nav-btns{position:fixed;top:58px;left:0;right:0;background:rgba(12,16,22,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(78,205,196,.1);padding:8px;display:flex;flex-wrap:wrap;gap:4px;z-index:99;justify-content:center}
   .nav-btns button{padding:10px 12px!important;font-size:12px!important;min-height:40px}
   .mob-stack{flex-direction:column!important;align-items:stretch!important}
   .mob-pad{padding-top:160px!important}
@@ -52,6 +67,9 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
   .nav-btns{display:flex;gap:2px;overflow-x:auto;min-width:0}
   .nav-btns::-webkit-scrollbar{display:none}
 }
+input:focus,select:focus,textarea:focus{border-color:rgba(78,205,196,.5)!important;box-shadow:0 0 0 3px rgba(78,205,196,.1)!important}
+button:focus-visible{outline:2px solid rgba(78,205,196,.5);outline-offset:2px;border-radius:8px}
+*:focus-visible{outline:2px solid rgba(78,205,196,.4);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -84,10 +102,12 @@ const fm=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0})+"
 const fmShort=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0});
 const MO=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const bg="#0a0c10",cd="#12161e",cd2="#181d27",bd="rgba(78,205,196,.12)",tl="#4ECDC4",tx="#e0e6e4",s2="rgba(224,230,228,.55)",mt="rgba(224,230,228,.3)";
-const lb={display:"block",fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:mt,marginBottom:6,fontFamily:"'Geist Mono',monospace"};
-const iS={width:"100%",background:cd,border:`1px solid ${bd}`,color:tx,borderRadius:8,padding:"10px 14px",fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
-const hd={fontSize:11,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:mt,marginBottom:16,fontFamily:"'Geist Mono',monospace"};
-const bg2=c=>{const b=c?c+"18":"rgba(224,230,228,.06)";const br=c?c+"30":"rgba(224,230,228,.1)";return{background:b,color:c||s2,padding:"3px 10px",borderRadius:20,fontSize:10,fontWeight:600,border:`1px solid ${br}`,height:"fit-content",flexShrink:0}};
+const gl="rgba(78,205,196,.10)";
+const dsp="'Space Grotesk','Geist',system-ui,sans-serif";
+const lb={display:"block",fontSize:9,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:mt,marginBottom:7,fontFamily:"'Geist Mono',monospace"};
+const iS={width:"100%",background:cd,border:`1px solid ${bd}`,color:tx,borderRadius:10,padding:"11px 14px",fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit",transition:"border-color .15s ease,box-shadow .15s ease"};
+const hd={fontSize:9,fontWeight:700,letterSpacing:".18em",textTransform:"uppercase",color:"rgba(78,205,196,.45)",marginBottom:16,fontFamily:"'Geist Mono',monospace",paddingLeft:10,borderLeft:"2px solid rgba(78,205,196,.25)"};
+const bg2=c=>{const b=c?c+"14":"rgba(224,230,228,.06)";const br=c?c+"28":"rgba(224,230,228,.1)";return{background:b,color:c||s2,padding:"3px 10px",borderRadius:6,fontSize:9,fontWeight:700,letterSpacing:".05em",border:`1px solid ${br}`,height:"fit-content",flexShrink:0,fontFamily:"'Geist Mono',monospace"}};
 
 const toSn=o=>{const r={};for(const k in o)r[k.replace(/([A-Z])/g,"_$1").toLowerCase()]=o[k];return r};
 const toCa=o=>{if(!o)return o;const r={};for(const k in o)r[k.replace(/_([a-z])/g,(_,l)=>l.toUpperCase())]=o[k];return r};
@@ -271,26 +291,26 @@ const mxMoVals=Object.values(me.byMo);const mxMo=mxMoVals.length?mxMoVals.reduce
 
 if(aL)return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:bg}}><div style={{animation:"spin 1s linear infinite",width:30,height:30,border:`3px solid ${bd}`,borderTop:`3px solid ${tl}`,borderRadius:"50%"}}/></div>;
 if(!user)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:bg}}>
-  <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:36,width:"90%",maxWidth:340,textAlign:"center"}}>
-    <div style={{fontWeight:800,fontSize:18,letterSpacing:".12em",color:tl,fontFamily:"'Geist Mono',monospace",marginBottom:6}}>STRYV</div>
-    <div style={{fontSize:12,color:mt,marginBottom:24}}>Centro de comando</div>
+  <div style={{background:"linear-gradient(160deg,rgba(24,29,39,.97) 0%,rgba(14,18,26,.98) 100%)",border:"1px solid rgba(78,205,196,.16)",borderRadius:22,padding:36,width:"90%",maxWidth:340,textAlign:"center",boxShadow:"0 32px 64px rgba(0,0,0,.5), 0 0 80px rgba(78,205,196,.05)"}}>
+    <div style={{fontWeight:700,fontSize:16,letterSpacing:".24em",color:tl,fontFamily:dsp,marginBottom:4,textShadow:"0 0 24px rgba(78,205,196,.4)"}}>STRYV</div>
+    <div style={{fontSize:10,color:mt,marginBottom:28,letterSpacing:".12em",textTransform:"uppercase",fontFamily:"'Geist Mono',monospace"}}>Centro de comando</div>
     <input value={aEm} onChange={e=>setAEm(e.target.value)} placeholder="Email" type="email" style={{...iS,marginBottom:10}} onKeyDown={e=>e.key==="Enter"&&login()}/>
-    <input value={aPw} onChange={e=>setAPw(e.target.value)} placeholder="Contraseña" type="password" style={{...iS,marginBottom:12}} onKeyDown={e=>e.key==="Enter"&&login()}/>
+    <input value={aPw} onChange={e=>setAPw(e.target.value)} placeholder="Contraseña" type="password" style={{...iS,marginBottom:14}} onKeyDown={e=>e.key==="Enter"&&login()}/>
     {aErr&&<div style={{color:"#ff6b6b",fontSize:11,marginBottom:10}}>{aErr}</div>}
-    <button onClick={login} style={{background:tl,border:"none",color:bg,padding:"12px",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",width:"100%"}}>Entrar</button>
+    <button onClick={login} style={{background:tl,border:"none",color:bg,padding:"13px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",width:"100%",fontFamily:dsp,letterSpacing:".06em",boxShadow:"0 12px 28px rgba(78,205,196,.28)"}}>Entrar</button>
   </div>
 </div>);
 
 return(<div style={{minHeight:"100vh",background:bg}}>
 {/* NAV */}
-<div style={{background:cd,borderBottom:`1px solid ${bd}`,padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between",height:56,position:"sticky",top:0,zIndex:100}}>
+<div style={{background:"rgba(12,16,22,.96)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:"1px solid rgba(78,205,196,.10)",padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between",height:58,position:"sticky",top:0,zIndex:100,boxShadow:"0 1px 0 rgba(78,205,196,.05)"}}>
   <div style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0}}>
-    <span style={{fontWeight:800,fontSize:15,letterSpacing:".12em",color:tl,fontFamily:"'Geist Mono',monospace",cursor:"pointer"}} onClick={()=>{setVw("dashboard");setSub(null);setNavOpen(false)}}>STRYV</span>
+    <span style={{fontWeight:700,fontSize:14,letterSpacing:".22em",color:tl,fontFamily:dsp,cursor:"pointer",textShadow:"0 0 18px rgba(78,205,196,.38)",userSelect:"none"}} onClick={()=>{setVw("dashboard");setSub(null);setNavOpen(false)}}>STRYV</span>
     <button className="nav-toggle" onClick={()=>setNavOpen(!navOpen)} style={{background:"none",border:`1px solid ${bd}`,color:tl,padding:"6px 10px",borderRadius:6,fontSize:16,cursor:"pointer",lineHeight:1}}>{navOpen?"✕":"☰"}</button>
     <div className={`nav-btns${navOpen?"":" mob-hide"}`}>
       {[{k:"dashboard",l:"Dashboard"},{k:"clients",l:"Clientes"},{k:"pipeline",l:"Pipeline"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},{k:"projects",l:"Proyectos"},{k:"academy",l:"Academia"},
         ...(isInv?[{k:"investment",l:"Inversión"}]:[]),{k:"team",l:"Equipo"},{k:"stack",l:"Stack"},...(isA?[{k:"historial",l:"Historial"}]:[])].map(n=>
-        <button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false)}} style={{background:vw===n.k?"rgba(78,205,196,.12)":"transparent",border:"none",color:vw===n.k?tl:s2,padding:"8px 10px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer"}}>{n.l}</button>)}
+        <button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false)}} style={{background:vw===n.k?"rgba(78,205,196,.1)":"transparent",border:vw===n.k?"1px solid rgba(78,205,196,.22)":"1px solid transparent",color:vw===n.k?tl:s2,padding:"7px 11px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",transition:"all .15s ease",boxShadow:vw===n.k?"0 0 14px rgba(78,205,196,.14)":""}}>{n.l}</button>)}
     </div>
   </div>
   <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -307,11 +327,11 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   </div>
 </div>
 {chPw&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setChPw(false)}>
-  <div onClick={e=>e.stopPropagation()} style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:28,width:"90%",maxWidth:320,textAlign:"center"}}>
-    <div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Cambiar contraseña</div>
-    <input value={nPw} onChange={e=>setNPw(e.target.value)} type="password" placeholder="Nueva (mín 6)" style={{...iS,marginBottom:10}} onKeyDown={e=>e.key==="Enter"&&chPass()}/>
+  <div onClick={e=>e.stopPropagation()} style={{background:"linear-gradient(160deg,rgba(24,29,39,.97),rgba(14,18,26,.98))",border:"1px solid rgba(78,205,196,.16)",borderRadius:20,padding:28,width:"90%",maxWidth:320,textAlign:"center",boxShadow:"0 24px 48px rgba(0,0,0,.5)"}}>
+    <div style={{fontSize:14,fontWeight:700,marginBottom:18,fontFamily:dsp,letterSpacing:".04em"}}>Cambiar contraseña</div>
+    <input value={nPw} onChange={e=>setNPw(e.target.value)} type="password" placeholder="Nueva (mín 6)" style={{...iS,marginBottom:12}} onKeyDown={e=>e.key==="Enter"&&chPass()}/>
     {pwMsg&&<div style={{color:pwMsg.startsWith("✓")?"#22c55e":"#ff6b6b",fontSize:11,marginBottom:10}}>{pwMsg}</div>}
-    <button onClick={chPass} style={{background:tl,border:"none",color:bg,padding:"10px",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer",width:"100%"}}>Actualizar</button>
+    <button onClick={chPass} style={{background:tl,border:"none",color:bg,padding:"12px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",width:"100%",fontFamily:dsp,boxShadow:"0 10px 24px rgba(78,205,196,.26)"}}>Actualizar</button>
   </div>
 </div>}
 
@@ -331,13 +351,13 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     {[{l:"Revenue total",v:fm(me.tRev),c:tl},{l:"Cobrado",v:fm(me.tPaid),c:tl},{l:"Pendiente",v:fm(me.tPend),c:"#e5a84b"},{l:"MRR clientes",v:fm(me.tMRR),c:tl},
       ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#ff7b72"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?tl:"#f47067"},{l:"Inversión total",v:fm(me.tIA+me.tISt),c:"#b392f0"},{l:"Stack clientes",v:fm(me.clSt),c:"#56d4a0"}]:[]),
       {l:"Leads",v:me.nLeads,c:tx},{l:"Leads web",v:me.nL,c:tx},{l:"Proy. clientes",v:me.active,c:tx},{l:"Equipo",v:me.aTm,c:tx}
-    ].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}>
-      <div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div>
-      <div style={{fontSize:20,fontWeight:800,color:k.c,letterSpacing:"-.03em"}}>{k.v}</div>
+    ].map((k,i)=><div key={i} className="card-row" style={{background:`linear-gradient(160deg,${cd},rgba(18,22,30,.9))`,border:`1px solid ${bd}`,borderRadius:14,padding:"16px 14px"}}>
+      <div style={{fontSize:8,fontWeight:700,letterSpacing:".18em",textTransform:"uppercase",color:mt,marginBottom:8,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div>
+      <div style={{fontSize:21,fontWeight:600,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
     </div>)}
   </div>
   <div className="g2" style={{marginBottom:16}}>
-    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
+    <div style={{background:`linear-gradient(160deg,${cd},rgba(18,22,30,.9))`,border:`1px solid ${bd}`,borderRadius:14,padding:18}}>
       <div style={hd}>Pipeline</div>
       {STAGES.map(s=><div key={s} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
         <div style={{width:8,height:8,borderRadius:"50%",background:SC[s]}}/><span style={{fontSize:12,color:s2,flex:1}}>{s}</span>
@@ -345,7 +365,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <span style={{fontSize:13,fontWeight:700,minWidth:18,textAlign:"right"}}>{me.byStg[s]}</span>
       </div>)}
     </div>
-    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16}}>
+    <div style={{background:`linear-gradient(160deg,${cd},rgba(18,22,30,.9))`,border:`1px solid ${bd}`,borderRadius:14,padding:18}}>
       <div style={hd}>Cobrado/mes</div>
       {Object.keys(me.byMo).length===0?<div style={{color:mt,fontSize:12}}>Sin datos.</div>:
         Object.entries(me.byMo).sort().slice(-6).map(([mo,v])=><div key={mo} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
@@ -396,10 +416,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   <div className="mob-col" style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
     <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>
     <select value={fSt} onChange={e=>setFSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Todas</option>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
-    {isA&&<button onClick={()=>goN("clients","cF",setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Nuevo</button>}
+    {isA&&<button onClick={()=>goN("clients","cF",setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>＋ Nuevo</button>}
   </div>
   {fCl.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin clientes</div>:
-    fCl.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} className="mob-wrap" style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:6}}>
+    fCl.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} className="mob-wrap card-row" style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:6}}>
       <div style={{width:8,height:8,borderRadius:"50%",background:SC[c.stage],flexShrink:0}}/>
       <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700}}>{c.name} {c.company&&<span style={{fontWeight:400,color:s2}}>· {c.company}</span>}</div><div style={{fontSize:10,color:mt,marginTop:1}}>{(c.solutions||[]).join(", ")||"—"}</div></div>
       <div style={{textAlign:"right",flexShrink:0}}><div style={{fontSize:14,fontWeight:800,color:tl}}>{fm(c.amount)}</div><div style={{fontSize:9,color:mt}}>Pagado: {fm(c.amountPaid)}</div></div>

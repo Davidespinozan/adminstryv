@@ -97,6 +97,13 @@ const PT=["Empresa del paraguas","Campaña marketing/ventas","Infraestructura","
 const PS=["Planeación","En progreso","Pausado","Completado","Cancelado"];
 const PSC={"Planeación":"#e5a84b","En progreso":"#4ECDC4","Pausado":"#8b949e","Completado":"#56d4a0","Cancelado":"#f47067"};
 const PP=["Alta","Media","Baja"];
+const PROSTAGES=["Sin contactar","Contactado","Respondió","Cerrado","Descartado"];
+const PROSC={"Sin contactar":"#8b949e","Contactado":"#79b8ff","Respondió":"#e5a84b","Cerrado":"#56d4a0","Descartado":"#f47067"};
+const CPILLARS=["Problema del mercado","Sistema STRYV","Caso de uso","Resultado de cliente","Provocación","Educación","Detrás de cámaras"];
+const CFMTS=["Video","Carrusel","Story","Reel"];
+const CSTATS=["Idea","Script listo","Grabado","Editado","Programado","Publicado"];
+const CSTATC={"Idea":"#8b949e","Script listo":"#e5a84b","Grabado":"#4ECDC4","Editado":"#79b8ff","Programado":"#a78bfa","Publicado":"#56d4a0"};
+const CPLATS=["Instagram","YouTube","TikTok"];
 const LS=["Borrador","En producción","Grabado","Editado","Listo"];
 const LSC={"Borrador":"#8b949e","En producción":"#e5a84b","Grabado":"#4ECDC4","Editado":"#79b8ff","Listo":"#56d4a0"};
 const LT=["Video","Template","Ejercicio","Entregable","Lectura","Live"];
@@ -153,6 +160,8 @@ const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",
 const _eL={week:1,title:"",description:"",type:"Video",status:"Borrador",version:"v1",assets:[],notes:""};
 const _eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:"",convertedToClient:false,notes:"",currency:"USD"};
 const _eI={type:"Inyección de capital",investor:"",amount:0,date:"",notes:"",currency:"USD"};
+const _ePr={name:"",business:"",city:"",email:"",phone:"",url:"",stage:"Sin contactar",emailV1:"",emailV2:"",emailV3:"",subjectV1:"",subjectV2:"",subjectV3:"",notes:"",source:""};
+const _eCt={pillar:"Problema del mercado",title:"",format:"Video",status:"Idea",platform:"Instagram",scheduledDate:"",url:"",notes:""};
 const today=()=>new Date().toISOString().split("T")[0];
 const CurSel=({val,onChange})=><select value={val||"USD"} onChange={e=>onChange(e.target.value)} style={{background:cd2,border:`1px solid ${bd}`,color:s2,borderRadius:6,padding:"4px 6px",fontSize:10,fontWeight:700,cursor:"pointer",outline:"none"}}><option value="USD">USD</option><option value="MXN">MXN</option></select>;
 
@@ -171,12 +180,12 @@ useEffect(()=>{
   return()=>subscription.unsubscribe();
 },[]);
 const login=async()=>{setAErr("");const{error}=await SB.auth.signInWithPassword({email:aEm,password:aPw});if(error)setAErr(error.message);else{setAPw("");setAEm("")}};
-const logout=async()=>{await SB.auth.signOut();setProf(null);setD({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[],snapshots:[]})};
+const logout=async()=>{await SB.auth.signOut();setProf(null);setD({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[],snapshots:[],prospects:[],content:[]})};
 const chPassTimer=React.useRef(null);
 const chPass=async()=>{setPwMsg("");const{error}=await SB.auth.updateUser({password:nPw});if(error)setPwMsg(error.message);else{setPwMsg("✓ Actualizada");setNPw("");clearTimeout(chPassTimer.current);chPassTimer.current=setTimeout(()=>{setChPw(false);setPwMsg("")},2000)}};
 useEffect(()=>()=>clearTimeout(chPassTimer.current),[]);
 
-const[D,setD]=useState({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[],snapshots:[]});
+const[D,setD]=useState({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[],snapshots:[],prospects:[],content:[]});
 const isInv=useMemo(()=>{if(isA)return true;const u=user?.email;if(!u)return false;const mb=D.team.find(m=>m.email&&m.email.toLowerCase()===u.toLowerCase());return mb&&(mb.roles||[]).includes("Inversionista")},[isA,user,D.team]);
 const[tcMXN,setTcMXN]=useState(()=>{try{const v=localStorage.getItem("stryv_tc");return v?Number(v):20.5}catch(e){return 20.5}});
 const saveTc=v=>{const n=Number(v);if(n>0){setTcMXN(n);try{localStorage.setItem("stryv_tc",n)}catch(e){}}};
@@ -184,7 +193,7 @@ const toUSD=(val,cur)=>{const n=Number(val||0);return cur==="MXN"?Math.round(n/t
 const[ld,setLd]=useState(false);const[vw,setVw]=useState("dashboard");const[sub,setSub]=useState(null);
 const[AW,setAW]=useState(()=>{try{const v=localStorage.getItem("stryv_aw");return v?JSON.parse(v):_AW}catch(e){return _AW}});
 const saveAW=(idx,field,val)=>{const nw=[...AW];nw[idx]={...nw[idx],[field]:val};setAW(nw);try{localStorage.setItem("stryv_aw",JSON.stringify(nw))}catch(e){}};
-const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");
+const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");const[notifOpen,setNotifOpen]=useState(false);
 const loadLock=React.useRef(false);
 
 // Fix 1: templates from outside, add today() for dates
@@ -195,19 +204,22 @@ const eP={..._eP,startDate:today()};
 const eL={..._eL};
 const eSt={..._eSt,startDate:today()};
 const eI={..._eI,date:today()};
+const ePr={..._ePr};
+const eCt={..._eCt};
 
 const[cF,setCF]=useState({...eC});const[mF,setMF]=useState({...eM});const[tF,setTF]=useState({...eT});
-const[pF,setPF]=useState({...eP});const[lF,setLF]=useState({...eL});const[sF,setSF]=useState({...eSt});const[iF,setIF]=useState({...eI});
+const[pF,setPF]=useState({...eP});const[lF,setLF]=useState({...eL});const[sF,setSF]=useState({...eSt});const[iF,setIF]=useState({...eI});const[prF,setPrF]=useState({...ePr});const[ctF,setCtF]=useState({...eCt});
+const[ctVw,setCtVw]=useState("lista");
 
-const cl=D.clients,tm=D.team,tls=D.tools,pjs=D.projects,lsns=D.lessons,sts=D.students,invs=D.investments,leads=D.leads,snaps=D.snapshots||[];
+const cl=D.clients,tm=D.team,tls=D.tools,pjs=D.projects,lsns=D.lessons,sts=D.students,invs=D.investments,leads=D.leads,snaps=D.snapshots||[],pros=D.prospects||[],cts=D.content||[];
 
 const loadAll=useCallback(async()=>{
   if(loadLock.current)return;
   loadLock.current=true;
   setLd(true);
   try{
-    const[clients,team,tools,projects,lessons,students,investments,leads,snapshots]=await Promise.all([dSel("clients"),dSel("team"),dSel("tools"),dSel("projects"),dSel("lessons"),dSel("students"),dSel("investments"),dSel("leads"),dSel("snapshots")]);
-    setD({clients,team,tools,projects,lessons,students,investments,leads,snapshots});
+    const[clients,team,tools,projects,lessons,students,investments,leads,snapshots,prospects,content]=await Promise.all([dSel("clients"),dSel("team"),dSel("tools"),dSel("projects"),dSel("lessons"),dSel("students"),dSel("investments"),dSel("leads"),dSel("snapshots"),dSel("prospects"),dSel("content")]);
+    setD({clients,team,tools,projects,lessons,students,investments,leads,snapshots,prospects,content});
   }catch(err){console.error("loadAll error",err)}
   setLd(false);
   loadLock.current=false;
@@ -215,7 +227,7 @@ const loadAll=useCallback(async()=>{
 useEffect(()=>{if(user)loadAll()},[user,loadAll]);
 
 const sv=async(t,f,sf,e)=>{
-  if(t==="lessons"){if(!f.title){alert("Título requerido");return}}
+  if(t==="lessons"||t==="content"){if(!f.title){alert("Título requerido");return}}
   else if(!f.name){alert("Nombre requerido");return}
   const res=eid?await dUpd(t,eid,f):await dIns(t,f);
   if(!res){alert("Error al guardar");return}
@@ -263,6 +275,26 @@ const convLead=async l=>{
     await loadAll();
   }catch(err){alert("Error: "+err.message)}};
 
+const mvPrSt=async(id,s)=>{
+  const prev=pros.find(x=>x.id===id)?.stage;
+  setD(p=>({...p,prospects:p.prospects.map(c=>c.id===id?{...c,stage:s}:c)}));
+  const res=await dUpd("prospects",id,{stage:s});
+  if(!res){setD(p=>({...p,prospects:p.prospects.map(c=>c.id===id?{...c,stage:prev}:c)}));alert("Error al mover etapa")}
+};
+const convProspect=async pr=>{
+  try{
+    const{data:ins,error:e1}=await SB.from("clients").insert({name:(pr.name||"").trim(),email:pr.email||"",phone:pr.phone||"",company:pr.business||"",source:pr.source||"Prospección",stage:"Lead",amount:0,amount_paid:0,mrr:0,stack_cost:0,solutions:[],tasks:[]}).select();
+    if(e1){alert("Error al crear cliente: "+e1.message);return}
+    await dUpd("prospects",pr.id,{stage:"Cerrado"});
+    await loadAll();
+    alert("✓ Prospecto convertido a cliente");
+  }catch(err){alert("Error: "+err.message)}
+};
+const fPros=useMemo(()=>pros.filter(p=>{const ms=!srch||p.name?.toLowerCase().includes(srch.toLowerCase())||(p.business||"").toLowerCase().includes(srch.toLowerCase());return ms&&(fSt==="Todos"||p.stage===fSt)}),[pros,srch,fSt]);
+const[ctFiltSt,setCtFiltSt]=useState("Todos");const[ctFiltPl,setCtFiltPl]=useState("Todos");
+const fCts=useMemo(()=>cts.filter(c=>{const ms=!srch||(c.title||"").toLowerCase().includes(srch.toLowerCase());return ms&&(ctFiltSt==="Todos"||c.status===ctFiltSt)&&(ctFiltPl==="Todos"||c.pillar===ctFiltPl)}),[cts,srch,ctFiltSt,ctFiltPl]);
+const ctMe=useMemo(()=>({total:cts.length,pub:cts.filter(c=>c.status==="Publicado").length,prod:cts.filter(c=>["Script listo","Grabado","Editado","Programado"].includes(c.status)).length,ideas:cts.filter(c=>c.status==="Idea").length}),[cts]);
+
 const me=useMemo(()=>{
   const tRev=cl.reduce((s,c)=>s+toUSD(c.amount,c.currency),0),tPaid=cl.reduce((s,c)=>s+toUSD(c.amountPaid,c.currency),0);
   const tMRR=cl.filter(c=>Number(c.mrr||0)>0).reduce((s,c)=>s+toUSD(c.mrr,c.currency),0);
@@ -293,6 +325,25 @@ const me=useMemo(()=>{
   return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,totCost,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,clSt,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
 },[cl,tm,tls,pjs,lsns,sts,invs,leads,tcMXN]);
 
+const alerts=useMemo(()=>{
+  const a=[];const now=new Date();const ms7=7*86400000;
+  cl.forEach(c=>{
+    if(c.stage==="En desarrollo"){
+      const last=c.updatedAt?new Date(c.updatedAt):c.startDate?new Date(c.startDate):null;
+      if(last&&(now-last)>ms7)a.push({icon:"⏱",msg:`${c.name} lleva +7 días sin actualización`,type:"clients",item:c});
+    }
+    if(Number(c.amount||0)>Number(c.amountPaid||0))a.push({icon:"💰",msg:`${c.name} tiene pago pendiente (${fm(Number(c.amount||0)-Number(c.amountPaid||0))})`,type:"clients",item:c});
+  });
+  tls.forEach(t=>{
+    if(t.renewDate){const rd=new Date(t.renewDate+"T00:00:00");const diff=rd-now;if(diff>=0&&diff<=ms7)a.push({icon:"🔄",msg:`${t.name} renueva en ${Math.ceil(diff/86400000)} día(s)`,type:"stack",item:t})}
+    if(t.cancelDate&&t.status==="Activo"){const cd2d=new Date(t.cancelDate+"T00:00:00");if(cd2d<now)a.push({icon:"⚠",msg:`${t.name} cancelada pero aún Activo`,type:"stack",item:t})}
+  });
+  pjs.forEach(p=>{
+    if(p.status==="En progreso"&&p.deadline){const dl2=new Date(p.deadline+"T00:00:00");if(dl2<now)a.push({icon:"📅",msg:`${p.name} pasó su deadline`,type:"projects",item:p})}
+  });
+  return a;
+},[cl,tls,pjs]);
+
 const fCl=useMemo(()=>cl.filter(c=>{const ms=!srch||c.name?.toLowerCase().includes(srch.toLowerCase())||(c.company||"").toLowerCase().includes(srch.toLowerCase());return ms&&(fSt==="Todos"||c.stage===fSt)}),[cl,srch,fSt]);
 const mxMoVals=Object.values(me.byMo);const mxMo=mxMoVals.length?mxMoVals.reduce((a,b)=>a>b?a:b,1):1;
 
@@ -316,7 +367,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <button className="nav-toggle" onClick={()=>setNavOpen(!navOpen)} style={{background:"none",border:`1px solid ${bd}`,color:"rgba(255,255,255,0.5)",padding:"6px 10px",borderRadius:6,fontSize:16,cursor:"pointer",lineHeight:1}}>{navOpen?"✕":"☰"}</button>
     <div className={`nav-btns${navOpen?"":" mob-hide"}`}>
       {[{k:"dashboard",l:"Dashboard"},{k:"clients",l:"Clientes"},{k:"pipeline",l:"Pipeline"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},{k:"projects",l:"Proyectos"},{k:"academy",l:"Academia"},
-        ...(isInv?[{k:"investment",l:"Inversión"}]:[]),{k:"team",l:"Equipo"},{k:"stack",l:"Stack"},...(isA?[{k:"historial",l:"Historial"}]:[])].map(n=>
+        ...(isInv?[{k:"investment",l:"Inversión"}]:[]),{k:"team",l:"Equipo"},{k:"stack",l:"Stack"},...(isA?[{k:"prospeccion",l:"Prospección"},{k:"contenido",l:"Contenido"},{k:"historial",l:"Historial"}]:[])].map(n=>
         <button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false)}} style={{background:vw===n.k?"rgba(11,119,152,0.15)":"transparent",border:vw===n.k?"1px solid rgba(11,119,152,0.3)":"1px solid transparent",color:vw===n.k?tl:"rgba(255,255,255,0.5)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"color .15s ease,border-color .15s ease,background .15s ease",fontFamily:ibm}}>{n.l}</button>)}
     </div>
   </div>
@@ -329,6 +380,23 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <span style={{fontSize:9,color:"rgba(255,255,255,0.4)"}}>MXN</span>
     </div>}
     {isA&&<span style={{background:"rgba(11,119,152,.15)",color:tl,padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,border:"1px solid rgba(11,119,152,.3)"}}>Admin</span>}
+    <div style={{position:"relative"}}>
+      <button onClick={()=>setNotifOpen(!notifOpen)} style={{background:notifOpen?"rgba(11,119,152,.15)":"none",border:`1px solid ${notifOpen?"rgba(11,119,152,.3)":bd}`,color:notifOpen?tl:"rgba(255,255,255,0.35)",padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36,position:"relative"}}>🔔{alerts.length>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",fontSize:9,fontWeight:700,width:16,height:16,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>{alerts.length>9?"9+":alerts.length}</span>}</button>
+      {notifOpen&&<><div style={{position:"fixed",inset:0,zIndex:9998}} onClick={()=>setNotifOpen(false)}/><div style={{position:"absolute",right:0,top:"calc(100% + 6px)",width:360,maxHeight:420,overflowY:"auto",background:"#0c1a22",border:`1px solid ${bd}`,borderRadius:16,boxShadow:"0 24px 48px rgba(0,0,0,.6)",zIndex:9999,padding:12}}>
+        <div style={{fontSize:10,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:mt,fontFamily:ibm,marginBottom:10,paddingLeft:4}}>Alertas {alerts.length>0&&<span style={{color:"#ef4444"}}>({alerts.length})</span>}</div>
+        {alerts.length===0?<div style={{textAlign:"center",padding:"20px 0",color:mt,fontSize:12}}>Sin alertas</div>:
+          alerts.map((al,i)=><div key={i} className="card-row" style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${bd}`,borderRadius:10,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>{
+            setNotifOpen(false);
+            if(al.type==="clients"){ed(al.item,setCF,"clients","cF")}
+            else if(al.type==="stack"){ed(al.item,setTF,"stack","tF")}
+            else if(al.type==="projects"){ed(al.item,setPF,"projects","pF")}
+          }}>
+            <span style={{fontSize:16,flexShrink:0}}>{al.icon}</span>
+            <div style={{flex:1,fontSize:12,color:"rgba(255,255,255,.8)",fontFamily:ibm,lineHeight:1.3}}>{al.msg}</div>
+            <span style={{fontSize:10,color:tl,flexShrink:0}}>→</span>
+          </div>)}
+      </div></>}
+    </div>
     <button onClick={()=>setChPw(true)} style={{background:"none",border:`1px solid ${bd}`,color:"rgba(255,255,255,0.35)",padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36}}>🔑</button>
     <button className="btn-logout" onClick={logout} style={{background:"none",border:"1px solid rgba(220,38,38,0.3)",color:"rgba(220,38,38,0.7)",padding:"6px 14px",borderRadius:6,fontSize:11,fontWeight:500,cursor:"pointer",minHeight:36,fontFamily:ibm}}>Salir</button>
   </div>
@@ -865,6 +933,162 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <button onClick={()=>sv("team",mF,setMF,eM)} style={{background:tl,border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Agregar"}</button>
     <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
     {eid&&isA&&<button onClick={()=>dl("team",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  </div>
+</div>)}
+
+{/* PROSPECCION LIST */}
+{vw==="prospeccion"&&!sub&&isA&&(<div>
+  <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+    <div>
+      <div style={{fontSize:9,fontWeight:700,letterSpacing:".18em",textTransform:"uppercase",color:mt,fontFamily:"'Geist Mono',monospace",marginBottom:5}}>Outbound</div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{fontSize:20,fontWeight:700,fontFamily:dsp,letterSpacing:"-.02em"}}>Prospección</div>
+        <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{fPros.length}</span>
+      </div>
+    </div>
+    <button onClick={()=>goN("prospeccion","prF",setPrF,ePr)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>＋ Nuevo</button>
+  </div>
+  <div className="mob-col" style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+    <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>
+    <select value={fSt} onChange={e=>setFSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Todas</option>{PROSTAGES.map(s=><option key={s}>{s}</option>)}</select>
+  </div>
+  {fPros.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin prospectos</div>:
+    fPros.map(p=><div key={p.id} className="mob-wrap card-row" style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+      <div style={{width:8,height:8,borderRadius:"50%",background:PROSC[p.stage],flexShrink:0}}/>
+      <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>ed(p,setPrF,"prospeccion","prF")}>
+        <div style={{fontSize:14,fontWeight:600,color:"#ffffff",fontFamily:ibm}}>{p.name} {p.business&&<span style={{fontWeight:400,color:"rgba(255,255,255,0.4)",fontSize:13}}>· {p.business}</span>}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.35)",marginTop:2,fontFamily:ibm}}>{p.city||"—"} {p.email&&<span>· {p.email}</span>}</div>
+      </div>
+      <div style={{display:"flex",gap:4,alignItems:"center",flexShrink:0,flexWrap:"wrap"}}>
+        {p.emailV1&&<button onClick={e=>{e.stopPropagation();navigator.clipboard.writeText(p.emailV1);alert("Email V1 copiado")}} style={{background:"rgba(78,205,196,.08)",border:`1px solid rgba(78,205,196,.25)`,color:tl,padding:"6px 10px",borderRadius:8,fontSize:10,fontWeight:600,cursor:"pointer"}}>Copiar V1</button>}
+        <select value={p.stage} onClick={e=>e.stopPropagation()} onChange={e=>mvPrSt(p.id,e.target.value)} style={{background:cd2,border:`1px solid ${bd}`,color:PROSC[p.stage]||s2,borderRadius:8,padding:"6px 8px",fontSize:11,fontWeight:600,cursor:"pointer",outline:"none"}}>{PROSTAGES.map(s=><option key={s} style={{color:"#fff",background:"#0a0c10"}}>{s}</option>)}</select>
+        {p.stage!=="Cerrado"&&p.stage!=="Descartado"&&<button onClick={e=>{e.stopPropagation();convProspect(p)}} style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.3)",color:"#34d399",padding:"6px 10px",borderRadius:8,fontSize:10,fontWeight:700,cursor:"pointer"}}>→ Cliente</button>}
+      </div>
+    </div>)}
+</div>)}
+
+{/* PROSPECCION FORM */}
+{vw==="prospeccion"&&sub==="prF"&&isA&&(<div style={{maxWidth:700,width:"100%"}}>
+  <div style={{marginBottom:24}}>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"none",border:"none",color:mt,fontSize:11,cursor:"pointer",padding:"0 0 12px 0",display:"flex",alignItems:"center",gap:4,letterSpacing:".04em"}}>← Prospección</button>
+    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+      <div>
+        <div style={{fontSize:9,fontWeight:700,letterSpacing:".18em",textTransform:"uppercase",color:mt,fontFamily:"'Geist Mono',monospace",marginBottom:5}}>{eid?"Editar prospecto":"Nuevo prospecto"}</div>
+        <div style={{fontSize:22,fontWeight:700,fontFamily:dsp,lineHeight:1,letterSpacing:"-.02em"}}>{eid?prF.name||"Prospecto":"Registrar prospecto"}</div>
+      </div>
+      {eid&&prF.stage&&<span style={bg2(PROSC[prF.stage])}>{prF.stage}</span>}
+    </div>
+  </div>
+  <div className="g2" style={{marginBottom:16}}>{[{k:"name",l:"Nombre *",p:"Nombre del contacto"},{k:"business",l:"Negocio",p:"Empresa o negocio"},{k:"city",l:"Ciudad",p:"Ciudad"},{k:"email",l:"Email",p:"email@ejemplo.com"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={prF[f.k]} onChange={e=>setPrF({...prF,[f.k]:e.target.value})} placeholder={f.p} style={iS}/></div>)}</div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Teléfono</label><input value={prF.phone} onChange={e=>setPrF({...prF,phone:e.target.value})} placeholder="+52" style={iS}/></div>
+    <div><label style={lb}>URL</label><input value={prF.url} onChange={e=>setPrF({...prF,url:e.target.value})} placeholder="https://..." style={iS}/></div>
+  </div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Etapa</label><select value={prF.stage} onChange={e=>setPrF({...prF,stage:e.target.value})} style={iS}>{PROSTAGES.map(s=><option key={s}>{s}</option>)}</select></div>
+    <div><label style={lb}>Fuente</label><input value={prF.source} onChange={e=>setPrF({...prF,source:e.target.value})} placeholder="Instagram, Google, etc." style={iS}/></div>
+  </div>
+  <div style={{marginBottom:16,padding:16,background:cd2,border:`1px solid ${bd}`,borderRadius:14}}>
+    <div style={{...hd,marginBottom:14}}>Emails de prospección</div>
+    <div className="g3" style={{marginBottom:12}}>{[{k:"subjectV1",l:"Asunto V1"},{k:"subjectV2",l:"Asunto V2"},{k:"subjectV3",l:"Asunto V3"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={prF[f.k]} onChange={e=>setPrF({...prF,[f.k]:e.target.value})} style={iS}/></div>)}</div>
+    {[{k:"emailV1",l:"Email V1"},{k:"emailV2",l:"Email V2"},{k:"emailV3",l:"Email V3"}].map(f=><div key={f.k} style={{marginBottom:10}}><label style={lb}>{f.l}</label><textarea value={prF[f.k]} onChange={e=>setPrF({...prF,[f.k]:e.target.value})} rows={3} style={{...iS,resize:"vertical"}}/></div>)}
+  </div>
+  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={prF.notes} onChange={e=>setPrF({...prF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
+  <div className="mob-wrap" style={{display:"flex",gap:8,paddingTop:8}}>
+    <button onClick={()=>sv("prospects",prF,setPrF,ePr)} style={{background:tl,border:"none",color:bg,padding:"12px 28px",borderRadius:10,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>{eid?"Guardar cambios":"Registrar prospecto"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:10,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&<button onClick={()=>dl("prospects",eid)} style={{background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.22)",color:"#ff6b6b",padding:"12px 18px",borderRadius:10,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
+  </div>
+</div>)}
+
+{/* CONTENIDO */}
+{vw==="contenido"&&!sub&&isA&&(()=>{
+  const getWeekKey=d=>{const dt=new Date(d+"T00:00:00");const jan1=new Date(dt.getFullYear(),0,1);const days=Math.floor((dt-jan1)/(86400000));return dt.getFullYear()+"-W"+String(Math.ceil((days+jan1.getDay()+1)/7)).padStart(2,"0")};
+  const weekLabel=wk=>{const[y,w]=wk.split("-W");const jan1=new Date(Number(y),0,1);const d=new Date(jan1.getTime()+((Number(w)-1)*7-jan1.getDay()+1)*86400000);const end=new Date(d.getTime()+6*86400000);const fmt=dt=>dt.getDate()+" "+MO[dt.getMonth()];return fmt(d)+" — "+fmt(end)};
+  const weeks={};cts.filter(c=>c.scheduledDate).forEach(c=>{const wk=getWeekKey(c.scheduledDate);if(!weeks[wk])weeks[wk]=[];weeks[wk].push(c)});
+  const sortedWeeks=Object.keys(weeks).sort().reverse().slice(0,8).reverse();
+  return <div>
+  <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+    <div>
+      <div style={{fontSize:9,fontWeight:700,letterSpacing:".18em",textTransform:"uppercase",color:mt,fontFamily:"'Geist Mono',monospace",marginBottom:5}}>Marketing</div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{fontSize:20,fontWeight:700,fontFamily:dsp,letterSpacing:"-.02em"}}>Contenido</div>
+        <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{cts.length}</span>
+      </div>
+    </div>
+    <button onClick={()=>goN("contenido","ctF",setCtF,eCt)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>＋ Nuevo</button>
+  </div>
+  <div className="g-cards" style={{marginBottom:16}}>
+    {[{l:"Total piezas",v:ctMe.total,c:tx},{l:"Publicadas",v:ctMe.pub,c:"#56d4a0"},{l:"En producción",v:ctMe.prod,c:"#4ECDC4"},{l:"Ideas",v:ctMe.ideas,c:"#8b949e"}].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:"20px 24px"}}>
+      <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>
+      <div style={{fontSize:"clamp(1.4rem,2vw,1.8rem)",fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
+    </div>)}
+  </div>
+  <div style={{display:"flex",gap:4,marginBottom:14}}>
+    {[{k:"lista",l:"Lista"},{k:"cal",l:"Calendario"}].map(t=><button key={t.k} onClick={()=>setCtVw(t.k)} style={{background:ctVw===t.k?"rgba(11,119,152,0.15)":"transparent",border:ctVw===t.k?"1px solid rgba(11,119,152,0.3)":"1px solid transparent",color:ctVw===t.k?tl:s2,padding:"8px 16px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:ibm}}>{t.l}</button>)}
+  </div>
+  {ctVw==="lista"&&<div>
+    <div className="mob-col" style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+      <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>
+      <select value={ctFiltSt} onChange={e=>setCtFiltSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Status: Todos</option>{CSTATS.map(s=><option key={s}>{s}</option>)}</select>
+      <select value={ctFiltPl} onChange={e=>setCtFiltPl(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Pilar: Todos</option>{CPILLARS.map(s=><option key={s}>{s}</option>)}</select>
+    </div>
+    {fCts.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin contenido</div>:
+      fCts.map(c=><div key={c.id} onClick={()=>ed(c,setCtF,"contenido","ctF")} className="mob-wrap card-row" style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,cursor:"pointer",marginBottom:8}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:CSTATC[c.status],flexShrink:0}}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:14,fontWeight:600,color:"#ffffff",fontFamily:ibm}}>{c.title}</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.35)",marginTop:2,fontFamily:ibm}}>{c.pillar} · {c.format} · {c.platform}{c.scheduledDate?` · ${(c.scheduledDate+"").substring(0,10)}`:""}</div>
+        </div>
+        <span style={bg2(CSTATC[c.status])}>{c.status}</span>
+      </div>)}
+  </div>}
+  {ctVw==="cal"&&<div>
+    {sortedWeeks.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin contenido programado — agrega fechas a tus piezas</div>:
+      sortedWeeks.map(wk=><div key={wk} style={{marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",color:mt,fontFamily:"'Geist Mono',monospace",marginBottom:8,paddingLeft:12,borderLeft:`3px solid ${tl}`}}>{weekLabel(wk)}</div>
+        {weeks[wk].sort((a,b)=>(a.scheduledDate||"").localeCompare(b.scheduledDate||"")).map(c=><div key={c.id} onClick={()=>ed(c,setCtF,"contenido","ctF")} className="card-row" style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:6}}>
+          <div style={{width:6,height:6,borderRadius:"50%",background:CSTATC[c.status],flexShrink:0}}/>
+          <div style={{fontSize:10,color:mt,fontFamily:"'Geist Mono',monospace",flexShrink:0,width:42}}>{(c.scheduledDate+"").substring(5,10)}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:600,color:tx,fontFamily:ibm}}>{c.title}</div>
+            <div style={{fontSize:11,color:s2}}>{c.pillar} · {c.format}</div>
+          </div>
+          <span style={{fontSize:10,color:s2,background:cd2,border:`1px solid ${bd}`,borderRadius:6,padding:"2px 8px"}}>{c.platform}</span>
+          <span style={bg2(CSTATC[c.status])}>{c.status}</span>
+        </div>)}
+      </div>)}
+  </div>}
+</div>})()}
+
+{/* CONTENIDO FORM */}
+{vw==="contenido"&&sub==="ctF"&&isA&&(<div style={{maxWidth:700,width:"100%"}}>
+  <div style={{marginBottom:24}}>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"none",border:"none",color:mt,fontSize:11,cursor:"pointer",padding:"0 0 12px 0",display:"flex",alignItems:"center",gap:4,letterSpacing:".04em"}}>← Contenido</button>
+    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+      <div>
+        <div style={{fontSize:9,fontWeight:700,letterSpacing:".18em",textTransform:"uppercase",color:mt,fontFamily:"'Geist Mono',monospace",marginBottom:5}}>{eid?"Editar pieza":"Nueva pieza"}</div>
+        <div style={{fontSize:22,fontWeight:700,fontFamily:dsp,lineHeight:1,letterSpacing:"-.02em"}}>{eid?ctF.title||"Contenido":"Crear contenido"}</div>
+      </div>
+      {eid&&ctF.status&&<span style={bg2(CSTATC[ctF.status])}>{ctF.status}</span>}
+    </div>
+  </div>
+  <div style={{marginBottom:16}}><label style={lb}>Título *</label><input value={ctF.title} onChange={e=>setCtF({...ctF,title:e.target.value})} placeholder="Título del contenido" style={iS}/></div>
+  <div className="g2" style={{marginBottom:16}}>
+    <div><label style={lb}>Pilar</label><select value={ctF.pillar} onChange={e=>setCtF({...ctF,pillar:e.target.value})} style={iS}>{CPILLARS.map(s=><option key={s}>{s}</option>)}</select></div>
+    <div><label style={lb}>Formato</label><select value={ctF.format} onChange={e=>setCtF({...ctF,format:e.target.value})} style={iS}>{CFMTS.map(s=><option key={s}>{s}</option>)}</select></div>
+  </div>
+  <div className="g3" style={{marginBottom:16}}>
+    <div><label style={lb}>Status</label><select value={ctF.status} onChange={e=>setCtF({...ctF,status:e.target.value})} style={iS}>{CSTATS.map(s=><option key={s}>{s}</option>)}</select></div>
+    <div><label style={lb}>Plataforma</label><select value={ctF.platform} onChange={e=>setCtF({...ctF,platform:e.target.value})} style={iS}>{CPLATS.map(s=><option key={s}>{s}</option>)}</select></div>
+    <div><label style={lb}>Fecha programada</label><input value={(ctF.scheduledDate||"").substring(0,10)} onChange={e=>setCtF({...ctF,scheduledDate:e.target.value})} type="date" style={iS}/></div>
+  </div>
+  <div style={{marginBottom:16}}><label style={lb}>URL</label><input value={ctF.url} onChange={e=>setCtF({...ctF,url:e.target.value})} placeholder="https://..." style={iS}/></div>
+  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={ctF.notes} onChange={e=>setCtF({...ctF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
+  <div className="mob-wrap" style={{display:"flex",gap:8,paddingTop:8}}>
+    <button onClick={()=>sv("content",ctF,setCtF,eCt)} style={{background:tl,border:"none",color:bg,padding:"12px 28px",borderRadius:10,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>{eid?"Guardar cambios":"Crear pieza"}</button>
+    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:10,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
+    {eid&&<button onClick={()=>dl("content",eid)} style={{background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.22)",color:"#ff6b6b",padding:"12px 18px",borderRadius:10,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
 </div>)}
 

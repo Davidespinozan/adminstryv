@@ -188,7 +188,19 @@ useEffect(()=>()=>clearTimeout(chPassTimer.current),[]);
 const[D,setD]=useState({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[],snapshots:[],prospects:[],content:[]});
 const isInv=useMemo(()=>{if(isA)return true;const u=user?.email;if(!u)return false;const mb=D.team.find(m=>m.email&&m.email.toLowerCase()===u.toLowerCase());return mb&&(mb.roles||[]).includes("Inversionista")},[isA,user,D.team]);
 const[tcMXN,setTcMXN]=useState(()=>{try{const v=localStorage.getItem("stryv_tc");return v?Number(v):20.5}catch(e){return 20.5}});
-const saveTc=v=>{const n=Number(v);if(n>0){setTcMXN(n);try{localStorage.setItem("stryv_tc",n)}catch(e){}}};
+const[tcAuto,setTcAuto]=useState(false);
+const saveTc=v=>{const n=Number(v);if(n>0){setTcMXN(n);setTcAuto(false);try{localStorage.setItem("stryv_tc",n);localStorage.removeItem("stryv_tc_date")}catch(e){}}};
+useEffect(()=>{
+  const fetchTC=async()=>{try{
+    const cached=localStorage.getItem("stryv_tc_date");
+    const today=new Date().toISOString().split("T")[0];
+    if(cached===today)return;
+    const r=await fetch("https://open.er-api.com/v6/latest/USD");
+    const d=await r.json();
+    if(d.result==="success"&&d.rates?.MXN){const v=Math.round(d.rates.MXN*100)/100;setTcMXN(v);setTcAuto(true);try{localStorage.setItem("stryv_tc",v);localStorage.setItem("stryv_tc_date",today)}catch(e){}}
+  }catch(e){console.warn("TC fetch failed",e)}};
+  fetchTC();
+},[]);
 const toUSD=(val,cur)=>{const n=Number(val||0);return cur==="MXN"?Math.round(n/tcMXN*100)/100:n};
 const[ld,setLd]=useState(false);const[vw,setVw]=useState("dashboard");const[sub,setSub]=useState(null);
 const[AW,setAW]=useState(()=>{try{const v=localStorage.getItem("stryv_aw");return v?JSON.parse(v):_AW}catch(e){return _AW}});
@@ -378,6 +390,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <span style={{fontSize:9,color:"rgba(255,255,255,0.4)",fontWeight:600,fontFamily:ibm}}>TC</span>
       <input value={tcMXN} onChange={e=>saveTc(e.target.value)} type="number" step="0.1" style={{width:46,background:"transparent",border:"none",color:"#ffffff",fontSize:11,fontWeight:600,outline:"none",textAlign:"center",padding:0}}/>
       <span style={{fontSize:9,color:"rgba(255,255,255,0.4)"}}>MXN</span>
+      {tcAuto&&<span style={{fontSize:8,color:"#34d399"}} title="Actualizado hoy">✓</span>}
     </div>}
     {isA&&<span style={{background:"rgba(11,119,152,.15)",color:tl,padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,border:"1px solid rgba(11,119,152,.3)"}}>Admin</span>}
     <div style={{position:"relative"}}>
@@ -428,7 +441,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {l:"Leads",v:me.nLeads,c:tx},{l:"Leads web",v:me.nL,c:tx},{l:"Proy. clientes",v:me.active,c:tx},{l:"Equipo",v:me.aTm,c:tx}
     ].map((k,i)=><div key={i} className="card-row" style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:"20px 24px"}}>
       <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>
-      <div style={{fontSize:"clamp(1.4rem,2vw,1.8rem)",fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
+      <div style={{fontSize:18,fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
     </div>)}
   </div>
   <div className="g2" style={{marginBottom:16}}>
@@ -1021,7 +1034,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   <div className="g-cards" style={{marginBottom:16}}>
     {[{l:"Total piezas",v:ctMe.total,c:tx},{l:"Publicadas",v:ctMe.pub,c:"#56d4a0"},{l:"En producción",v:ctMe.prod,c:"#4ECDC4"},{l:"Ideas",v:ctMe.ideas,c:"#8b949e"}].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:"20px 24px"}}>
       <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>
-      <div style={{fontSize:"clamp(1.4rem,2vw,1.8rem)",fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
+      <div style={{fontSize:18,fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
     </div>)}
   </div>
   <div style={{display:"flex",gap:4,marginBottom:14}}>

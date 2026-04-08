@@ -733,7 +733,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 {vw==="academy"&&!sub&&(<div>
   <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center",flexWrap:"wrap"}}>
     <div style={{display:"flex",gap:4}}>
-      {[{k:"curriculum",l:"📚 Curriculum"},{k:"students",l:"🎓 Alumnos"}].map(t=><button key={t.k} onClick={()=>setAcT(t.k)} style={{background:acT===t.k?"rgba(78,205,196,.1)":"transparent",border:"none",color:acT===t.k?tl:s2,padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.l}</button>)}
+      {[{k:"curriculum",l:"Programa"},{k:"students",l:"Alumnos"}].map(t=><button key={t.k} onClick={()=>setAcT(t.k)} style={{background:acT===t.k?"rgba(78,205,196,.1)":"transparent",border:"none",color:acT===t.k?tl:s2,padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.l}</button>)}
     </div>
     <div className="mob-wrap" style={{display:"flex",gap:8}}>
       {acT==="curriculum"&&isA&&<button onClick={()=>{setLF({...eL});setEid(null);setSub("lF")}} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Lección</button>}

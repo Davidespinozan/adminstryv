@@ -348,7 +348,7 @@ const me=useMemo(()=>{
   const toolsAcc=(()=>{let t=0;const cm=curMo;tls.filter(tlAct).filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const defMo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(defMo<=0)return;const ch=x.costHistory||{};const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;let cur=start;while(cur<=cm){t+=ch[cur]!==undefined?Number(ch[cur]):defMo;const[y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}});return t})();
   const nL=leads.filter(l=>!l.converted).length;
   const totalInv=tIA+toolsAcc;
-  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,costByMo,totalCostAcc,totalInv,toolsAcc,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
+  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,costByMo,totalCostAcc,totalInv,toolsAcc,cobMes:byMo[curMo]||0,profit:(byMo[curMo]||0)-totCost,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
 },[cl,tm,tls,pjs,lsns,sts,invs,leads,tcMXN]);
 
 const alerts=useMemo(()=>{

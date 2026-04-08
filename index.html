@@ -548,9 +548,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {eid&&cF.stage&&<span style={bg2(SC[cF.stage])}>{cF.stage}</span>}
     </div>
     {eid&&<div style={{display:"flex",gap:0,marginTop:14,background:"#fafbfc",borderRadius:14,border:`1px solid ${bd}`,overflow:"hidden"}}>
-      {[{l:"Total",v:cF.currency==="MXN"?fmShort(cF.amount)+" MXN":fm(cF.amount),c:"#34d399"},{l:"Pagado",v:cF.currency==="MXN"?fmShort(cF.amountPaid)+" MXN":fm(cF.amountPaid),c:"#34d399"},{l:"MRR",v:cF.currency==="MXN"?fmShort(cF.mrr)+" MXN":fm(cF.mrr),c:tl}].map((s,i)=><div key={i} style={{flex:1,padding:"14px 18px",borderRight:i<2?`1px solid ${bd}`:"none"}}>
+      {[{l:"Total",raw:cF.amount,c:"#34d399"},{l:"Pagado",raw:cF.amountPaid,c:"#34d399"},{l:"MRR",raw:cF.mrr,c:tl}].map((s,i)=><div key={i} style={{flex:1,padding:"14px 18px",borderRight:i<2?`1px solid ${bd}`:"none"}}>
         <div style={{fontSize:9,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",fontFamily:ibm,marginBottom:5}}>{s.l}</div>
-        <div style={{fontSize:17,fontWeight:700,color:s.c,fontFamily:dsp}}>{s.v}</div>
+        <div style={{fontSize:17,fontWeight:700,color:s.c,fontFamily:dsp}}>{cF.currency==="MXN"?fmShort(s.raw)+" MXN":fm(s.raw)}</div>
+        {cF.currency==="MXN"&&Number(s.raw||0)>0&&<div style={{fontSize:9,color:mt,marginTop:2}}>≈ {fm(toUSD(s.raw,"MXN"))}</div>}
       </div>)}
     </div>}
   </div>

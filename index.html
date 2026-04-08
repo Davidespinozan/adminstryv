@@ -344,8 +344,9 @@ const me=useMemo(()=>{
   invs.forEach(x=>{if(!x.date)return;const ds=(x.date+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(!m)return;const a=toUSD(x.amount,x.currency);iMo[m]=(iMo[m]||0)+a;iT[x.type]=(iT[x.type]||0)+a;const inv=x.investor||"Sin asignar";iInv[inv]=(iInv[inv]||0)+a});
   const invStTools={};tls.filter(tlAct).filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const inv=x.paidBy==="STRYV"?"STRYV":x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(!invStTools[inv])invStTools[inv]={tools:[],total:0};invStTools[inv].tools.push({name:x.name,cost:mo,billing:x.billing});invStTools[inv].total+=mo;iInv[inv]=(iInv[inv]||0)+mo});
   const tISt=Object.values(invStTools).reduce((s,v)=>s+v.total,0);
+  const totalCostAcc=Object.values(costByMo).reduce((s,v)=>s+v.total,0);
   const nL=leads.filter(l=>!l.converted).length;
-  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,costByMo,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
+  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,costByMo,totalCostAcc,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
 },[cl,tm,tls,pjs,lsns,sts,invs,leads,tcMXN]);
 
 const alerts=useMemo(()=>{
@@ -471,7 +472,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   </div>}
   <div className="g-cards" style={{marginBottom:16}}>
     {[{l:"Revenue total",v:fm(me.tRev),c:"#34d399"},{l:"Cobrado",v:fm(me.tPaid),c:"#34d399"},{l:"Pendiente",v:fm(me.tPend),c:"#f87171"},{l:"MRR clientes",v:fm(me.tMRR),c:"#34d399"},
-      ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#f87171"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?"#34d399":"#f87171"},{l:"Inversión total",v:fm(me.tIA+me.tISt),c:tl}]:[]),
+      ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#f87171"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?"#34d399":"#f87171"},{l:"Inversión total",v:fm(me.totalCostAcc+me.tInj),c:tl}]:[]),
     ].map((k,i)=><div key={i} className="card-row" style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:"20px 24px"}}>
       <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>
       <div style={{fontSize:18,fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>

@@ -155,7 +155,7 @@ async function dDel(t,id){
 const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,notes:"",tasks:[],payments:[],currency:"USD"};
 const _eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:"",currency:"USD"};
 const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",cancelDate:"",renewDate:"",paidBy:"STRYV",paidByName:"",currency:"USD"};
-const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,startDate:"",deadline:"",description:"",tasks:[],notes:"",currency:"USD"};
+const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,description:"",tasks:[],notes:"",currency:"USD"};
 const _eL={week:1,title:"",description:"",type:"Video",status:"Borrador",version:"v1",assets:[],notes:""};
 const _eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:"",convertedToClient:false,notes:"",currency:"USD"};
 const _eI={type:"Inyección de capital",investor:"",amount:0,date:"",notes:"",currency:"USD"};
@@ -211,7 +211,7 @@ const loadLock=React.useRef(false);
 const eC={..._eC};
 const eM={..._eM};
 const eT={..._eT};
-const eP={..._eP,startDate:today()};
+const eP={..._eP};
 const eL={..._eL};
 const eSt={..._eSt,startDate:today()};
 const eI={..._eI,date:today()};
@@ -674,11 +674,9 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Prioridad</label><select value={pF.priority} onChange={e=>setPF({...pF,priority:e.target.value})} style={iS}>{PP.map(p=><option key={p}>{p}</option>)}</select></div>
     <div><label style={lb}>Responsable</label><select value={pF.owner} onChange={e=>setPF({...pF,owner:e.target.value})} style={iS}><option value="">—</option>{tm.map(m=><option key={m.id} value={m.name}>{m.name}</option>)}</select></div>
   </div>
-  {isA&&<div style={{display:"flex",gap:8,alignItems:"start",marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g4">
+  {isA&&<div style={{display:"flex",gap:8,alignItems:"start",marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g2">
     <div><label style={lb}>Budget</label><input value={pF.budget} onChange={e=>setPF({...pF,budget:e.target.value})} type="number" style={iS}/></div>
     <div><label style={lb}>Gastado</label><input value={pF.spent} onChange={e=>setPF({...pF,spent:e.target.value})} type="number" style={iS}/></div>
-    <div><label style={lb}>Inicio</label><input value={(pF.startDate+"").substring(0,10)} onChange={e=>setPF({...pF,startDate:e.target.value})} type="date" style={iS}/></div>
-    <div><label style={lb}>Deadline</label><input value={((pF.deadline||"")+"").substring(0,10)} onChange={e=>setPF({...pF,deadline:e.target.value})} type="date" style={iS}/></div>
   </div></div><div style={{paddingTop:16}}><CurSel val={pF.currency} onChange={v=>setPF({...pF,currency:v})}/></div></div>}
   <div style={{marginBottom:16}}><label style={lb}>Tareas</label>
     {(pF.tasks||[]).map((t,i)=><div key={t.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}><input checked={t.done} onChange={()=>{const ts=[...pF.tasks];ts[i]={...ts[i],done:!ts[i].done};setPF({...pF,tasks:ts})}} type="checkbox" style={{accentColor:tl}}/><input value={t.text} onChange={e=>{const ts=[...pF.tasks];ts[i]={...ts[i],text:e.target.value};setPF({...pF,tasks:ts})}} style={{...iS,flex:1}}/><button onClick={()=>setPF({...pF,tasks:pF.tasks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button></div>)}

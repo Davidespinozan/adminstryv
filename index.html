@@ -21,7 +21,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   font-family:'IBM Plex Sans',system-ui,sans-serif;
-  background:#eef1f6;
+  background:#e8ecf2;
   color:#1a202c;overflow-x:hidden;-webkit-font-smoothing:antialiased
 }
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -35,8 +35,8 @@ input,select,textarea,button{font-family:inherit;font-size:16px;-webkit-tap-high
 
 /* ─── INTERACTIVE CARDS ─── */
 .card-row{transition:border-color .18s ease,background .18s ease}
-.card-row{box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.card-row:hover{border-color:rgba(11,119,152,.25)!important;background:rgba(11,119,152,.04)!important;box-shadow:0 3px 8px rgba(0,0,0,.07)!important}
+.card-row{box-shadow:0 2px 6px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)}
+.card-row:hover{border-color:rgba(11,119,152,.3)!important;background:#fff!important;box-shadow:0 6px 16px rgba(0,0,0,.1),0 2px 4px rgba(0,0,0,.06)!important}
 
 /* ─── PIPE MOVE BUTTONS ─── */
 .pipe-move{transition:border-color .15s,color .15s}
@@ -113,7 +113,7 @@ const IT=["Inyección de capital","Pago de stack mensual","Equipo","Otro"];
 const fm=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0})+" USD";
 const fmShort=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0});
 const MO=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const bg="#eef1f6",cd="#ffffff",cd2="#f6f7f9",bd="rgba(0,0,0,0.10)",tl="#0b7798",tx="#1a202c",s2="rgba(0,0,0,0.50)",mt="rgba(0,0,0,0.40)";
+const bg="#e8ecf2",cd="#ffffff",cd2="#f3f5f8",bd="rgba(0,0,0,0.12)",tl="#0b7798",tx="#1a202c",s2="rgba(0,0,0,0.50)",mt="rgba(0,0,0,0.40)";
 const gl="rgba(11,119,152,0.08)";
 const dsp="'Space Grotesk','IBM Plex Sans',system-ui,sans-serif";
 const ibm="'IBM Plex Sans',system-ui,sans-serif";
@@ -372,7 +372,7 @@ if(!user)return(<div style={{display:"flex",alignItems:"center",justifyContent:"
 
 return(<div style={{minHeight:"100vh",background:bg}}>
 {/* NAV */}
-<div style={{background:"#ffffff",borderBottom:"1px solid rgba(0,0,0,0.08)",padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between",height:58,position:"sticky",top:0,zIndex:100,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+<div style={{background:"#ffffff",borderBottom:"1px solid rgba(0,0,0,0.08)",padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between",height:58,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
   <div style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0}}>
     <span style={{fontWeight:700,fontSize:14,letterSpacing:".22em",color:"#1a202c",fontFamily:dsp,cursor:"pointer",userSelect:"none"}} onClick={()=>{setVw("dashboard");setSub(null);setNavOpen(false)}}>STRYV</span>
     <button className="nav-toggle" onClick={()=>setNavOpen(!navOpen)} style={{background:"none",border:`1px solid ${bd}`,color:"rgba(0,0,0,0.45)",padding:"6px 10px",borderRadius:6,fontSize:16,cursor:"pointer",lineHeight:1}}>{navOpen?"✕":"☰"}</button>
@@ -444,7 +444,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     </div>)}
   </div>
   <div className="g2" style={{marginBottom:16}}>
-    <div style={{background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:28}}>
+    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:20,padding:28,boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>
       <div style={hd}>Pipeline</div>
       {STAGES.map(s=><div key={s} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
         <div style={{width:8,height:8,borderRadius:"50%",background:SC[s]}}/><span style={{fontSize:12,color:s2,flex:1}}>{s}</span>
@@ -452,7 +452,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <span style={{fontSize:13,fontWeight:600,fontFamily:dsp,minWidth:18,textAlign:"right"}}>{me.byStg[s]}</span>
       </div>)}
     </div>
-    <div style={{background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:28}}>
+    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:20,padding:28,boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>
       <div style={hd}>Cobrado/mes</div>
       {Object.keys(me.byMo).length===0?<div style={{color:mt,fontSize:12}}>Sin datos.</div>:
         Object.entries(me.byMo).sort().slice(-6).map(([mo,v])=><div key={mo} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
@@ -463,13 +463,13 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     </div>
   </div>
   <div className="g-auto">
-    {isA&&<div style={{background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:28}}>
+    {isA&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:20,padding:28,boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>
       <div style={hd}>Costos/mes</div>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${bd}`}}><span style={{fontSize:13,color:s2,fontFamily:ibm}}>Equipo</span><span style={{fontSize:13,fontWeight:600,color:"#f87171",fontFamily:dsp}}>{fm(me.tmCost)}</span></div>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${bd}`}}><span style={{fontSize:13,color:s2,fontFamily:ibm}}>Tools</span><span style={{fontSize:13,fontWeight:600,color:"#f87171",fontFamily:dsp}}>{fm(me.tlCost)}</span></div>
       <div style={{display:"flex",justifyContent:"space-between",paddingTop:4}}><span style={{fontWeight:600,fontFamily:ibm}}>Total</span><span style={{fontSize:16,fontWeight:700,color:"#f87171",fontFamily:dsp}}>{fm(me.totCost)}</span></div>
     </div>}
-    <div style={{background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:28}}>
+    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:20,padding:28,boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>
       <div style={hd}>Tareas clientes ({me.cTasks.length})</div>
       <div style={{maxHeight:160,overflowY:"auto"}}>{me.cTasks.slice(0,6).map((t,i)=><div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:`1px solid rgba(0,0,0,0.06)`,alignItems:"center"}}>
         <button onClick={()=>togT(t.cid,t.id)} style={{width:18,height:18,borderRadius:6,border:"1.5px solid rgba(0,0,0,.15)",background:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
@@ -482,7 +482,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
           <div><div style={{fontSize:12,color:"rgba(0,0,0,0.35)",textDecoration:"line-through",fontFamily:ibm}}>{t.text}</div><div style={{fontSize:11,color:"rgba(0,0,0,0.20)"}}>{t.cn}</div></div>
         </div>)}</div>:null})()}
     </div>
-    <div style={{background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:28}}>
+    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:20,padding:28,boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>
       <div style={hd}>Tareas internas ({me.pTasks.length})</div>
       <div style={{maxHeight:160,overflowY:"auto"}}>{me.pTasks.slice(0,6).map((t,i)=><div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:`1px solid rgba(0,0,0,0.06)`,alignItems:"center"}}>
         <button onClick={()=>togPT(t.cid,t.id)} style={{width:18,height:18,borderRadius:6,border:"1.5px solid rgba(0,0,0,.15)",background:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
@@ -1249,7 +1249,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>
 </div>);
 }
-class EB extends React.Component{constructor(p){super(p);this.state={err:null}}static getDerivedStateFromError(e){return{err:e}}componentDidCatch(e,i){console.error("STRYV Error:",e,i)}render(){if(this.state.err)return <div style={{padding:40,textAlign:"center",color:"#ff6b6b",background:"#eef1f6",minHeight:"100vh"}}><h2>Error en el dashboard</h2><pre style={{fontSize:12,color:"#374151",marginTop:16,textAlign:"left",maxWidth:600,margin:"16px auto",whiteSpace:"pre-wrap"}}>{this.state.err.toString()}</pre><button onClick={()=>this.setState({err:null})} style={{marginTop:16,background:"#4ECDC4",border:"none",color:"#fff",padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>Reintentar</button></div>;return this.props.children}}
+class EB extends React.Component{constructor(p){super(p);this.state={err:null}}static getDerivedStateFromError(e){return{err:e}}componentDidCatch(e,i){console.error("STRYV Error:",e,i)}render(){if(this.state.err)return <div style={{padding:40,textAlign:"center",color:"#ff6b6b",background:"#e8ecf2",minHeight:"100vh"}}><h2>Error en el dashboard</h2><pre style={{fontSize:12,color:"#374151",marginTop:16,textAlign:"left",maxWidth:600,margin:"16px auto",whiteSpace:"pre-wrap"}}>{this.state.err.toString()}</pre><button onClick={()=>this.setState({err:null})} style={{marginTop:16,background:"#4ECDC4",border:"none",color:"#fff",padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>Reintentar</button></div>;return this.props.children}}
 ReactDOM.createRoot(document.getElementById("root")).render(<EB><App/></EB>);
 </script>
 </body>

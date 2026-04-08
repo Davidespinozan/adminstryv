@@ -390,7 +390,8 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         {g:"dashboard",l:"General",items:[{k:"dashboard",l:"Dashboard"}]},
         {g:"ventas",l:"Ventas",items:[{k:"clients",l:"Clientes"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},...(isA?[{k:"prospeccion",l:"Prospección"}]:[])]},
         {g:"operacion",l:"Operación",items:[{k:"projects",l:"Proyectos"},{k:"team",l:"Equipo"},{k:"stack",l:"Stack"}]},
-        {g:"marketing",l:"Marketing",items:[...(isA?[{k:"contenido",l:"Contenido"}]:[]),{k:"academy",l:"Academia"}]},
+        ...(isA?[{g:"marketing",l:"Marketing",items:[{k:"contenido",l:"Contenido"}]}]:[]),
+        {g:"academia",l:"Academia",items:[{k:"academy",l:"Academia"}]},
         {g:"finanzas",l:"Finanzas",items:[...(isInv?[{k:"investment",l:"Inversión"}]:[]),...(isA?[{k:"historial",l:"Historial"}]:[])]}
       ].filter(b=>b.items.length>0);
       const navBtn=(n)=>({background:vw===n.k?"rgba(11,119,152,0.25)":"transparent",border:vw===n.k?"1px solid rgba(11,119,152,0.4)":"1px solid transparent",color:vw===n.k?"#4ECDC4":"rgba(255,255,255,0.55)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"all .15s ease",fontFamily:ibm});

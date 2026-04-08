@@ -323,7 +323,7 @@ const me=useMemo(()=>{
   const tRev=cl.reduce((s,c)=>s+toUSD(c.amount,c.currency),0),tPaid=cl.reduce((s,c)=>s+toUSD(c.amountPaid,c.currency),0);
   const tMRR=cl.filter(c=>Number(c.mrr||0)>0).reduce((s,c)=>s+toUSD(c.mrr,c.currency),0);
   const byStg={};STAGES.forEach(s=>{byStg[s]=cl.filter(c=>c.stage===s).length});
-  const byMo={};cl.forEach(c=>{if(c.startDate){const ds=(c.startDate+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(m)byMo[m]=(byMo[m]||0)+toUSD(c.amountPaid,c.currency)}});
+  const byMo={};cl.forEach(c=>{const pays=c.payments||[];if(pays.length>0){pays.forEach(p=>{if(!p.date||!p.amount)return;const ds=(p.date+"").substring(0,10);const m=ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(m)byMo[m]=(byMo[m]||0)+toUSD(p.amount,c.currency)})}else if(c.amountPaid>0){const ds=c.createdAt?(c.createdAt+"").substring(0,10):null;const m=ds&&ds.length>=7&&/^\d{4}-\d{2}/.test(ds)?ds.substring(0,7):null;if(m)byMo[m]=(byMo[m]||0)+toUSD(c.amountPaid,c.currency)}});
   const cTasks=[],pTasks=[];
   cl.forEach(c=>{(c.tasks||[]).forEach(t=>{if(!t.done)cTasks.push({...t,cn:c.name,cid:c.id})})});
   pjs.forEach(p=>{(p.tasks||[]).forEach(t=>{if(!t.done)pTasks.push({...t,cn:p.name,cid:p.id})})});

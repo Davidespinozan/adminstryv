@@ -1190,17 +1190,6 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       </tr></tfoot></table>
     </div>
   </div>}
-  {hData.length>0&&<div style={{marginTop:16}}>
-    <div className="g-cards">
-      {(()=>{const last=hData[hData.length-1];const prev=hData.length>1?hData[hData.length-2]:null;
-        const d=(k)=>prev?last[k]-prev[k]:0;const arr=(k)=>{const v=d(k);return v>0?"+"+fmShort(v):v<0?fmShort(v):"="};
-        return [{l:"Último cobrado",v:fm(last.cob),d:arr("cob"),c:"#34d399"},{l:"Última utilidad",v:fm(last.util),d:arr("util"),c:last.util>=0?tl:"#f47067"},{l:"Último costo",v:fm(last.costos),d:arr("costos"),c:"#ff7b72"},{l:"Meses",v:hData.length,d:"",c:tx}].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}>
-          <div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div>
-          <div style={{fontSize:20,fontWeight:800,color:k.c}}>{k.v}</div>
-          {k.d&&<div style={{fontSize:10,color:k.d.startsWith("+")?tl:k.d==="="?mt:"#f47067",marginTop:2}}>{k.d} vs mes anterior</div>}
-        </div>)})()}
-    </div>
-  </div>}
 </div>})()}
 
 {/* STACK */}

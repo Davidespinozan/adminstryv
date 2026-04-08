@@ -1122,7 +1122,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>EQUIPO</th>
         <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>TOOLS</th>
       </tr></thead><tbody>{sorted.map(s=>{const u=Number(s.utilidad||0);return <tr key={s.id} style={{borderBottom:`1px solid ${bd}`}}>
-        <td style={{padding:10,fontWeight:700,fontFamily:"'Geist Mono',monospace",whiteSpace:"nowrap"}}>{MO[parseInt((s.month||"").split("-")[1]||"1")-1]} {(s.month||"").split("-")[0]}</td>
+        <td style={{padding:10,fontWeight:700,fontFamily:"'Geist Mono',monospace",whiteSpace:"nowrap"}}><div style={{display:"flex",alignItems:"center",gap:6}}><span>{MO[parseInt((s.month||"").split("-")[1]||"1")-1]} {(s.month||"").split("-")[0]}</span>{isA&&<button onClick={e=>{e.stopPropagation();if(confirm(`¿Eliminar cierre de ${s.month}?`)){dDel("snapshots",s.id).then(()=>loadAll())}}} style={{background:"none",border:"none",color:"#f47067",fontSize:10,cursor:"pointer",padding:"2px 4px",lineHeight:1}} title="Eliminar cierre">✕</button>}</div></td>
         <td style={{textAlign:"right",padding:10,fontWeight:700,color:tx}}>{fm(s.mrrClientes)}</td>
         <td style={{textAlign:"right",padding:10,fontWeight:700,color:tx}}>{fm(s.mrrAcademia)}</td>
         <td style={{textAlign:"right",padding:10,fontWeight:700,color:tx}}>{fm(Number(s.mrrClientes||0)+Number(s.mrrAcademia||0))}</td>

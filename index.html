@@ -331,7 +331,8 @@ const me=useMemo(()=>{
   tls.filter(tlAct).forEach(x=>{const c=toUSD(x.cost,x.currency);const mo=x.billing==="Anual"?c/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:c;const pk=x.paidBy||"STRYV";tlP[pk]=(tlP[pk]||0)+mo});
   const tlCost=Object.values(tlP).reduce((s,v)=>s+v,0);
   const tlCov=tlCost?Math.round(((tlP.Cliente+tlP.Inversor)/tlCost)*100):100;
-  const totCost=tmCost+tlCost;
+  const adsCost=invs.filter(x=>x.type==="Ads").reduce((s,x)=>{if(!x.date)return s;const m=(x.date+"").substring(0,7);return m===curMo?s+toUSD(x.amount,x.currency):s},0);
+  const totCost=tmCost+tlCost+adsCost;
   const acaMRR=sts.filter(x=>x.status==="Activo").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
   const acaRev=sts.reduce((s,x)=>s+toUSD(x.amountPaid,x.currency),0),acaAct=sts.filter(x=>x.status==="Activo").length,acaCnv=sts.filter(x=>x.convertedToClient).length;
   const lR=lsns.filter(x=>x.status==="Listo").length;
@@ -343,7 +344,7 @@ const me=useMemo(()=>{
   const invStTools={};tls.filter(tlAct).filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const inv=x.paidBy==="STRYV"?"STRYV":x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(!invStTools[inv])invStTools[inv]={tools:[],total:0};invStTools[inv].tools.push({name:x.name,cost:mo,billing:x.billing});invStTools[inv].total+=mo;iInv[inv]=(iInv[inv]||0)+mo});
   const tISt=Object.values(invStTools).reduce((s,v)=>s+v.total,0);
   const nL=leads.filter(l=>!l.converted).length;
-  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,totCost,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
+  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
 },[cl,tm,tls,pjs,lsns,sts,invs,leads,tcMXN]);
 
 const alerts=useMemo(()=>{
@@ -475,15 +476,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <div style={{fontSize:18,fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
     </div>)}
   </div>
-  <div className="g2" style={{marginBottom:16}}>
-    <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:20,padding:28,boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>
-      <div style={hd}>Pipeline</div>
-      {STAGES.map(s=><div key={s} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-        <div style={{width:8,height:8,borderRadius:"50%",background:SC[s]}}/><span style={{fontSize:12,color:s2,flex:1}}>{s}</span>
-        <div style={{background:"rgba(0,0,0,0.04)",borderRadius:999,height:6,flex:2,overflow:"hidden"}}><div style={{height:"100%",background:SC[s],borderRadius:999,width:`${me.tot?(me.byStg[s]/me.tot)*100:0}%`}}/></div>
-        <span style={{fontSize:13,fontWeight:600,fontFamily:dsp,minWidth:18,textAlign:"right"}}>{me.byStg[s]}</span>
-      </div>)}
-    </div>
+  <div style={{marginBottom:16}}>
     <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:20,padding:28,boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>
       <div style={hd}>Cobrado/mes</div>
       {Object.keys(me.byMo).length===0?<div style={{color:mt,fontSize:12}}>Sin datos.</div>:
@@ -499,6 +492,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <div style={hd}>Costos/mes</div>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${bd}`}}><span style={{fontSize:13,color:s2,fontFamily:ibm}}>Equipo</span><span style={{fontSize:13,fontWeight:600,color:"#f87171",fontFamily:dsp}}>{fm(me.tmCost)}</span></div>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${bd}`}}><span style={{fontSize:13,color:s2,fontFamily:ibm}}>Tools</span><span style={{fontSize:13,fontWeight:600,color:"#f87171",fontFamily:dsp}}>{fm(me.tlCost)}</span></div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${bd}`}}><span style={{fontSize:13,color:s2,fontFamily:ibm}}>Ads (este mes)</span><span style={{fontSize:13,fontWeight:600,color:"#f87171",fontFamily:dsp}}>{fm(me.adsCost)}</span></div>
       <div style={{display:"flex",justifyContent:"space-between",paddingTop:4}}><span style={{fontWeight:600,fontFamily:ibm}}>Total</span><span style={{fontSize:16,fontWeight:700,color:"#f87171",fontFamily:dsp}}>{fm(me.totCost)}</span></div>
     </div>}
     <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:20,padding:28,boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>

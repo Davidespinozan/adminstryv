@@ -21,7 +21,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   font-family:'IBM Plex Sans',system-ui,sans-serif;
-  background:#f5f7fa;
+  background:#eef1f6;
   color:#1a202c;overflow-x:hidden;-webkit-font-smoothing:antialiased
 }
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -35,7 +35,8 @@ input,select,textarea,button{font-family:inherit;font-size:16px;-webkit-tap-high
 
 /* ─── INTERACTIVE CARDS ─── */
 .card-row{transition:border-color .18s ease,background .18s ease}
-.card-row:hover{border-color:rgba(11,119,152,.25)!important;background:rgba(11,119,152,.04)!important}
+.card-row{box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card-row:hover{border-color:rgba(11,119,152,.25)!important;background:rgba(11,119,152,.04)!important;box-shadow:0 3px 8px rgba(0,0,0,.07)!important}
 
 /* ─── PIPE MOVE BUTTONS ─── */
 .pipe-move{transition:border-color .15s,color .15s}
@@ -112,12 +113,12 @@ const IT=["Inyección de capital","Pago de stack mensual","Equipo","Otro"];
 const fm=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0})+" USD";
 const fmShort=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0});
 const MO=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const bg="#f5f7fa",cd="#ffffff",cd2="#fafbfc",bd="rgba(0,0,0,0.08)",tl="#0b7798",tx="#1a202c",s2="rgba(0,0,0,0.50)",mt="rgba(0,0,0,0.40)";
+const bg="#eef1f6",cd="#ffffff",cd2="#f6f7f9",bd="rgba(0,0,0,0.10)",tl="#0b7798",tx="#1a202c",s2="rgba(0,0,0,0.50)",mt="rgba(0,0,0,0.40)";
 const gl="rgba(11,119,152,0.08)";
 const dsp="'Space Grotesk','IBM Plex Sans',system-ui,sans-serif";
 const ibm="'IBM Plex Sans',system-ui,sans-serif";
 const lb={display:"block",fontSize:9,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:7,fontFamily:ibm};
-const iS={width:"100%",background:"#ffffff",border:"1px solid rgba(0,0,0,0.12)",color:"#1a202c",borderRadius:12,padding:"11px 16px",fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:ibm,transition:"border-color .15s ease,box-shadow .15s ease"};
+const iS={width:"100%",background:"#ffffff",border:"1px solid rgba(0,0,0,0.10)",color:"#1a202c",borderRadius:12,padding:"11px 16px",fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:ibm,transition:"border-color .15s ease,box-shadow .15s ease"};
 const hd={fontSize:11,fontWeight:600,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:16,fontFamily:ibm,paddingLeft:12,borderLeft:"4px solid #0b7798"};
 const bg2=c=>{const b=c?c+"15":"rgba(0,0,0,.04)";const br=c?c+"30":"rgba(0,0,0,.10)";return{background:b,color:c||s2,padding:"4px 12px",borderRadius:999,fontSize:12,fontWeight:600,border:`1px solid ${br}`,height:"fit-content",flexShrink:0}};
 
@@ -1248,7 +1249,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>
 </div>);
 }
-class EB extends React.Component{constructor(p){super(p);this.state={err:null}}static getDerivedStateFromError(e){return{err:e}}componentDidCatch(e,i){console.error("STRYV Error:",e,i)}render(){if(this.state.err)return <div style={{padding:40,textAlign:"center",color:"#ff6b6b",background:"#f5f7fa",minHeight:"100vh"}}><h2>Error en el dashboard</h2><pre style={{fontSize:12,color:"#374151",marginTop:16,textAlign:"left",maxWidth:600,margin:"16px auto",whiteSpace:"pre-wrap"}}>{this.state.err.toString()}</pre><button onClick={()=>this.setState({err:null})} style={{marginTop:16,background:"#4ECDC4",border:"none",color:"#fff",padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>Reintentar</button></div>;return this.props.children}}
+class EB extends React.Component{constructor(p){super(p);this.state={err:null}}static getDerivedStateFromError(e){return{err:e}}componentDidCatch(e,i){console.error("STRYV Error:",e,i)}render(){if(this.state.err)return <div style={{padding:40,textAlign:"center",color:"#ff6b6b",background:"#eef1f6",minHeight:"100vh"}}><h2>Error en el dashboard</h2><pre style={{fontSize:12,color:"#374151",marginTop:16,textAlign:"left",maxWidth:600,margin:"16px auto",whiteSpace:"pre-wrap"}}>{this.state.err.toString()}</pre><button onClick={()=>this.setState({err:null})} style={{marginTop:16,background:"#4ECDC4",border:"none",color:"#fff",padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>Reintentar</button></div>;return this.props.children}}
 ReactDOM.createRoot(document.getElementById("root")).render(<EB><App/></EB>);
 </script>
 </body>

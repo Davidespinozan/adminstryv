@@ -318,52 +318,8 @@ const convProspect=async pr=>{
 const genProspectEmails=async()=>{
   if(!prF.name||!prF.business){alert("Nombre y negocio requeridos");return}
   setPrGenLoading(true);
-  const prompt=`Eres David Espinoza, fundador de STRYV (stryvstudio.com) — un estudio que construye sistemas operativos digitales para negocios en México y Latinoamérica. Escribes desde Madrid, España.
-
-STRYV ofrece 5 sistemas según lo que el negocio necesite:
-1. Sistema de Ventas y Entrega — para negocios que venden online o quieren sistematizar su proceso comercial
-2. Sistema de Atención y Soporte — para negocios con muchos mensajes, consultas o casos sin sistema
-3. Sistema de Conversión y Retención Local — para negocios físicos que quieren más recurrencia de clientes
-4. Sistema de Operación Interna — para negocios con inventario, producción, equipos o procesos internos complejos
-5. Sistema de Contenido con IA — para negocios que necesitan generar contenido de forma sistemática
-
-STRYV NO hace: branding, logos, contenido, redes sociales, ni publicidad pagada. Solo construye sistemas operativos digitales.
-Los proyectos son por ticket de implementación (no mensualidades). Duran 4 a 6 semanas. Los primeros resultados se ven en 48-72 horas.
-
-PROSPECTO:
-- Nombre: ${prF.name}
-- Negocio: ${prF.business}
-- Ciudad: ${prF.city||"no especificada"}
-- URL/Instagram: ${prF.url||"no proporcionada"}
-- Cómo te enteraste de ellos: ${prF.source||"búsqueda propia"}
-- Qué hace el negocio: ${prF.activity||"no especificado"}
-- Cómo vende: ${(prF.howSells||[]).join(", ")||"no especificado"}
-- Qué entrega: ${(prF.whatDelivers||[]).join(", ")||"no especificado"}
-- Operación actual: ${(prF.operation||[]).join(", ")||"no especificado"}
-- Problema principal: ${prF.pain||"no especificado"}
-- Notas adicionales: ${prF.notes||"ninguna"}
-
-INSTRUCCIONES:
-${prF.url?'Si hay sitio web o Instagram del prospecto, menciona algo específico que hayas "notado" en su presencia digital como gancho de apertura — algo concreto, no genérico.':""}
-Escribe 3 emails de prospección completamente distintos en tono y ángulo, pero todos desde la misma voz — la de David escribiendo personalmente.
-
-Reglas de tono:
-- Suenan como un email que David escribió específicamente para este prospecto, no un template
-- Arrancan con "Buen día" o "Hola ${prF.name.split(" ")[0]}" — nunca menciones la ciudad de David ni la del prospecto en el saludo
-- Nunca suena a plantilla de ventas — es conversacional, directo, sin exageraciones
-- Menciona los sistemas de STRYV que aplican de forma natural dentro del texto, no como lista
-- El CTA es siempre una invitación a platicar 20 minutos, sin presión
-- Firma siempre: David Espinoza / STRYV · Sistemas Operativos Digitales / stryvstudio.com
-
-Los 3 emails deben tener:
-- V1: tono personal y observacional — abre con algo específico que notó del negocio
-- V2: tono cercano y conversacional — como alguien que tiene una idea y quiere compartirla
-- V3: muy corto — una sola observación o pregunta incómoda, sin pitch largo
-
-Responde SOLO en este formato JSON (sin markdown, sin explicaciones):
-{"emails":[{"subject":"...","body":"..."},{"subject":"...","body":"..."},{"subject":"...","body":"..."}]}`;
   try{
-    const res=await fetch("/.netlify/functions/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+    const res=await fetch("/.netlify/functions/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"manual",data:{name:prF.name,business:prF.business,city:prF.city,url:prF.url,source:prF.source,activity:prF.activity,howSells:prF.howSells,whatDelivers:prF.whatDelivers,operation:prF.operation,pain:prF.pain,notes:prF.notes}})});
     if(!res.ok){const errText=await res.text();throw new Error("HTTP "+res.status+": "+errText)}
     const data=await res.json();
     if(data.error){throw new Error(data.error.message||JSON.stringify(data.error))}

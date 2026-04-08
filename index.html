@@ -384,9 +384,16 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <span style={{fontWeight:700,fontSize:14,letterSpacing:".22em",color:"#ffffff",fontFamily:dsp,cursor:"pointer",userSelect:"none"}} onClick={()=>{setVw("dashboard");setSub(null);setNavOpen(false)}}>STRYV</span>
     <button className="nav-toggle" onClick={()=>setNavOpen(!navOpen)} style={{background:"none",border:"1px solid rgba(255,255,255,.15)",color:"rgba(255,255,255,0.5)",padding:"6px 10px",borderRadius:6,fontSize:16,cursor:"pointer",lineHeight:1}}>{navOpen?"✕":"☰"}</button>
     <div className={`nav-btns${navOpen?"":" mob-hide"}`}>
-      {[{k:"dashboard",l:"Dashboard"},{k:"clients",l:"Clientes"},{k:"pipeline",l:"Pipeline"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},{k:"projects",l:"Proyectos"},{k:"academy",l:"Academia"},
-        ...(isInv?[{k:"investment",l:"Inversión"}]:[]),{k:"team",l:"Equipo"},{k:"stack",l:"Stack"},...(isA?[{k:"prospeccion",l:"Prospección"},{k:"contenido",l:"Contenido"},{k:"historial",l:"Historial"}]:[])].map(n=>
-        <button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false)}} style={{background:vw===n.k?"rgba(11,119,152,0.25)":"transparent",border:vw===n.k?"1px solid rgba(11,119,152,0.4)":"1px solid transparent",color:vw===n.k?"#4ECDC4":"rgba(255,255,255,0.55)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"color .15s ease,border-color .15s ease,background .15s ease",fontFamily:ibm}}>{n.l}</button>)}
+      {[
+        [{k:"dashboard",l:"Dashboard"}],
+        [{k:"clients",l:"Clientes"},{k:"pipeline",l:"Pipeline"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},...(isA?[{k:"prospeccion",l:"Prospección"}]:[])],
+        [{k:"projects",l:"Proyectos"},{k:"team",l:"Equipo"},{k:"stack",l:"Stack"}],
+        [...(isA?[{k:"contenido",l:"Contenido"}]:[]),{k:"academy",l:"Academia"}],
+        [...(isInv?[{k:"investment",l:"Inversión"}]:[]),...(isA?[{k:"historial",l:"Historial"}]:[])]
+      ].filter(g=>g.length>0).map((group,gi)=><React.Fragment key={gi}>
+        {gi>0&&<div style={{width:1,height:20,background:"rgba(255,255,255,.12)",margin:"0 4px",flexShrink:0}}/>}
+        {group.map(n=><button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false)}} style={{background:vw===n.k?"rgba(11,119,152,0.25)":"transparent",border:vw===n.k?"1px solid rgba(11,119,152,0.4)":"1px solid transparent",color:vw===n.k?"#4ECDC4":"rgba(255,255,255,0.55)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"color .15s ease,border-color .15s ease,background .15s ease",fontFamily:ibm}}>{n.l}</button>)}
+      </React.Fragment>)}
     </div>
   </div>
   <div style={{display:"flex",gap:6,alignItems:"center"}}>

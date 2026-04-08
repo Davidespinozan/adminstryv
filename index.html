@@ -251,7 +251,14 @@ const svI=async()=>{const amt=iF.type==="Pago de stack mensual"?Math.round(me.tl
 const buildSnap=(mo)=>({month:mo,mrrClientes:Math.round(me.tMRR*100)/100,mrrAcademia:Math.round(me.acaMRR*100)/100,costoEquipo:Math.round(me.tmCost*100)/100,costoStack:Math.round(me.tlCost*100)/100,costoTotal:Math.round(me.totCost*100)/100,utilidad:Math.round(me.profit*100)/100,revenueMes:Math.round((me.byMo[mo]||0)*100)/100,invertidoMes:Math.round((me.iMo[mo]||0)*100)/100,clientesActivos:me.active,alumnosActivos:me.acaAct,teamActivos:me.aTm,toolsActivos:tls.filter(x=>x.status==="Activo").length,cobradoTotal:Math.round(me.tPaid*100)/100,notes:""});
 const cerrarMes=async(targetMo)=>{const mo=targetMo||new Date().toISOString().substring(0,7);if(snaps.find(s=>s.month===mo)){if(targetMo)return;if(!confirm(`Ya existe un cierre para ${mo}. ¿Reemplazar?`))return;const ex=snaps.find(s=>s.month===mo);await dDel("snapshots",ex.id)}await dIns("snapshots",buildSnap(mo));await loadAll();if(!targetMo)alert(`✓ Mes ${mo} cerrado`)};
 const autoCloseRef=React.useRef(false);
-useEffect(()=>{if(!isA||!user||ld||cl.length===0||autoCloseRef.current)return;autoCloseRef.current=true;const now=new Date();const prev=new Date(now.getFullYear(),now.getMonth()-1,1);const prevMo=prev.toISOString().substring(0,7);if(!snaps.find(s=>s.month===prevMo)){cerrarMes(prevMo).then(()=>console.log(`Auto-cierre: ${prevMo}`))}},[isA,user,ld,cl,snaps]);
+useEffect(()=>{if(!isA||!user||ld||cl.length===0||autoCloseRef.current)return;autoCloseRef.current=true;
+  const now=new Date();const curMo2=now.toISOString().substring(0,7);
+  const firstDate=cl.reduce((mn,c)=>{const d=c.createdAt?(c.createdAt+"").substring(0,7):null;return d&&(!mn||d<mn)?d:mn},null);
+  if(!firstDate)return;
+  const missing=[];let cur=firstDate;
+  while(cur<curMo2){if(!snaps.find(s=>s.month===cur))missing.push(cur);const[y,m]=cur.split("-").map(Number);const ny=m===12?y+1:y;const nm=m===12?1:m+1;cur=ny+"-"+String(nm).padStart(2,"0")}
+  if(missing.length>0){(async()=>{for(const mo of missing){await cerrarMes(mo)}console.log(`Auto-cierre: ${missing.join(", ")}`)})()}
+},[isA,user,ld,cl,snaps]);
 const mvSt=async(id,s)=>{
   const prev=cl.find(x=>x.id===id)?.stage;
   setD(p=>({...p,clients:p.clients.map(c=>c.id===id?{...c,stage:s}:c)}));
@@ -1098,11 +1105,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 
 {/* HISTORIAL */}
 {vw==="historial"&&isA&&(<div>
-  <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center",flexWrap:"wrap"}}>
-    <div style={{fontSize:15,fontWeight:800}}>Historial <span style={{color:mt,fontWeight:400}}>P&L mes a mes</span></div>
-    <button onClick={()=>cerrarMes()} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>◉ Cerrar mes actual</button>
+  <div style={{marginBottom:16}}>
+    <div style={{fontSize:15,fontWeight:800}}>Historial <span style={{color:mt,fontWeight:400}}>P&L mes a mes · cierre automático</span></div>
   </div>
-  {snaps.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin cierres de mes. Haz clic en "Cerrar mes actual" para guardar la foto de este mes.</div>:
+  {snaps.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin cierres — se generarán automáticamente al inicio de cada mes.</div>:
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 0"}}>
     <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",padding:"0 16px"}}>
     {(()=>{

@@ -529,8 +529,8 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <div style={{fontSize:12,color:"rgba(0,0,0,0.40)",marginTop:2,fontFamily:ibm}}>{(c.solutions||[]).join(", ")||"—"}</div>
       </div>
       <div style={{textAlign:"right",flexShrink:0}}>
-        <div style={{fontSize:14,fontWeight:700,color:"#34d399",fontFamily:dsp}}>{fm(c.amount)}</div>
-        <div style={{fontSize:11,color:"rgba(0,0,0,0.35)"}}>Pagado: {fm(c.amountPaid)}</div>
+        <div style={{fontSize:14,fontWeight:700,color:"#34d399",fontFamily:dsp}}>{c.currency==="MXN"?fmShort(c.amount)+" MXN":fm(c.amount)}</div>
+        <div style={{fontSize:11,color:"rgba(0,0,0,0.35)"}}>Pagado: {c.currency==="MXN"?fmShort(c.amountPaid)+" MXN":fm(c.amountPaid)}</div>{c.currency==="MXN"&&<div style={{fontSize:9,color:mt}}>≈ {fm(toUSD(c.amount,c.currency))}</div>}
       </div>
       <span style={bg2(SC[c.stage])}>{c.stage}</span>
     </div>)}
@@ -548,7 +548,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {eid&&cF.stage&&<span style={bg2(SC[cF.stage])}>{cF.stage}</span>}
     </div>
     {eid&&<div style={{display:"flex",gap:0,marginTop:14,background:"#fafbfc",borderRadius:14,border:`1px solid ${bd}`,overflow:"hidden"}}>
-      {[{l:"Total",v:fm(cF.amount),c:"#34d399"},{l:"Pagado",v:fm(cF.amountPaid),c:"#34d399"},{l:"MRR",v:fm(cF.mrr),c:tl}].map((s,i)=><div key={i} style={{flex:1,padding:"14px 18px",borderRight:i<2?`1px solid ${bd}`:"none"}}>
+      {[{l:"Total",v:cF.currency==="MXN"?fmShort(cF.amount)+" MXN":fm(cF.amount),c:"#34d399"},{l:"Pagado",v:cF.currency==="MXN"?fmShort(cF.amountPaid)+" MXN":fm(cF.amountPaid),c:"#34d399"},{l:"MRR",v:cF.currency==="MXN"?fmShort(cF.mrr)+" MXN":fm(cF.mrr),c:tl}].map((s,i)=><div key={i} style={{flex:1,padding:"14px 18px",borderRight:i<2?`1px solid ${bd}`:"none"}}>
         <div style={{fontSize:9,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",fontFamily:ibm,marginBottom:5}}>{s.l}</div>
         <div style={{fontSize:17,fontWeight:700,color:s.c,fontFamily:dsp}}>{s.v}</div>
       </div>)}
@@ -587,8 +587,8 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <div style={{fontSize:13,fontWeight:600,color:"#1a202c",fontFamily:ibm,marginBottom:3}}>{c.name}</div>
       {c.company&&<div style={{fontSize:12,color:"rgba(0,0,0,0.40)",fontFamily:ibm}}>{c.company}</div>}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12}}>
-        <div style={{fontSize:13,fontWeight:700,color:tl,fontFamily:dsp}}>{fm(c.amount)}</div>
-        {c.mrr>0&&<div style={{fontSize:10,color:"rgba(0,0,0,0.35)",fontFamily:ibm}}>MRR {fm(c.mrr)}</div>}
+        <div style={{fontSize:13,fontWeight:700,color:tl,fontFamily:dsp}}>{c.currency==="MXN"?fmShort(c.amount)+" MXN":fm(c.amount)}</div>
+        {c.mrr>0&&<div style={{fontSize:10,color:"rgba(0,0,0,0.35)",fontFamily:ibm}}>MRR {c.currency==="MXN"?fmShort(c.mrr)+" MXN":fm(c.mrr)}</div>}
       </div>
       {isA&&<div style={{display:"flex",gap:4,marginTop:10,flexWrap:"wrap"}}>{STAGES.filter(s=>s!==stg).map(s=><button key={s} className="pipe-move" onClick={()=>mvSt(c.id,s)} style={{background:"rgba(0,0,0,0.03)",border:"1px solid rgba(0,0,0,0.08)",color:"rgba(0,0,0,0.45)",padding:"4px 8px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:500,fontFamily:ibm}}>→ {s.substring(0,4)}</button>)}</div>}
     </div>)}

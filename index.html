@@ -160,7 +160,7 @@ async function dDel(t,id){
 
 const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,notes:"",tasks:[],payments:[],currency:"USD"};
 const _eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:"",currency:"USD"};
-const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",cancelDate:"",renewDate:"",paidBy:"STRYV",paidByName:"",currency:"USD"};
+const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",cancelDate:"",renewDate:"",paidBy:"STRYV",paidByName:"",currency:"USD",costHistory:{}};
 const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,description:"",tasks:[],notes:"",currency:"USD"};
 const _eL={week:1,title:"",description:"",type:"Video",status:"Borrador",version:"v1",assets:[],notes:""};
 const _eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:"",convertedToClient:false,notes:"",currency:"USD"};
@@ -865,7 +865,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       const rows=[];
       invs.forEach(x=>{if(!x.date)return;const m=(x.date+"").substring(0,7);rows.push({month:m,investor:x.investor||"Sin asignar",concept:x.type,amount:toUSD(x.amount,x.currency),detail:x.notes||"",src:"mov",_inv:x})});
       const _cm=new Date().toISOString().substring(0,7);
-      tls.filter(t=>t.status==="Activo"&&(!t.cancelDate||(t.cancelDate+"").substring(0,7)>=_cm)).filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const inv=x.paidBy==="STRYV"?"STRYV":x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(mo<=0)return;const cm=_cm;const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;const ms=[];let cur=start;while(cur<=cm){ms.push(cur);const [y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}ms.forEach(m=>{rows.push({month:m,investor:inv,concept:"Herramienta: "+x.name,amount:mo,detail:x.billing,src:"tool",_tool:x})})});
+      tls.filter(t=>t.status==="Activo"&&(!t.cancelDate||(t.cancelDate+"").substring(0,7)>=_cm)).filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const inv=x.paidBy==="STRYV"?"STRYV":x.paidByName||"Inversor";const defMo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(defMo<=0)return;const cm=_cm;const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;const ms=[];let cur=start;while(cur<=cm){ms.push(cur);const [y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}const ch=x.costHistory||{};ms.forEach(m=>{const mo=ch[m]!==undefined?Number(ch[m]):defMo;rows.push({month:m,investor:inv,concept:"Herramienta: "+x.name,amount:mo,detail:x.billing,src:"tool",_tool:x})})});
       if(rows.length===0)return <div style={{color:mt,fontSize:12}}>Sin movimientos</div>;
       const byMo={};rows.forEach(r=>{if(!byMo[r.month])byMo[r.month]=[];byMo[r.month].push(r)});
       const months=Object.keys(byMo).sort();
@@ -878,11 +878,11 @@ return(<div style={{minHeight:"100vh",background:bg}}>
           <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MONTO</th>
         </tr></thead>
         <tbody>{months.map(m=>{const items=byMo[m];const moTotal=items.reduce((s,r)=>s+r.amount,0);acc+=moTotal;return <React.Fragment key={m}>
-          {items.sort((a,b)=>a.investor.localeCompare(b.investor)||a.concept.localeCompare(b.concept)).map((r,i)=><tr key={i} style={{borderBottom:`1px solid ${bd}`,cursor:isA?"pointer":"default"}} onClick={()=>{if(!isA)return;if(r.src==="mov"&&r._inv){setIF({...r._inv});setEid(r._inv.id);setSub("iF")}else if(r.src==="tool"&&r._tool){ed(r._tool,setTF,"stack","tF")}}}>
+          {items.sort((a,b)=>a.investor.localeCompare(b.investor)||a.concept.localeCompare(b.concept)).map((r,i)=><tr key={i} style={{borderBottom:`1px solid ${bd}`,cursor:r.src==="mov"&&isA?"pointer":"default"}} onClick={()=>{if(!isA)return;if(r.src==="mov"&&r._inv){setIF({...r._inv});setEid(r._inv.id);setSub("iF")}}}>
             {i===0?<td rowSpan={items.length+1} style={{padding:"10px 10px",fontWeight:700,fontFamily:"'Geist Mono',monospace",verticalAlign:"top",borderRight:`1px solid ${bd}`}}>{MO[parseInt(m.split("-")[1])-1]} {m.split("-")[0]}</td>:null}
             <td style={{padding:"6px 10px",color:"#b392f0",fontWeight:600,fontSize:11}}>{r.investor}</td>
-            <td style={{padding:"6px 10px",color:tx,fontSize:11}}>{r.src==="tool"?"🔧 ":""}{r.concept}<span style={{fontSize:9,color:tl,marginLeft:4}}>✎</span></td>
-            <td style={{textAlign:"right",padding:"6px 10px",fontWeight:700,color:tx}}>{fm(r.amount)}</td>
+            <td style={{padding:"6px 10px",color:tx,fontSize:11}}>{r.src==="tool"?"🔧 ":""}{r.concept}{r.src==="mov"&&<span style={{fontSize:9,color:tl,marginLeft:4}}>✎</span>}</td>
+            <td style={{textAlign:"right",padding:"6px 10px",fontWeight:700,color:tx}}>{r.src==="tool"&&isA?<input defaultValue={r.amount} onClick={e=>e.stopPropagation()} onBlur={e=>{const v=Number(e.target.value);if(v===r.amount)return;const tool=r._tool;const ch={...(tool.costHistory||{}),[(r.month||m)]:v};dUpd("tools",tool.id,{costHistory:ch}).then(()=>loadAll())}} type="number" style={{width:80,background:"transparent",border:`1px solid ${bd}`,borderRadius:6,padding:"3px 6px",fontSize:12,fontWeight:700,color:tx,textAlign:"right",outline:"none"}}/>:fm(r.amount)}</td>
           </tr>)}
           <tr style={{borderBottom:`2px solid ${bd}`,background:"rgba(179,146,240,.04)"}}>
             <td colSpan={2} style={{padding:"8px 10px",fontWeight:800,fontSize:11,color:s2,textAlign:"right"}}>Subtotal mes</td>

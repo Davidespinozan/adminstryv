@@ -1139,73 +1139,60 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>)}
 
 {/* HISTORIAL */}
-{vw==="historial"&&isA&&(<div>
-  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-    <div style={{fontSize:15,fontWeight:800}}>Historial <span style={{color:mt,fontWeight:400}}>P&L mes a mes</span></div>
-    <button onClick={async()=>{if(!confirm("¿Regenerar todos los cierres? Esto recalcula con los datos actuales."))return;for(const s of snaps){await dDel("snapshots",s.id)}await loadAll();setTimeout(()=>loadAll(),500)}} style={{background:"rgba(0,0,0,0.04)",border:`1px solid ${bd}`,color:s2,padding:"8px 14px",borderRadius:8,fontSize:11,cursor:"pointer",fontFamily:ibm}}>↻ Regenerar</button>
+{vw==="historial"&&isA&&(()=>{
+  const allMo=new Set([...Object.keys(me.byMo),...Object.keys(me.costByMo),...Object.keys(me.iMo)]);
+  const months=[...allMo].sort();
+  const hData=months.map(mo=>{const cob=me.byMo[mo]||0;const cm=me.costByMo[mo]||{equipo:0,tools:0,ads:0,total:0};const inv=me.iMo[mo]||0;const util=cob-cm.total;return{mo,cob,equipo:cm.equipo,tools:cm.tools,ads:cm.ads,costos:cm.total,util,inv}});
+  return <div>
+  <div style={{marginBottom:16}}>
+    <div style={{fontSize:15,fontWeight:800}}>Historial <span style={{color:mt,fontWeight:400}}>P&L mes a mes · calculado en tiempo real</span></div>
   </div>
-  {snaps.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin cierres — se generarán automáticamente al inicio de cada mes.</div>:
+  {months.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin datos — registra pagos e inversiones para ver el historial.</div>:
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 0"}}>
     <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",padding:"0 16px"}}>
-    {(()=>{
-      const sorted=[...snaps].sort((a,b)=>(a.month||"").localeCompare(b.month||"")); 
-      return <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:900}}><thead><tr style={{borderBottom:`2px solid ${bd}`}}>
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:700}}><thead><tr style={{borderBottom:`2px solid ${bd}`}}>
         <th style={{textAlign:"left",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MES</th>
-        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MRR CLIENTES</th>
-        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MRR ACADEMIA</th>
-        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>INGRESOS</th>
+        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>COBRADO</th>
         <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>EQUIPO</th>
-        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>STACK</th>
+        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>TOOLS</th>
+        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>ADS</th>
         <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>COSTOS</th>
         <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:800,fontFamily:"'Geist Mono',monospace"}}>UTILIDAD</th>
         <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>INVERTIDO</th>
-        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>CLIENTES</th>
-        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>ALUMNOS</th>
-        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>EQUIPO</th>
-        <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:9,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>TOOLS</th>
-      </tr></thead><tbody>{sorted.map(s=>{const u=Number(s.utilidad||0);return <tr key={s.id} style={{borderBottom:`1px solid ${bd}`}}>
-        <td style={{padding:10,fontWeight:700,fontFamily:"'Geist Mono',monospace",whiteSpace:"nowrap"}}><div style={{display:"flex",alignItems:"center",gap:6}}><span>{MO[parseInt((s.month||"").split("-")[1]||"1")-1]} {(s.month||"").split("-")[0]}</span>{isA&&<button onClick={e=>{e.stopPropagation();if(confirm(`¿Eliminar cierre de ${s.month}?`)){dDel("snapshots",s.id).then(()=>loadAll())}}} style={{background:"none",border:"none",color:"#f47067",fontSize:10,cursor:"pointer",padding:"2px 4px",lineHeight:1}} title="Eliminar cierre">✕</button>}</div></td>
-        <td style={{textAlign:"right",padding:10,fontWeight:700,color:tx}}>{fm(s.mrrClientes)}</td>
-        <td style={{textAlign:"right",padding:10,fontWeight:700,color:tx}}>{fm(s.mrrAcademia)}</td>
-        <td style={{textAlign:"right",padding:10,fontWeight:700,color:tx}}>{fm(Number(s.mrrClientes||0)+Number(s.mrrAcademia||0))}</td>
-        <td style={{textAlign:"right",padding:10,color:s2}}>{fm(s.costoEquipo)}</td>
-        <td style={{textAlign:"right",padding:10,color:s2}}>{fm(s.costoStack)}</td>
-        <td style={{textAlign:"right",padding:10,fontWeight:700,color:tx}}>{fm(s.costoTotal)}</td>
-        <td style={{textAlign:"right",padding:10,fontWeight:800,fontSize:14,color:u>=0?tl:"#f47067"}}>{fm(u)}</td>
-        <td style={{textAlign:"right",padding:10,color:s2}}>{fm(s.invertidoMes)}</td>
-        <td style={{textAlign:"right",padding:10,color:s2}}>{s.clientesActivos}</td>
-        <td style={{textAlign:"right",padding:10,color:s2}}>{s.alumnosActivos}</td>
-        <td style={{textAlign:"right",padding:10,color:s2}}>{s.teamActivos}</td>
-        <td style={{textAlign:"right",padding:10,color:s2}}>{s.toolsActivos}</td>
-      </tr>})}</tbody>
+      </tr></thead><tbody>{hData.map(r=><tr key={r.mo} style={{borderBottom:`1px solid ${bd}`}}>
+        <td style={{padding:10,fontWeight:700,fontFamily:"'Geist Mono',monospace",whiteSpace:"nowrap"}}>{MO[parseInt(r.mo.split("-")[1])-1]} {r.mo.split("-")[0]}</td>
+        <td style={{textAlign:"right",padding:10,fontWeight:700,color:"#34d399"}}>{fm(r.cob)}</td>
+        <td style={{textAlign:"right",padding:10,color:s2}}>{fm(r.equipo)}</td>
+        <td style={{textAlign:"right",padding:10,color:s2}}>{fm(r.tools)}</td>
+        <td style={{textAlign:"right",padding:10,color:s2}}>{fm(r.ads)}</td>
+        <td style={{textAlign:"right",padding:10,fontWeight:700,color:"#f87171"}}>{fm(r.costos)}</td>
+        <td style={{textAlign:"right",padding:10,fontWeight:800,fontSize:14,color:r.util>=0?tl:"#f47067"}}>{fm(r.util)}</td>
+        <td style={{textAlign:"right",padding:10,color:s2}}>{fm(r.inv)}</td>
+      </tr>)}</tbody>
       <tfoot><tr style={{borderTop:`2px solid ${bd}`,background:"rgba(78,205,196,.03)"}}>
-        <td style={{padding:"12px 10px",fontWeight:800,fontSize:13}}>PROMEDIO</td>
-        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:700,color:tx}}>{fm(sorted.reduce((s,x)=>s+Number(x.mrrClientes||0),0)/sorted.length)}</td>
-        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:700,color:tx}}>{fm(sorted.reduce((s,x)=>s+Number(x.mrrAcademia||0),0)/sorted.length)}</td>
-        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:700,color:tx}}>{fm(sorted.reduce((s,x)=>s+Number(x.mrrClientes||0)+Number(x.mrrAcademia||0),0)/sorted.length)}</td>
-        <td style={{textAlign:"right",padding:"12px 10px",color:s2}}>{fm(sorted.reduce((s,x)=>s+Number(x.costoEquipo||0),0)/sorted.length)}</td>
-        <td style={{textAlign:"right",padding:"12px 10px",color:s2}}>{fm(sorted.reduce((s,x)=>s+Number(x.costoStack||0),0)/sorted.length)}</td>
-        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:700,color:tx}}>{fm(sorted.reduce((s,x)=>s+Number(x.costoTotal||0),0)/sorted.length)}</td>
-        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:sorted.reduce((s,x)=>s+Number(x.utilidad||0),0)>=0?tl:"#f47067",fontSize:14}}>{fm(sorted.reduce((s,x)=>s+Number(x.utilidad||0),0)/sorted.length)}</td>
-        <td style={{textAlign:"right",padding:"12px 10px",color:s2}}>{fm(sorted.reduce((s,x)=>s+Number(x.invertidoMes||0),0)/sorted.length)}</td>
-        <td colSpan={4} style={{textAlign:"right",padding:"12px 10px",color:mt,fontSize:10}}>promedios</td>
+        <td style={{padding:"12px 10px",fontWeight:800,fontSize:13}}>TOTAL</td>
+        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:700,color:"#34d399"}}>{fm(hData.reduce((s,r)=>s+r.cob,0))}</td>
+        <td style={{textAlign:"right",padding:"12px 10px",color:s2}}>{fm(hData.reduce((s,r)=>s+r.equipo,0))}</td>
+        <td style={{textAlign:"right",padding:"12px 10px",color:s2}}>{fm(hData.reduce((s,r)=>s+r.tools,0))}</td>
+        <td style={{textAlign:"right",padding:"12px 10px",color:s2}}>{fm(hData.reduce((s,r)=>s+r.ads,0))}</td>
+        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:700,color:"#f87171"}}>{fm(hData.reduce((s,r)=>s+r.costos,0))}</td>
+        <td style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:hData.reduce((s,r)=>s+r.util,0)>=0?tl:"#f47067",fontSize:14}}>{fm(hData.reduce((s,r)=>s+r.util,0))}</td>
+        <td style={{textAlign:"right",padding:"12px 10px",color:s2}}>{fm(hData.reduce((s,r)=>s+r.inv,0))}</td>
       </tr></tfoot></table>
-    })()}
     </div>
   </div>}
-  {snaps.length>0&&<div style={{marginTop:16}}>
+  {hData.length>0&&<div style={{marginTop:16}}>
     <div className="g-cards">
-      {(()=>{const sorted=[...snaps].sort((a,b)=>(a.month||"").localeCompare(b.month||"")); const last=sorted[sorted.length-1]; const prev=sorted.length>1?sorted[sorted.length-2]:null;
-        const delta=(k)=>prev?Number(last[k]||0)-Number(prev[k]||0):0;
-        const arr=(k)=>{const d=delta(k); return d>0?"+"+fmShort(d):d<0?fmShort(d):"="};
-        return [{l:"Último MRR",v:fm(Number(last.mrrClientes||0)+Number(last.mrrAcademia||0)),d:arr("mrrClientes"),c:tl},{l:"Última utilidad",v:fm(last.utilidad),d:arr("utilidad"),c:Number(last.utilidad||0)>=0?tl:"#f47067"},{l:"Último costo",v:fm(last.costoTotal),d:arr("costoTotal"),c:"#ff7b72"},{l:"Meses registrados",v:sorted.length,d:"",c:tx}].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}>
+      {(()=>{const last=hData[hData.length-1];const prev=hData.length>1?hData[hData.length-2]:null;
+        const d=(k)=>prev?last[k]-prev[k]:0;const arr=(k)=>{const v=d(k);return v>0?"+"+fmShort(v):v<0?fmShort(v):"="};
+        return [{l:"Último cobrado",v:fm(last.cob),d:arr("cob"),c:"#34d399"},{l:"Última utilidad",v:fm(last.util),d:arr("util"),c:last.util>=0?tl:"#f47067"},{l:"Último costo",v:fm(last.costos),d:arr("costos"),c:"#ff7b72"},{l:"Meses",v:hData.length,d:"",c:tx}].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}>
           <div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div>
           <div style={{fontSize:20,fontWeight:800,color:k.c}}>{k.v}</div>
           {k.d&&<div style={{fontSize:10,color:k.d.startsWith("+")?tl:k.d==="="?mt:"#f47067",marginTop:2}}>{k.d} vs mes anterior</div>}
         </div>)})()}
     </div>
   </div>}
-</div>)}
+</div>})()}
 
 {/* STACK */}
 {vw==="stack"&&!sub&&(<div>

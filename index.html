@@ -84,7 +84,7 @@ window.addEventListener("unhandledrejection",e=>{console.error("Unhandled async 
 const{useState,useEffect,useMemo,useCallback}=React;
 const SB=window.supabase.createClient("https://ltveorvqvvlyivjwxjlc.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dmVvcnZxdnZseWl2and4amxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzODEzNTAsImV4cCI6MjA4Nzk1NzM1MH0.BpBc3lM6VpDyL5299H1MwQK0VBOBjKWQQconfpcCsfU");
 
-const SOLUTIONS=["Sol 01 — Ventas y Entrega","Sol 02 — Atención con IA","Sol 03 — Conversión Local","Sol 04 — Operación Interna","Combo personalizado","Diagnóstico","Mantenimiento mensual"];
+const SOLUTIONS=["Sol 01 — Ventas y Entrega","Sol 02 — Atención con IA","Sol 03 — Conversión Local","Sol 04 — Operación Interna","Combo personalizado","Mantenimiento mensual"];
 const STAGES=["Lead","Diagnóstico","Propuesta","En desarrollo","Entregado","Mantenimiento"];
 const SC={Lead:"#79b8ff","Diagnóstico":"#e5a84b",Propuesta:"#79b8ff","En desarrollo":"#4ECDC4",Entregado:"#56d4a0",Mantenimiento:"#8b949e"};
 const SOURCES=["Instagram","Referido","WhatsApp directo","Web","Academia","Otro"];
@@ -151,7 +151,7 @@ async function dDel(t,id){
   }
 }
 
-const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,stackCost:0,stackDetail:"",startDate:"",estDelivery:"",notes:"",tasks:[],currency:"USD"};
+const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,notes:"",tasks:[],currency:"USD"};
 const _eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:"",currency:"USD"};
 const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",cancelDate:"",renewDate:"",paidBy:"STRYV",paidByName:"",currency:"USD"};
 const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,startDate:"",deadline:"",description:"",tasks:[],notes:"",currency:"USD"};
@@ -207,7 +207,7 @@ const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setF
 const loadLock=React.useRef(false);
 
 // Fix 1: templates from outside, add today() for dates
-const eC={..._eC,startDate:today()};
+const eC={..._eC};
 const eM={..._eM};
 const eT={..._eT};
 const eP={..._eP,startDate:today()};
@@ -553,14 +553,6 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   </div>
   <div style={{marginBottom:16}}><label style={lb}>Soluciones</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{SOLUTIONS.map(sol=>{const sel=(cF.solutions||[]).includes(sol);return <button key={sol} onClick={()=>setCF(p=>({...p,solutions:sel?(p.solutions||[]).filter(s=>s!==sol):[...(p.solutions||[]),sol]}))} style={{background:sel?"rgba(78,205,196,.15)":cd,border:`1px solid ${sel?tl:bd}`,color:sel?tl:s2,padding:"8px 12px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:sel?700:500,minHeight:36}}>{sol}</button>})}</div></div>
   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g3">{[{k:"amount",l:"Monto total"},{k:"amountPaid",l:"Pagado"},{k:"mrr",l:"MRR"}].map(f=><div key={f.k}><label style={lb}>{f.l}</label><input value={cF[f.k]} onChange={e=>setCF({...cF,[f.k]:e.target.value})} type="number" placeholder="0" style={iS}/></div>)}</div></div><div style={{paddingTop:16}}><CurSel val={cF.currency} onChange={v=>setCF({...cF,currency:v})}/>{cF.currency==="MXN"&&<div style={{fontSize:8,color:mt,marginTop:2}}>≈ {fmShort(toUSD(cF.amount,cF.currency))} USD</div>}</div></div>
-  <div className="g2" style={{marginBottom:16}}>
-    <div><label style={lb}>Stack/mes</label><input value={cF.stackCost} onChange={e=>setCF({...cF,stackCost:e.target.value})} type="number" style={iS}/></div>
-    <div><label style={lb}>Detalle stack</label><input value={cF.stackDetail} onChange={e=>setCF({...cF,stackDetail:e.target.value})} placeholder="Make, CF..." style={iS}/></div>
-  </div>
-  <div className="g2" style={{marginBottom:16}}>
-    <div><label style={lb}>Inicio</label><input value={(cF.startDate+"").substring(0,10)} onChange={e=>setCF({...cF,startDate:e.target.value})} type="date" style={iS}/></div>
-    <div><label style={lb}>Entrega</label><input value={((cF.estDelivery||"")+"").substring(0,10)} onChange={e=>setCF({...cF,estDelivery:e.target.value})} type="date" style={iS}/></div>
-  </div>
   <div style={{marginBottom:16}}><label style={lb}>Tareas</label>
     {(cF.tasks||[]).map((t,i)=><div key={t.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}><input checked={t.done} onChange={()=>{const ts=[...cF.tasks];ts[i]={...ts[i],done:!ts[i].done};setCF({...cF,tasks:ts})}} type="checkbox" style={{accentColor:tl}}/><input value={t.text} onChange={e=>{const ts=[...cF.tasks];ts[i]={...ts[i],text:e.target.value};setCF({...cF,tasks:ts})}} placeholder="Tarea..." style={{...iS,flex:1}}/><button onClick={()=>setCF({...cF,tasks:cF.tasks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button></div>)}
     <button onClick={()=>setCF({...cF,tasks:[...(cF.tasks||[]),{text:"",done:false,id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(78,205,196,.06)",border:`1px dashed ${bd}`,color:s2,padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Tarea</button>

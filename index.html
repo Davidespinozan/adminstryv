@@ -845,23 +845,9 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     {isA&&<button onClick={()=>{setIF({...eI});setEid(null);setSub("iF")}} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Movimiento</button>}
   </div>
   <div className="g-inv" style={{marginBottom:16}}>
-    {[{l:"Total invertido",v:fm(me.tIA+me.tISt),c:"#b392f0"},{l:"Inyecciones",v:fm(me.tInj),c:"#b392f0"},{l:"Stack pagado (mov.)",v:fm(me.tSP),c:"#e5a84b"},{l:"Stack inversión/mes",v:fm(me.tISt),c:"#b392f0"},{l:"Stack activo/mes",v:fm(me.tlCost),c:"#ff7b72"}].map((k,i)=>
+    {[{l:"Total invertido",v:fm(me.totalCostAcc+me.tInj),c:"#b392f0"},{l:"Inyecciones",v:fm(me.tInj),c:"#b392f0"},{l:"Costos acumulados",v:fm(me.totalCostAcc),c:"#ff7b72"}].map((k,i)=>
       <div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}><div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div><div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div></div>)}
   </div>
-  {/* Stack como inversión */}
-  {Object.keys(me.invStTools).length>0&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginBottom:16}}>
-    <div style={hd}>Stack como inversión <span style={{color:"#b392f0",fontWeight:800}}>{fm(me.tISt)}/mes</span></div>
-    {Object.entries(me.invStTools).map(([inv,d])=><div key={inv} style={{marginBottom:12}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-        <span style={{fontSize:13,fontWeight:700,color:"#b392f0"}}>{inv}</span>
-        <span style={{fontSize:13,fontWeight:800,color:tx}}>{fm(d.total)}/mes</span>
-      </div>
-      {d.tools.map((t,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:i<d.tools.length-1?`1px solid ${bd}`:"none"}}>
-        <span style={{fontSize:11,color:s2}}>{t.name}</span>
-        <span style={{fontSize:11,fontWeight:700,color:tx}}>{fm(t.cost)}/mes</span>
-      </div>)}
-    </div>)}
-  </div>}
   {/* Historial completo mes a mes */}
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 0",marginBottom:16}}>
     <div style={{padding:"0 16px"}}><div style={hd}>Historial de inversión mes a mes (incluye stack)</div></div>

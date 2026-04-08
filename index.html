@@ -879,30 +879,32 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       const byMo={};rows.forEach(r=>{if(!byMo[r.month])byMo[r.month]=[];byMo[r.month].push(r)});
       const months=Object.keys(byMo).sort();
       let acc=0;
-      return <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:600}}>
-        <thead><tr style={{borderBottom:`2px solid ${bd}`}}>
-          <th style={{textAlign:"left",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MES</th>
-          <th style={{textAlign:"left",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>INVERSOR</th>
-          <th style={{textAlign:"left",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>CONCEPTO</th>
-          <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MONTO</th>
-        </tr></thead>
-        <tbody>{months.map(m=>{const items=byMo[m];const moTotal=items.reduce((s,r)=>s+r.amount,0);acc+=moTotal;return <React.Fragment key={m}>
-          {items.sort((a,b)=>a.investor.localeCompare(b.investor)||a.concept.localeCompare(b.concept)).map((r,i)=><tr key={i} style={{borderBottom:`1px solid ${bd}`,cursor:r.src==="mov"&&isA?"pointer":"default"}} onClick={()=>{if(!isA)return;if(r.src==="mov"&&r._inv){setIF({...r._inv});setEid(r._inv.id);setSub("iF")}}}>
-            {i===0?<td rowSpan={items.length+1} style={{padding:"10px 10px",fontWeight:700,fontFamily:"'Geist Mono',monospace",verticalAlign:"top",borderRight:`1px solid ${bd}`}}>{MO[parseInt(m.split("-")[1])-1]} {m.split("-")[0]}</td>:null}
-            <td style={{padding:"6px 10px",color:"#b392f0",fontWeight:600,fontSize:11}}>{r.investor}</td>
-            <td style={{padding:"6px 10px",color:tx,fontSize:11}}>{r.src==="tool"?"🔧 ":""}{r.concept}{r.src==="mov"&&<span style={{fontSize:9,color:tl,marginLeft:4}}>✎</span>}</td>
-            <td style={{textAlign:"right",padding:"6px 10px",fontWeight:700,color:tx}}>{r.src==="tool"&&isA?<input defaultValue={r.amount} onClick={e=>e.stopPropagation()} onBlur={e=>{const v=Number(e.target.value);if(v===r.amount)return;const tool=r._tool;const ch={...(tool.costHistory||{}),[(r.month||m)]:v};dUpd("tools",tool.id,{costHistory:ch}).then(()=>loadAll())}} type="number" style={{width:80,background:"transparent",border:`1px solid ${bd}`,borderRadius:6,padding:"3px 6px",fontSize:12,fontWeight:700,color:tx,textAlign:"right",outline:"none"}}/>:fm(r.amount)}</td>
-          </tr>)}
-          <tr style={{borderBottom:`2px solid ${bd}`,background:"rgba(179,146,240,.04)"}}>
-            <td colSpan={2} style={{padding:"8px 10px",fontWeight:800,fontSize:11,color:s2,textAlign:"right"}}>Subtotal mes</td>
-            <td style={{textAlign:"right",padding:"8px 10px",fontWeight:800,color:"#b392f0",fontSize:13}}>{fm(moTotal)}</td>
-          </tr>
-        </React.Fragment>})}</tbody>
-        <tfoot><tr style={{borderTop:`2px solid ${bd}`,background:"rgba(78,205,196,.03)"}}>
-          <td colSpan={3} style={{padding:"12px 10px",fontWeight:800,fontSize:13}}>TOTAL ACUMULADO</td>
-          <td style={{textAlign:"right",padding:"12px 10px",fontWeight:800,color:"#b392f0",fontSize:16}}>{fm(acc)}</td>
-        </tr></tfoot>
-      </table>})()}
+      return months.map(m=>{const items=byMo[m].sort((a,b)=>a.investor.localeCompare(b.investor)||a.concept.localeCompare(b.concept));const moTotal=items.reduce((s,r)=>s+r.amount,0);acc+=moTotal;
+        return <div key={m} style={{marginBottom:4}}>
+          <div onClick={()=>setNavGrp(navGrp==="inv-"+m?null:"inv-"+m)} className="card-row" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:cd2,border:`1px solid ${bd}`,borderRadius:navGrp==="inv-"+m?"10px 10px 0 0":10,cursor:"pointer"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:12,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>{MO[parseInt(m.split("-")[1])-1]} {m.split("-")[0]}</span>
+              <span style={{fontSize:10,color:mt}}>{items.length} items</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:14,fontWeight:800,color:"#b392f0",fontFamily:dsp}}>{fm(moTotal)}</span>
+              <span style={{fontSize:10,color:mt}}>{navGrp==="inv-"+m?"▲":"▼"}</span>
+            </div>
+          </div>
+          {navGrp==="inv-"+m&&<div style={{border:`1px solid ${bd}`,borderTop:"none",borderRadius:"0 0 10px 10px",padding:8,background:cd}}>
+            {items.map((r,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 8px",borderBottom:i<items.length-1?`1px solid ${bd}`:"none",cursor:r.src==="mov"&&isA?"pointer":"default"}} onClick={()=>{if(!isA)return;if(r.src==="mov"&&r._inv){setIF({...r._inv});setEid(r._inv.id);setSub("iF")}}}>
+              <div style={{display:"flex",gap:8,alignItems:"center",flex:1}}>
+                <span style={{fontSize:11,color:"#b392f0",fontWeight:600,minWidth:80}}>{r.investor}</span>
+                <span style={{fontSize:11,color:tx}}>{r.src==="tool"?"🔧 ":""}{r.concept}{r.src==="mov"&&<span style={{fontSize:9,color:tl,marginLeft:4}}>✎</span>}</span>
+              </div>
+              <div>{r.src==="tool"&&isA?<input defaultValue={r.amount} onClick={e=>e.stopPropagation()} onBlur={e=>{const v=Number(e.target.value);if(v===r.amount)return;const tool=r._tool;const ch={...(tool.costHistory||{}),[(r.month||m)]:v};dUpd("tools",tool.id,{costHistory:ch}).then(()=>loadAll())}} type="number" style={{width:70,background:"transparent",border:`1px solid ${bd}`,borderRadius:6,padding:"3px 6px",fontSize:11,fontWeight:700,color:tx,textAlign:"right",outline:"none"}}/>:<span style={{fontSize:12,fontWeight:700,color:tx}}>{fm(r.amount)}</span>}</div>
+            </div>)}
+          </div>}
+        </div>})})()}
+      <div style={{display:"flex",justifyContent:"space-between",padding:"12px 14px",borderTop:`2px solid ${bd}`,marginTop:8}}>
+        <span style={{fontWeight:800,fontSize:13}}>TOTAL ACUMULADO</span>
+        <span style={{fontWeight:800,color:"#b392f0",fontSize:16}}>{fm(acc)}</span>
+      </div>
     </div>
   </div>
   {/* Movimientos */}

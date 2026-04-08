@@ -473,7 +473,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <span style={{fontSize:9,color:mt}}>Todo se muestra en USD</span>
   </div>}
   <div className="g-cards" style={{marginBottom:16}}>
-    {[{l:"Revenue total",v:fm(me.tRev),c:"#34d399"},{l:"Cobrado",v:fm(me.tPaid),c:"#34d399"},{l:"Pendiente",v:fm(me.tPend),c:"#f87171"},{l:"MRR clientes",v:fm(me.tMRR),c:"#34d399"},
+    {[{l:"Revenue total",v:fm(me.tRev),c:"#34d399"},{l:"Cobrado total",v:fm(me.tPaid),c:"#34d399"},{l:"Cobrado/mes",v:fm(me.cobMes),c:"#34d399"},{l:"Pendiente",v:fm(me.tPend),c:"#f87171"},{l:"MRR clientes",v:fm(me.tMRR),c:"#34d399"},
       ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#f87171"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?"#34d399":"#f87171"},{l:"Inversión total",v:fm(me.totalInv),c:tl}]:[]),
     ].map((k,i)=><div key={i} className="card-row" style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:"20px 24px"}}>
       <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>

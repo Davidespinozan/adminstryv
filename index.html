@@ -623,13 +623,13 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     </div>)}
     <button onClick={()=>setCF({...cF,payments:[...(cF.payments||[]),{date:new Date().toISOString().split("T")[0],amount:"",note:"",id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(52,211,153,.06)",border:`1px dashed rgba(52,211,153,.3)`,color:"#34d399",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%",fontWeight:600}}>＋ Registrar pago</button>
   </div>
-  {(()=>{const ct=tls.filter(t=>t.paidBy==="Cliente"&&t.paidByName===cF.name);const ctCost=ct.reduce((s,t)=>{const c=toUSD(t.cost,t.currency);return s+(t.billing==="Anual"?c/12:t.billing==="Lifetime"||t.billing==="Gratis"?0:c)},0);return ct.length>0&&<div style={{marginBottom:16,padding:14,background:"rgba(11,119,152,.04)",border:`1px solid rgba(11,119,152,.15)`,borderRadius:12}}>
+  {(()=>{const ct=tls.filter(t=>t.paidBy==="Cliente"&&t.paidByName===cF.name);const ctCost=ct.reduce((s,t)=>{const c=toUSD(t.cost,t.currency);return s+(t.billing==="Anual"?c/12:t.billing==="Lifetime"||t.billing==="Gratis"?0:c)},0);return <div style={{marginBottom:16,padding:14,background:"rgba(11,119,152,.04)",border:`1px solid rgba(11,119,152,.15)`,borderRadius:12}}>
     <label style={lb}>Stack del cliente — {fm(ctCost)}/mes</label>
-    {ct.map(t=>{const c=toUSD(t.cost,t.currency);const mo=t.billing==="Anual"?c/12:t.billing==="Lifetime"||t.billing==="Gratis"?0:c;return <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${bd}`}}>
+    {ct.length===0?<div style={{fontSize:11,color:mt,padding:"4px 0"}}>Sin herramientas asignadas. Asígnalas en Stack → ¿Quién paga? → Cliente → {cF.name||"este cliente"}</div>:
+    ct.map(t=>{const c=toUSD(t.cost,t.currency);const mo=t.billing==="Anual"?c/12:t.billing==="Lifetime"||t.billing==="Gratis"?0:c;return <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${bd}`}}>
       <span style={{fontSize:12,color:tx}}>{t.name} <span style={{color:mt,fontSize:10}}>· {t.billing}</span></span>
       <span style={{fontSize:12,fontWeight:700,color:tl}}>{fm(mo)}/mes</span>
     </div>})}
-    <div style={{fontSize:9,color:mt,marginTop:6}}>Se asignan desde Stack → ¿Quién paga? → Cliente</div>
   </div>})()}
   <div style={{marginBottom:16}}><label style={lb}>Ads del cliente — Total: {cF.currency==="MXN"?fmShort((cF.adsPayments||[]).reduce((s,p)=>s+Number(p.amount||0),0))+" MXN":fm((cF.adsPayments||[]).reduce((s,p)=>s+Number(p.amount||0),0))}</label>
     {(cF.adsPayments||[]).map((p,i)=><div key={p.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}>

@@ -63,14 +63,20 @@ input,select,textarea,button{font-family:inherit;font-size:16px;-webkit-tap-high
   .mob-col{flex-direction:column!important}
   .mob-full{width:100%!important;min-width:0!important}
   .mob-wrap{flex-wrap:wrap!important}
-  .nav-btns{position:fixed;top:58px;left:0;right:0;background:#071620;border-bottom:1px solid rgba(255,255,255,.08);padding:8px;display:flex;flex-wrap:wrap;gap:4px;z-index:99;justify-content:center}
-  .nav-btns button{padding:10px 12px!important;font-size:12px!important;min-height:40px}
+  .nav-btns{position:fixed;top:58px;left:0;right:0;background:#071620;border-bottom:1px solid rgba(255,255,255,.08);padding:10px 12px;z-index:99;overflow-y:auto;max-height:calc(100vh - 58px)}
+  .nav-btns button{font-size:13px!important;min-height:40px}
+  .nav-grp-label{display:block!important;width:100%;font-size:9px!important;font-weight:700!important;letter-spacing:.14em!important;text-transform:uppercase;color:rgba(255,255,255,.3)!important;padding:12px 8px 4px!important;min-height:auto!important;pointer-events:none;border:none!important;background:none!important}
+  .nav-grp-label:first-child{padding-top:4px!important}
+  .nav-mob-item{display:block!important;width:100%;text-align:left!important;padding:10px 12px!important;border-radius:8px!important}
+  .nav-dropdown{display:none!important}
+  .mob-hide-inv{display:block!important}
   .mob-stack{flex-direction:column!important;align-items:stretch!important}
   .mob-pad{padding-top:160px!important}
 }
 @media(min-width:769px){
   .nav-toggle{display:none!important}
   .nav-btns{display:flex;gap:2px;min-width:0;align-items:center}
+  .mob-hide-inv{display:none!important}
   .nav-btns::-webkit-scrollbar{display:none}
 }
 input:focus,select:focus,textarea:focus{border-color:rgba(11,119,152,.5)!important;box-shadow:0 0 0 3px rgba(11,119,152,.1)!important}
@@ -384,24 +390,34 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <span style={{fontWeight:700,fontSize:14,letterSpacing:".22em",color:"#ffffff",fontFamily:dsp,cursor:"pointer",userSelect:"none"}} onClick={()=>{setVw("dashboard");setSub(null);setNavOpen(false)}}>STRYV</span>
     <button className="nav-toggle" onClick={()=>setNavOpen(!navOpen)} style={{background:"none",border:"1px solid rgba(255,255,255,.15)",color:"rgba(255,255,255,0.5)",padding:"6px 10px",borderRadius:6,fontSize:16,cursor:"pointer",lineHeight:1}}>{navOpen?"✕":"☰"}</button>
     <div className={`nav-btns${navOpen?"":" mob-hide"}`}>
-      {navGrp!==null&&<div style={{position:"fixed",inset:0,zIndex:97}} onClick={()=>setNavGrp(null)}/>}
-      {[
-        {g:"dashboard",l:"Dashboard",items:[{k:"dashboard",l:"Dashboard"}]},
+      {navGrp!==null&&<div className="mob-hide" style={{position:"fixed",inset:0,zIndex:97}} onClick={()=>setNavGrp(null)}/>}
+      {(()=>{const navData=[
+        {g:"dashboard",l:"General",items:[{k:"dashboard",l:"Dashboard"}]},
         {g:"ventas",l:"Ventas",items:[{k:"clients",l:"Clientes"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},...(isA?[{k:"prospeccion",l:"Prospección"}]:[])]},
         {g:"operacion",l:"Operación",items:[{k:"projects",l:"Proyectos"},{k:"team",l:"Equipo"},{k:"stack",l:"Stack"}]},
         {g:"marketing",l:"Marketing",items:[...(isA?[{k:"contenido",l:"Contenido"}]:[]),{k:"academy",l:"Academia"}]},
         {g:"finanzas",l:"Finanzas",items:[...(isInv?[{k:"investment",l:"Inversión"}]:[]),...(isA?[{k:"historial",l:"Historial"}]:[])]}
-      ].filter(b=>b.items.length>0).map(b=>{
-        const active=b.items.some(n=>n.k===vw);
-        return b.items.length===1?
-          <button key={b.g} onClick={()=>{setVw(b.items[0].k);setSub(null);setEid(null);setSrch("");setNavOpen(false);setNavGrp(null)}} style={{background:active?"rgba(11,119,152,0.25)":"transparent",border:active?"1px solid rgba(11,119,152,0.4)":"1px solid transparent",color:active?"#4ECDC4":"rgba(255,255,255,0.55)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"all .15s ease",fontFamily:ibm}}>{b.l}</button>
-          :<div key={b.g} style={{position:"relative"}}>
-            <button onClick={()=>setNavGrp(navGrp===b.g?null:b.g)} style={{background:active?"rgba(11,119,152,0.25)":navGrp===b.g?"rgba(255,255,255,.08)":"transparent",border:active?"1px solid rgba(11,119,152,0.4)":"1px solid transparent",color:active?"#4ECDC4":"rgba(255,255,255,0.55)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"all .15s ease",fontFamily:ibm}}>{b.l} <span style={{fontSize:8,opacity:.5}}>{navGrp===b.g?"▲":"▼"}</span></button>
-            {navGrp===b.g&&<div style={{position:"absolute",top:"calc(100% + 4px)",left:0,background:"#0d2230",border:"1px solid rgba(255,255,255,.12)",borderRadius:10,padding:4,minWidth:160,zIndex:98,boxShadow:"0 8px 24px rgba(0,0,0,.3)"}}>
-              {b.items.map(n=><button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false);setNavGrp(null)}} style={{display:"block",width:"100%",textAlign:"left",background:vw===n.k?"rgba(11,119,152,0.2)":"transparent",border:"none",color:vw===n.k?"#4ECDC4":"rgba(255,255,255,0.7)",padding:"8px 12px",borderRadius:6,fontSize:12,fontWeight:vw===n.k?600:400,cursor:"pointer",fontFamily:ibm,transition:"background .12s ease"}}>{n.l}</button>)}
-            </div>}
-          </div>
-      })}
+      ].filter(b=>b.items.length>0);
+      const navBtn=(n)=>({background:vw===n.k?"rgba(11,119,152,0.25)":"transparent",border:vw===n.k?"1px solid rgba(11,119,152,0.4)":"1px solid transparent",color:vw===n.k?"#4ECDC4":"rgba(255,255,255,0.55)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"all .15s ease",fontFamily:ibm});
+      const goTo=(k)=>{setVw(k);setSub(null);setEid(null);setSrch("");setNavOpen(false);setNavGrp(null)};
+      return <>
+        {/* Mobile: flat list with group labels */}
+        {navData.map(b=><React.Fragment key={b.g+"-mob"}>
+          <button className="nav-grp-label mob-hide-inv" style={{display:"none"}}>{b.l}</button>
+          {b.items.map(n=><button key={n.k} className="nav-mob-item mob-hide-inv" onClick={()=>goTo(n.k)} style={{...navBtn(n),display:"none"}}>{n.l}</button>)}
+        </React.Fragment>)}
+        {/* Desktop: dropdown groups */}
+        {navData.map(b=>{const active=b.items.some(n=>n.k===vw);
+          return b.items.length===1?
+            <button key={b.g} className="nav-dropdown" onClick={()=>goTo(b.items[0].k)} style={{...navBtn(b.items[0]),background:active?"rgba(11,119,152,0.25)":"transparent",border:active?"1px solid rgba(11,119,152,0.4)":"1px solid transparent",color:active?"#4ECDC4":"rgba(255,255,255,0.55)"}}>{b.l}</button>
+            :<div key={b.g} className="nav-dropdown" style={{position:"relative"}}>
+              <button onClick={()=>setNavGrp(navGrp===b.g?null:b.g)} style={{background:active?"rgba(11,119,152,0.25)":navGrp===b.g?"rgba(255,255,255,.08)":"transparent",border:active?"1px solid rgba(11,119,152,0.4)":"1px solid transparent",color:active?"#4ECDC4":"rgba(255,255,255,0.55)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"all .15s ease",fontFamily:ibm}}>{b.l} <span style={{fontSize:8,opacity:.5}}>{navGrp===b.g?"▲":"▼"}</span></button>
+              {navGrp===b.g&&<div style={{position:"absolute",top:"calc(100% + 4px)",left:0,background:"#0d2230",border:"1px solid rgba(255,255,255,.12)",borderRadius:10,padding:4,minWidth:160,zIndex:98,boxShadow:"0 8px 24px rgba(0,0,0,.3)"}}>
+                {b.items.map(n=><button key={n.k} onClick={()=>goTo(n.k)} style={{display:"block",width:"100%",textAlign:"left",background:vw===n.k?"rgba(11,119,152,0.2)":"transparent",border:"none",color:vw===n.k?"#4ECDC4":"rgba(255,255,255,0.7)",padding:"8px 12px",borderRadius:6,fontSize:12,fontWeight:vw===n.k?600:400,cursor:"pointer",fontFamily:ibm,transition:"background .12s ease"}}>{n.l}</button>)}
+              </div>}
+            </div>
+        })}
+      </>})()}
     </div>
   </div>
   <div style={{display:"flex",gap:6,alignItems:"center"}}>

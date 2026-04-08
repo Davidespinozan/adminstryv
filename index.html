@@ -623,13 +623,21 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     </div>)}
     <button onClick={()=>setCF({...cF,payments:[...(cF.payments||[]),{date:new Date().toISOString().split("T")[0],amount:"",note:"",id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(52,211,153,.06)",border:`1px dashed rgba(52,211,153,.3)`,color:"#34d399",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%",fontWeight:600}}>＋ Registrar pago</button>
   </div>
-  {(()=>{const ct=tls.filter(t=>t.paidBy==="Cliente"&&t.paidByName===cF.name);const ctCost=ct.reduce((s,t)=>{const c=toUSD(t.cost,t.currency);return s+(t.billing==="Anual"?c/12:t.billing==="Lifetime"||t.billing==="Gratis"?0:c)},0);return <div style={{marginBottom:16,padding:14,background:"rgba(11,119,152,.04)",border:`1px solid rgba(11,119,152,.15)`,borderRadius:12}}>
-    <label style={lb}>Stack del cliente — {fm(ctCost)}/mes</label>
-    {ct.length===0?<div style={{fontSize:11,color:mt,padding:"4px 0"}}>Sin herramientas asignadas. Asígnalas en Stack → ¿Quién paga? → Cliente → {cF.name||"este cliente"}</div>:
-    ct.map(t=>{const c=toUSD(t.cost,t.currency);const mo=t.billing==="Anual"?c/12:t.billing==="Lifetime"||t.billing==="Gratis"?0:c;return <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${bd}`}}>
-      <span style={{fontSize:12,color:tx}}>{t.name} <span style={{color:mt,fontSize:10}}>· {t.billing}</span></span>
-      <span style={{fontSize:12,fontWeight:700,color:tl}}>{fm(mo)}/mes</span>
-    </div>})}
+  {(()=>{const ct=tls.filter(t=>t.paidBy==="Cliente"&&t.paidByName===cF.name);
+    const ctCost=ct.reduce((s,t)=>{const c=toUSD(t.cost,t.currency);return s+(t.billing==="Anual"?c/12:t.billing==="Lifetime"||t.billing==="Gratis"?0:c)},0);
+    const curMo3=new Date().toISOString().substring(0,7);
+    const stackByMo={};ct.forEach(t=>{const defC=t.billing==="Anual"?toUSD(t.cost,t.currency)/12:t.billing==="Lifetime"||t.billing==="Gratis"?0:toUSD(t.cost,t.currency);if(defC<=0)return;const ch=t.costHistory||{};const start=t.createdAt?(t.createdAt+"").substring(0,7):curMo3;let cur=start;while(cur<=curMo3){const c=ch[cur]!==undefined?Number(ch[cur]):defC;if(!stackByMo[cur])stackByMo[cur]={total:0,tools:[]};stackByMo[cur].total+=c;stackByMo[cur].tools.push({name:t.name,cost:c});const[y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}});
+    const stackMonths=Object.keys(stackByMo).sort().reverse();
+    const stackTotal=stackMonths.reduce((s,m)=>s+stackByMo[m].total,0);
+    return <div style={{marginBottom:16,padding:14,background:"rgba(11,119,152,.04)",border:`1px solid rgba(11,119,152,.15)`,borderRadius:12}}>
+    <label style={lb}>Stack del cliente — {fm(ctCost)}/mes · Total acumulado: {fm(stackTotal)}</label>
+    {ct.length===0?<div style={{fontSize:11,color:mt,padding:"4px 0"}}>Sin herramientas asignadas. Asígnalas en Stack → ¿Quién paga? → Cliente → {cF.name||"este cliente"}</div>:<>
+    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>{ct.map(t=><span key={t.id} style={{fontSize:10,background:"rgba(11,119,152,.1)",border:"1px solid rgba(11,119,152,.2)",color:tl,padding:"3px 8px",borderRadius:6,fontWeight:600}}>{t.name}</span>)}</div>
+    {stackMonths.map(m=><div key={m} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${bd}`}}>
+      <span style={{fontSize:11,fontWeight:600,fontFamily:"'Geist Mono',monospace",color:s2}}>{MO[parseInt(m.split("-")[1])-1]} {m.split("-")[0]}</span>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>{stackByMo[m].tools.map((t,i)=><span key={i} style={{fontSize:9,color:mt}}>{t.name}: {fm(t.cost)}</span>)}<span style={{fontSize:12,fontWeight:700,color:tl}}>{fm(stackByMo[m].total)}</span></div>
+    </div>)}
+    </>}
   </div>})()}
   <div style={{marginBottom:16}}><label style={lb}>Ads del cliente — Total: {cF.currency==="MXN"?fmShort((cF.adsPayments||[]).reduce((s,p)=>s+Number(p.amount||0),0))+" MXN":fm((cF.adsPayments||[]).reduce((s,p)=>s+Number(p.amount||0),0))}</label>
     {(cF.adsPayments||[]).map((p,i)=><div key={p.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}>

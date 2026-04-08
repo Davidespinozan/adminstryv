@@ -333,6 +333,7 @@ const me=useMemo(()=>{
   const tlCov=tlCost?Math.round(((tlP.Cliente+tlP.Inversor)/tlCost)*100):100;
   const adsCost=invs.filter(x=>x.type==="Ads").reduce((s,x)=>{if(!x.date)return s;const m=(x.date+"").substring(0,7);return m===curMo?s+toUSD(x.amount,x.currency):s},0);
   const totCost=tmCost+tlCost+adsCost;
+  const costByMo=(()=>{const cmo={};const adsByMo={};invs.filter(x=>x.type==="Ads").forEach(x=>{if(!x.date)return;const m=(x.date+"").substring(0,7);adsByMo[m]=(adsByMo[m]||0)+toUSD(x.amount,x.currency)});const toolsByMo={};tls.filter(tlAct).forEach(x=>{const defC=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(defC<=0)return;const ch=x.costHistory||{};const start=x.createdAt?(x.createdAt+"").substring(0,7):curMo;let cur=start;while(cur<=curMo){const c=ch[cur]!==undefined?Number(ch[cur]):defC;toolsByMo[cur]=(toolsByMo[cur]||0)+c;const[y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}});const allMo=new Set([...Object.keys(adsByMo),...Object.keys(toolsByMo)]);allMo.forEach(m=>{cmo[m]={equipo:tmCost,tools:toolsByMo[m]||0,ads:adsByMo[m]||0,total:tmCost+(toolsByMo[m]||0)+(adsByMo[m]||0)}});return cmo})();
   const acaMRR=sts.filter(x=>x.status==="Activo").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
   const acaRev=sts.reduce((s,x)=>s+toUSD(x.amountPaid,x.currency),0),acaAct=sts.filter(x=>x.status==="Activo").length,acaCnv=sts.filter(x=>x.convertedToClient).length;
   const lR=lsns.filter(x=>x.status==="Listo").length;
@@ -344,7 +345,7 @@ const me=useMemo(()=>{
   const invStTools={};tls.filter(tlAct).filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const inv=x.paidBy==="STRYV"?"STRYV":x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(!invStTools[inv])invStTools[inv]={tools:[],total:0};invStTools[inv].tools.push({name:x.name,cost:mo,billing:x.billing});invStTools[inv].total+=mo;iInv[inv]=(iInv[inv]||0)+mo});
   const tISt=Object.values(invStTools).reduce((s,v)=>s+v.total,0);
   const nL=leads.filter(l=>!l.converted).length;
-  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
+  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,costByMo,profit:tMRR+acaMRR-totCost,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
 },[cl,tm,tls,pjs,lsns,sts,invs,leads,tcMXN]);
 
 const alerts=useMemo(()=>{
@@ -490,10 +491,13 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   <div className="g-auto">
     {isA&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:20,padding:28,boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>
       <div style={hd}>Costos/mes</div>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${bd}`}}><span style={{fontSize:13,color:s2,fontFamily:ibm}}>Equipo</span><span style={{fontSize:13,fontWeight:600,color:"#f87171",fontFamily:dsp}}>{fm(me.tmCost)}</span></div>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${bd}`}}><span style={{fontSize:13,color:s2,fontFamily:ibm}}>Tools</span><span style={{fontSize:13,fontWeight:600,color:"#f87171",fontFamily:dsp}}>{fm(me.tlCost)}</span></div>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${bd}`}}><span style={{fontSize:13,color:s2,fontFamily:ibm}}>Ads</span><span style={{fontSize:13,fontWeight:600,color:"#f87171",fontFamily:dsp}}>{fm(me.adsCost)}</span></div>
-      <div style={{display:"flex",justifyContent:"space-between",paddingTop:4}}><span style={{fontWeight:600,fontFamily:ibm}}>Total</span><span style={{fontSize:16,fontWeight:700,color:"#f87171",fontFamily:dsp}}>{fm(me.totCost)}</span></div>
+      {(()=>{const entries=Object.entries(me.costByMo).sort().slice(-6);const mxC=entries.length?entries.reduce((a,[,v])=>v.total>a?v.total:a,1):1;
+        return entries.length===0?<div style={{color:mt,fontSize:12}}>Sin datos.</div>:
+        entries.map(([mo,v])=><div key={mo} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+          <span style={{fontSize:11,color:s2,width:45,flexShrink:0}}>{MO[parseInt(mo.split("-")[1])-1]} {mo.split("-")[0].slice(2)}</span>
+          <div style={{flex:1,background:"rgba(0,0,0,.04)",borderRadius:6,height:10,overflow:"hidden"}}><div style={{height:"100%",background:"#f87171",borderRadius:6,width:`${(v.total/mxC)*100}%`}}/></div>
+          <span style={{fontSize:12,fontWeight:600,color:"#f87171",minWidth:60,textAlign:"right",fontFamily:dsp}}>{fm(v.total)}</span>
+        </div>)})()}
     </div>}
     <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:20,padding:28,boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>
       <div style={hd}>Tareas clientes ({me.cTasks.length})</div>

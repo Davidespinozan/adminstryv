@@ -547,8 +547,8 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       fCl.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} className="mob-wrap card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,cursor:"pointer",marginBottom:8}}>
         <div style={{width:8,height:8,borderRadius:"50%",background:SC[c.stage],flexShrink:0}}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,fontWeight:600,color:"#1a202c",fontFamily:ibm}}>{c.name} {c.company&&<span style={{fontWeight:400,color:"rgba(0,0,0,0.40)",fontSize:13}}>· {c.company}</span>}</div>
-          <div style={{fontSize:12,color:"rgba(0,0,0,0.40)",marginTop:2,fontFamily:ibm}}>{(c.solutions||[]).join(", ")||"—"}</div>
+          <div style={{fontSize:14,fontWeight:600,color:"#1a202c",fontFamily:ibm}}>{c.company||c.name}</div>
+          <div style={{fontSize:12,color:"rgba(0,0,0,0.40)",marginTop:2,fontFamily:ibm}}>{c.company?c.name:""}{c.company&&c.name?" · ":""}{(c.solutions||[]).join(", ")||"—"}</div>
         </div>
         <div style={{textAlign:"right",flexShrink:0}}>
           <div style={{fontSize:14,fontWeight:700,color:"#34d399",fontFamily:dsp}}>{c.currency==="MXN"?fmShort(c.amount)+" MXN":fm(c.amount)}</div>

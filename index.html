@@ -254,7 +254,7 @@ const dl=async(t,id)=>{if(!confirm("¿Eliminar?"))return;const ok=await dDel(t,i
 const ed=(item,sf,v,s)=>{sf(JSON.parse(JSON.stringify(item)));setEid(item.id);setVw(v);setSub(s)};
 const goN=(v,s,sf,e)=>{setEid(null);setVw(v);setSub(s);sf({...e})};
 const svI=async()=>{const amt=iF.type==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:Number(iF.amount||0);if(!amt){alert("Monto requerido");return}const rec={...iF,amount:amt};if(eid)await dUpd("investments",eid,rec);else await dIns("investments",rec);setIF({...eI});setEid(null);setSub(null);await loadAll()};
-const buildSnap=(mo)=>({month:mo,mrrClientes:Math.round(me.tMRR*100)/100,mrrAcademia:Math.round(me.acaMRR*100)/100,costoEquipo:Math.round(me.tmCost*100)/100,costoStack:Math.round(me.tlCost*100)/100,costoTotal:Math.round(me.totCost*100)/100,utilidad:Math.round(me.profit*100)/100,revenueMes:Math.round((me.byMo[mo]||0)*100)/100,invertidoMes:Math.round((me.iMo[mo]||0)*100)/100,clientesActivos:me.active,alumnosActivos:me.acaAct,teamActivos:me.aTm,toolsActivos:tls.filter(x=>x.status==="Activo").length,cobradoTotal:Math.round(me.tPaid*100)/100,notes:""});
+const buildSnap=(mo)=>{const cm=me.costByMo[mo]||{equipo:me.tmCost,tools:me.tlCost,ads:0,total:me.totCost};const cobMo=me.byMo[mo]||0;const invMo=me.iMo[mo]||0;const util=me.tMRR+me.acaMRR-cm.total;return{month:mo,mrrClientes:Math.round(me.tMRR*100)/100,mrrAcademia:Math.round(me.acaMRR*100)/100,costoEquipo:Math.round(cm.equipo*100)/100,costoStack:Math.round(cm.tools*100)/100,costoAds:Math.round(cm.ads*100)/100,costoTotal:Math.round(cm.total*100)/100,utilidad:Math.round(util*100)/100,revenueMes:Math.round(cobMo*100)/100,invertidoMes:Math.round(invMo*100)/100,clientesActivos:me.active,alumnosActivos:me.acaAct,teamActivos:me.aTm,toolsActivos:tls.filter(x=>x.status==="Activo").length,cobradoTotal:Math.round(me.tPaid*100)/100,notes:""}};
 const cerrarMes=async(targetMo)=>{const mo=targetMo||new Date().toISOString().substring(0,7);if(snaps.find(s=>s.month===mo)){if(targetMo)return;if(!confirm(`Ya existe un cierre para ${mo}. ¿Reemplazar?`))return;const ex=snaps.find(s=>s.month===mo);await dDel("snapshots",ex.id)}await dIns("snapshots",buildSnap(mo));await loadAll();if(!targetMo)alert(`✓ Mes ${mo} cerrado`)};
 const autoCloseRef=React.useRef(false);
 useEffect(()=>{if(!isA||!user||ld||cl.length===0||autoCloseRef.current)return;autoCloseRef.current=true;
@@ -1139,8 +1139,9 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 
 {/* HISTORIAL */}
 {vw==="historial"&&isA&&(<div>
-  <div style={{marginBottom:16}}>
-    <div style={{fontSize:15,fontWeight:800}}>Historial <span style={{color:mt,fontWeight:400}}>P&L mes a mes · cierre automático</span></div>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+    <div style={{fontSize:15,fontWeight:800}}>Historial <span style={{color:mt,fontWeight:400}}>P&L mes a mes</span></div>
+    <button onClick={async()=>{if(!confirm("¿Regenerar todos los cierres? Esto recalcula con los datos actuales."))return;for(const s of snaps){await dDel("snapshots",s.id)}await loadAll();setTimeout(()=>loadAll(),500)}} style={{background:"rgba(0,0,0,0.04)",border:`1px solid ${bd}`,color:s2,padding:"8px 14px",borderRadius:8,fontSize:11,cursor:"pointer",fontFamily:ibm}}>↻ Regenerar</button>
   </div>
   {snaps.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin cierres — se generarán automáticamente al inicio de cada mes.</div>:
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 0"}}>

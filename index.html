@@ -204,7 +204,7 @@ const toUSD=(val,cur)=>{const n=Number(val||0);return cur==="MXN"?Math.round(n/t
 const[ld,setLd]=useState(false);const[vw,setVw]=useState("dashboard");const[sub,setSub]=useState(null);
 const[AW,setAW]=useState(()=>{try{const v=localStorage.getItem("stryv_aw");return v?JSON.parse(v):_AW}catch(e){return _AW}});
 const saveAW=(idx,field,val)=>{const nw=[...AW];nw[idx]={...nw[idx],[field]:val};setAW(nw);try{localStorage.setItem("stryv_aw",JSON.stringify(nw))}catch(e){}};
-const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");const[notifOpen,setNotifOpen]=useState(false);const[navGrp,setNavGrp]=useState(null);
+const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");const[notifOpen,setNotifOpen]=useState(false);const[navGrp,setNavGrp]=useState(null);const[clVw,setClVw]=useState("lista");
 const loadLock=React.useRef(false);
 
 // Fix 1: templates from outside, add today() for dates
@@ -387,7 +387,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {navGrp!==null&&<div style={{position:"fixed",inset:0,zIndex:97}} onClick={()=>setNavGrp(null)}/>}
       {[
         {g:"dashboard",l:"Dashboard",items:[{k:"dashboard",l:"Dashboard"}]},
-        {g:"ventas",l:"Ventas",items:[{k:"clients",l:"Clientes"},{k:"pipeline",l:"Pipeline"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},...(isA?[{k:"prospeccion",l:"Prospección"}]:[])]},
+        {g:"ventas",l:"Ventas",items:[{k:"clients",l:"Clientes"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},...(isA?[{k:"prospeccion",l:"Prospección"}]:[])]},
         {g:"operacion",l:"Operación",items:[{k:"projects",l:"Proyectos"},{k:"team",l:"Equipo"},{k:"stack",l:"Stack"}]},
         {g:"marketing",l:"Marketing",items:[...(isA?[{k:"contenido",l:"Contenido"}]:[]),{k:"academy",l:"Academia"}]},
         {g:"finanzas",l:"Finanzas",items:[...(isInv?[{k:"investment",l:"Inversión"}]:[]),...(isA?[{k:"historial",l:"Historial"}]:[])]}
@@ -520,35 +520,61 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   </div>
 </div>)}
 
-{/* CLIENTS LIST */}
+{/* CLIENTS LIST + PIPELINE */}
 {vw==="clients"&&!sub&&(<div>
   <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12,marginBottom:16,flexWrap:"wrap"}}>
     <div>
       <div style={{fontSize:9,fontWeight:700,letterSpacing:".18em",textTransform:"uppercase",color:mt,fontFamily:"'Geist Mono',monospace",marginBottom:5}}>CRM</div>
       <div style={{display:"flex",alignItems:"center",gap:10}}>
         <div style={{fontSize:20,fontWeight:700,fontFamily:dsp,letterSpacing:"-.02em"}}>Clientes</div>
-        <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{fCl.length}</span>
+        <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{cl.length}</span>
       </div>
     </div>
     {isA&&<button onClick={()=>goN("clients","cF",setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>＋ Nuevo</button>}
   </div>
-  <div className="mob-col" style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
-    <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>
-    <select value={fSt} onChange={e=>setFSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Todas</option>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
+  <div style={{display:"flex",gap:4,marginBottom:14}}>
+    {[{k:"lista",l:"Lista"},{k:"pipeline",l:"Pipeline"}].map(t=><button key={t.k} onClick={()=>setClVw(t.k)} style={{background:clVw===t.k?"rgba(11,119,152,0.15)":"transparent",border:clVw===t.k?"1px solid rgba(11,119,152,0.3)":"1px solid transparent",color:clVw===t.k?tl:s2,padding:"8px 16px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:ibm}}>{t.l}</button>)}
   </div>
-  {fCl.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin clientes</div>:
-    fCl.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} className="mob-wrap card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,cursor:"pointer",marginBottom:8}}>
-      <div style={{width:8,height:8,borderRadius:"50%",background:SC[c.stage],flexShrink:0}}/>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:14,fontWeight:600,color:"#1a202c",fontFamily:ibm}}>{c.name} {c.company&&<span style={{fontWeight:400,color:"rgba(0,0,0,0.40)",fontSize:13}}>· {c.company}</span>}</div>
-        <div style={{fontSize:12,color:"rgba(0,0,0,0.40)",marginTop:2,fontFamily:ibm}}>{(c.solutions||[]).join(", ")||"—"}</div>
+  {clVw==="lista"&&<div>
+    <div className="mob-col" style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+      <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>
+      <select value={fSt} onChange={e=>setFSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Todas</option>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
+    </div>
+    {fCl.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin clientes</div>:
+      fCl.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} className="mob-wrap card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,cursor:"pointer",marginBottom:8}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:SC[c.stage],flexShrink:0}}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:14,fontWeight:600,color:"#1a202c",fontFamily:ibm}}>{c.name} {c.company&&<span style={{fontWeight:400,color:"rgba(0,0,0,0.40)",fontSize:13}}>· {c.company}</span>}</div>
+          <div style={{fontSize:12,color:"rgba(0,0,0,0.40)",marginTop:2,fontFamily:ibm}}>{(c.solutions||[]).join(", ")||"—"}</div>
+        </div>
+        <div style={{textAlign:"right",flexShrink:0}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#34d399",fontFamily:dsp}}>{c.currency==="MXN"?fmShort(c.amount)+" MXN":fm(c.amount)}</div>
+          <div style={{fontSize:11,color:"rgba(0,0,0,0.35)"}}>Pagado: {c.currency==="MXN"?fmShort(c.amountPaid)+" MXN":fm(c.amountPaid)}</div>{c.currency==="MXN"&&<div style={{fontSize:9,color:mt}}>≈ {fm(toUSD(c.amount,c.currency))}</div>}
+        </div>
+        <span style={bg2(SC[c.stage])}>{c.stage}</span>
+      </div>)}
+  </div>}
+  {clVw==="pipeline"&&<div style={{overflowX:"auto"}}><div className="mob-col" style={{display:"flex",gap:0}}>
+    {STAGES.map((stg,si)=>{const sc=cl.filter(c=>c.stage===stg);return <div key={stg} style={{flex:1,minWidth:155,borderRight:si<STAGES.length-1?"1px solid rgba(0,0,0,0.06)":"none",paddingRight:si<STAGES.length-1?16:0,paddingLeft:si>0?16:0}}>
+      <div style={{marginBottom:14,paddingBottom:12,borderBottom:"1px solid rgba(0,0,0,0.06)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <div style={{width:7,height:7,borderRadius:"50%",background:SC[stg],flexShrink:0}}/>
+          <span style={{fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".1em",color:"rgba(0,0,0,0.45)",fontFamily:ibm}}>{stg}</span>
+          <span style={{fontSize:10,color:"rgba(0,0,0,0.30)",marginLeft:"auto"}}>{sc.length}</span>
+        </div>
       </div>
-      <div style={{textAlign:"right",flexShrink:0}}>
-        <div style={{fontSize:14,fontWeight:700,color:"#34d399",fontFamily:dsp}}>{c.currency==="MXN"?fmShort(c.amount)+" MXN":fm(c.amount)}</div>
-        <div style={{fontSize:11,color:"rgba(0,0,0,0.35)"}}>Pagado: {c.currency==="MXN"?fmShort(c.amountPaid)+" MXN":fm(c.amountPaid)}</div>{c.currency==="MXN"&&<div style={{fontSize:9,color:mt}}>≈ {fm(toUSD(c.amount,c.currency))}</div>}
-      </div>
-      <span style={bg2(SC[c.stage])}>{c.stage}</span>
-    </div>)}
+      {sc.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} className="card-row" style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:14,padding:18,marginBottom:8,cursor:"pointer"}}>
+        <div style={{fontSize:13,fontWeight:600,color:"#1a202c",fontFamily:ibm,marginBottom:3}}>{c.name}</div>
+        {c.company&&<div style={{fontSize:12,color:"rgba(0,0,0,0.40)",fontFamily:ibm}}>{c.company}</div>}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12}}>
+          <div style={{fontSize:13,fontWeight:700,color:tl,fontFamily:dsp}}>{c.currency==="MXN"?fmShort(c.amount)+" MXN":fm(c.amount)}</div>
+          {c.mrr>0&&<div style={{fontSize:10,color:"rgba(0,0,0,0.35)",fontFamily:ibm}}>MRR {c.currency==="MXN"?fmShort(c.mrr)+" MXN":fm(c.mrr)}</div>}
+        </div>
+        {isA&&<div style={{display:"flex",gap:4,marginTop:10,flexWrap:"wrap"}}>{STAGES.filter(s=>s!==stg).map(s=><button key={s} className="pipe-move" onClick={e=>{e.stopPropagation();mvSt(c.id,s)}} style={{background:"rgba(0,0,0,0.03)",border:"1px solid rgba(0,0,0,0.08)",color:"rgba(0,0,0,0.45)",padding:"4px 8px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:500,fontFamily:ibm}}>→ {s.substring(0,4)}</button>)}</div>}
+      </div>)}
+      {sc.length===0&&<div style={{color:"rgba(0,0,0,0.30)",fontSize:13,fontFamily:ibm,textAlign:"center",padding:"20px 0"}}>Vacío</div>}
+    </div>})}
+  </div></div>}
 </div>)}
 
 {/* CLIENT FORM */}
@@ -597,29 +623,6 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     {eid&&isA&&<button onClick={()=>dl("clients",eid)} style={{background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.22)",color:"#ff6b6b",padding:"12px 18px",borderRadius:10,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
 </div>)}
-
-{/* PIPELINE */}
-{vw==="pipeline"&&(<div style={{overflowX:"auto"}}><div className="mob-col" style={{display:"flex",gap:0}}>
-  {STAGES.map((stg,si)=>{const sc=cl.filter(c=>c.stage===stg);return <div key={stg} style={{flex:1,minWidth:155,borderRight:si<STAGES.length-1?"1px solid rgba(0,0,0,0.06)":"none",paddingRight:si<STAGES.length-1?16:0,paddingLeft:si>0?16:0}}>
-    <div style={{marginBottom:14,paddingBottom:12,borderBottom:"1px solid rgba(0,0,0,0.06)"}}>
-      <div style={{display:"flex",alignItems:"center",gap:7}}>
-        <div style={{width:7,height:7,borderRadius:"50%",background:SC[stg],flexShrink:0}}/>
-        <span style={{fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".1em",color:"rgba(0,0,0,0.45)",fontFamily:ibm}}>{stg}</span>
-        <span style={{fontSize:10,color:"rgba(0,0,0,0.30)",marginLeft:"auto"}}>{sc.length}</span>
-      </div>
-    </div>
-    {sc.map(c=><div key={c.id} className="card-row" style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:14,padding:18,marginBottom:8}}>
-      <div style={{fontSize:13,fontWeight:600,color:"#1a202c",fontFamily:ibm,marginBottom:3}}>{c.name}</div>
-      {c.company&&<div style={{fontSize:12,color:"rgba(0,0,0,0.40)",fontFamily:ibm}}>{c.company}</div>}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12}}>
-        <div style={{fontSize:13,fontWeight:700,color:tl,fontFamily:dsp}}>{c.currency==="MXN"?fmShort(c.amount)+" MXN":fm(c.amount)}</div>
-        {c.mrr>0&&<div style={{fontSize:10,color:"rgba(0,0,0,0.35)",fontFamily:ibm}}>MRR {c.currency==="MXN"?fmShort(c.mrr)+" MXN":fm(c.mrr)}</div>}
-      </div>
-      {isA&&<div style={{display:"flex",gap:4,marginTop:10,flexWrap:"wrap"}}>{STAGES.filter(s=>s!==stg).map(s=><button key={s} className="pipe-move" onClick={()=>mvSt(c.id,s)} style={{background:"rgba(0,0,0,0.03)",border:"1px solid rgba(0,0,0,0.08)",color:"rgba(0,0,0,0.45)",padding:"4px 8px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:500,fontFamily:ibm}}>→ {s.substring(0,4)}</button>)}</div>}
-    </div>)}
-    {sc.length===0&&<div style={{color:"rgba(0,0,0,0.30)",fontSize:13,fontFamily:ibm,textAlign:"center",padding:"20px 0"}}>Vacío</div>}
-  </div>})}
-</div></div>)}
 
 {/* LEADS */}
 {vw==="leads"&&(<div>

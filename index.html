@@ -158,7 +158,7 @@ async function dDel(t,id){
   }
 }
 
-const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,notes:"",tasks:[],payments:[],currency:"USD"};
+const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,notes:"",tasks:[],payments:[],stackPayments:[],adsPayments:[],currency:"USD"};
 const _eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:"",currency:"USD"};
 const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",cancelDate:"",renewDate:"",paidBy:"STRYV",paidByName:"",currency:"USD",costHistory:{}};
 const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,description:"",tasks:[],notes:"",currency:"USD"};
@@ -598,7 +598,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {eid&&cF.stage&&<span style={bg2(SC[cF.stage])}>{cF.stage}</span>}
     </div>
     {eid&&<div style={{display:"flex",gap:0,marginTop:14,background:"#fafbfc",borderRadius:14,border:`1px solid ${bd}`,overflow:"hidden"}}>
-      {[{l:"Total",raw:cF.amount,c:"#34d399"},{l:"Pagado",raw:cF.amountPaid,c:"#34d399"},{l:"MRR",raw:cF.mrr,c:tl}].map((s,i)=><div key={i} style={{flex:1,padding:"14px 18px",borderRight:i<2?`1px solid ${bd}`:"none"}}>
+      {[{l:"Total",raw:cF.amount,c:"#34d399"},{l:"Pagado",raw:cF.amountPaid,c:"#34d399"},{l:"MRR",raw:cF.mrr,c:tl},{l:"Stack",raw:(cF.stackPayments||[]).reduce((s,p)=>s+Number(p.amount||0),0),c:"#0b7798"},{l:"Ads",raw:(cF.adsPayments||[]).reduce((s,p)=>s+Number(p.amount||0),0),c:"#a78bfa"}].map((s,i)=><div key={i} style={{flex:1,padding:"14px 18px",borderRight:i<4?`1px solid ${bd}`:"none"}}>
         <div style={{fontSize:9,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",fontFamily:ibm,marginBottom:5}}>{s.l}</div>
         <div style={{fontSize:17,fontWeight:700,color:s.c,fontFamily:dsp}}>{cF.currency==="MXN"?fmShort(s.raw)+" MXN":fm(s.raw)}</div>
         {cF.currency==="MXN"&&Number(s.raw||0)>0&&<div style={{fontSize:9,color:mt,marginTop:2}}>≈ {fm(toUSD(s.raw,"MXN"))}</div>}
@@ -620,6 +620,24 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <button onClick={()=>{const ps=cF.payments.filter((_,j)=>j!==i);setCF({...cF,payments:ps,amountPaid:ps.reduce((s,x)=>s+Number(x.amount||0),0)})}} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button>
     </div>)}
     <button onClick={()=>setCF({...cF,payments:[...(cF.payments||[]),{date:new Date().toISOString().split("T")[0],amount:"",note:"",id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(52,211,153,.06)",border:`1px dashed rgba(52,211,153,.3)`,color:"#34d399",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%",fontWeight:600}}>＋ Registrar pago</button>
+  </div>
+  <div style={{marginBottom:16}}><label style={lb}>Stack del cliente — Total: {cF.currency==="MXN"?fmShort((cF.stackPayments||[]).reduce((s,p)=>s+Number(p.amount||0),0))+" MXN":fm((cF.stackPayments||[]).reduce((s,p)=>s+Number(p.amount||0),0))}</label>
+    {(cF.stackPayments||[]).map((p,i)=><div key={p.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}>
+      <input value={p.date||""} onChange={e=>{const ps=[...cF.stackPayments];ps[i]={...ps[i],date:e.target.value};setCF({...cF,stackPayments:ps})}} type="date" style={{...iS,width:140,flex:"none"}}/>
+      <input value={p.amount||""} onChange={e=>{const ps=[...cF.stackPayments];ps[i]={...ps[i],amount:e.target.value};setCF({...cF,stackPayments:ps})}} type="number" placeholder="Monto" style={{...iS,flex:1}}/>
+      <input value={p.note||""} onChange={e=>{const ps=[...cF.stackPayments];ps[i]={...ps[i],note:e.target.value};setCF({...cF,stackPayments:ps})}} placeholder="Herramienta..." style={{...iS,flex:1}}/>
+      <button onClick={()=>setCF({...cF,stackPayments:cF.stackPayments.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button>
+    </div>)}
+    <button onClick={()=>setCF({...cF,stackPayments:[...(cF.stackPayments||[]),{date:new Date().toISOString().split("T")[0],amount:"",note:"",id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(11,119,152,.06)",border:`1px dashed rgba(11,119,152,.3)`,color:tl,padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%",fontWeight:600}}>＋ Pago de stack</button>
+  </div>
+  <div style={{marginBottom:16}}><label style={lb}>Ads del cliente — Total: {cF.currency==="MXN"?fmShort((cF.adsPayments||[]).reduce((s,p)=>s+Number(p.amount||0),0))+" MXN":fm((cF.adsPayments||[]).reduce((s,p)=>s+Number(p.amount||0),0))}</label>
+    {(cF.adsPayments||[]).map((p,i)=><div key={p.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}>
+      <input value={p.date||""} onChange={e=>{const ps=[...cF.adsPayments];ps[i]={...ps[i],date:e.target.value};setCF({...cF,adsPayments:ps})}} type="date" style={{...iS,width:140,flex:"none"}}/>
+      <input value={p.amount||""} onChange={e=>{const ps=[...cF.adsPayments];ps[i]={...ps[i],amount:e.target.value};setCF({...cF,adsPayments:ps})}} type="number" placeholder="Monto" style={{...iS,flex:1}}/>
+      <input value={p.note||""} onChange={e=>{const ps=[...cF.adsPayments];ps[i]={...ps[i],note:e.target.value};setCF({...cF,adsPayments:ps})}} placeholder="Plataforma..." style={{...iS,flex:1}}/>
+      <button onClick={()=>setCF({...cF,adsPayments:cF.adsPayments.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button>
+    </div>)}
+    <button onClick={()=>setCF({...cF,adsPayments:[...(cF.adsPayments||[]),{date:new Date().toISOString().split("T")[0],amount:"",note:"",id:Date.now().toString(36)+Math.random().toString(36).substr(2,5)}]})} style={{background:"rgba(167,139,250,.06)",border:"1px dashed rgba(167,139,250,.3)",color:"#a78bfa",padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%",fontWeight:600}}>＋ Gasto de ads</button>
   </div>
   <div style={{marginBottom:16}}><label style={lb}>Tareas</label>
     {(cF.tasks||[]).map((t,i)=><div key={t.id||i} style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}><input checked={t.done} onChange={()=>{const ts=[...cF.tasks];ts[i]={...ts[i],done:!ts[i].done};setCF({...cF,tasks:ts})}} type="checkbox" style={{accentColor:tl}}/><input value={t.text} onChange={e=>{const ts=[...cF.tasks];ts[i]={...ts[i],text:e.target.value};setCF({...cF,tasks:ts})}} placeholder="Tarea..." style={{...iS,flex:1}}/><button onClick={()=>setCF({...cF,tasks:cF.tasks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button></div>)}

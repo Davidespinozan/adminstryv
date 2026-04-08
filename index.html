@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#4ECDC4">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="STRYV">
@@ -21,23 +21,21 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   font-family:'IBM Plex Sans',system-ui,sans-serif;
-  background:
-    radial-gradient(circle at 10% 20%, rgba(11,119,152,0.05), transparent 40%),
-    #07131a;
-  color:#ffffff;overflow-x:hidden;-webkit-font-smoothing:antialiased
+  background:#f5f7fa;
+  color:#1a202c;overflow-x:hidden;-webkit-font-smoothing:antialiased
 }
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:99px}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.20)}
-::selection{background:rgba(11,119,152,.5);color:#fff}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25)}
+::selection{background:rgba(11,119,152,.2);color:#1a202c}
 input,select,textarea,button{font-family:inherit;font-size:16px;-webkit-tap-highlight-color:transparent}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes ds-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 
 /* ─── INTERACTIVE CARDS ─── */
 .card-row{transition:border-color .18s ease,background .18s ease}
-.card-row:hover{border-color:rgba(255,255,255,.12)!important;background:rgba(255,255,255,.055)!important}
+.card-row:hover{border-color:rgba(11,119,152,.25)!important;background:rgba(11,119,152,.04)!important}
 
 /* ─── PIPE MOVE BUTTONS ─── */
 .pipe-move{transition:border-color .15s,color .15s}
@@ -45,7 +43,7 @@ input,select,textarea,button{font-family:inherit;font-size:16px;-webkit-tap-high
 
 /* ─── LOGOUT BUTTON ─── */
 .btn-logout{transition:background .15s}
-.btn-logout:hover{background:rgba(220,38,38,.08)!important}
+.btn-logout:hover{background:rgba(220,38,38,.06)!important}
 
 /* ─── RESPONSIVE GRIDS ─── */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -64,7 +62,7 @@ input,select,textarea,button{font-family:inherit;font-size:16px;-webkit-tap-high
   .mob-col{flex-direction:column!important}
   .mob-full{width:100%!important;min-width:0!important}
   .mob-wrap{flex-wrap:wrap!important}
-  .nav-btns{position:fixed;top:58px;left:0;right:0;background:#050e14;border-bottom:1px solid rgba(255,255,255,.07);padding:8px;display:flex;flex-wrap:wrap;gap:4px;z-index:99;justify-content:center}
+  .nav-btns{position:fixed;top:58px;left:0;right:0;background:#ffffff;border-bottom:1px solid rgba(0,0,0,.08);padding:8px;display:flex;flex-wrap:wrap;gap:4px;z-index:99;justify-content:center}
   .nav-btns button{padding:10px 12px!important;font-size:12px!important;min-height:40px}
   .mob-stack{flex-direction:column!important;align-items:stretch!important}
   .mob-pad{padding-top:160px!important}
@@ -74,7 +72,7 @@ input,select,textarea,button{font-family:inherit;font-size:16px;-webkit-tap-high
   .nav-btns{display:flex;gap:2px;overflow-x:auto;min-width:0}
   .nav-btns::-webkit-scrollbar{display:none}
 }
-input:focus,select:focus,textarea:focus{border-color:rgba(11,119,152,.6)!important;box-shadow:0 0 0 3px rgba(11,119,152,.12)!important}
+input:focus,select:focus,textarea:focus{border-color:rgba(11,119,152,.5)!important;box-shadow:0 0 0 3px rgba(11,119,152,.1)!important}
 button:focus-visible{outline:2px solid rgba(11,119,152,.5);outline-offset:2px;border-radius:8px}
 </style>
 </head>
@@ -114,14 +112,14 @@ const IT=["Inyección de capital","Pago de stack mensual","Equipo","Otro"];
 const fm=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0})+" USD";
 const fmShort=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0});
 const MO=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const bg="#07131a",cd="rgba(255,255,255,0.04)",cd2="rgba(255,255,255,0.03)",bd="rgba(255,255,255,0.07)",tl="#0b7798",tx="#ffffff",s2="rgba(255,255,255,0.45)",mt="rgba(255,255,255,0.35)";
-const gl="rgba(11,119,152,0.15)";
+const bg="#f5f7fa",cd="#ffffff",cd2="#fafbfc",bd="rgba(0,0,0,0.08)",tl="#0b7798",tx="#1a202c",s2="rgba(0,0,0,0.50)",mt="rgba(0,0,0,0.40)";
+const gl="rgba(11,119,152,0.08)";
 const dsp="'Space Grotesk','IBM Plex Sans',system-ui,sans-serif";
 const ibm="'IBM Plex Sans',system-ui,sans-serif";
-const lb={display:"block",fontSize:9,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)",marginBottom:7,fontFamily:ibm};
-const iS={width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)",color:"#ffffff",borderRadius:12,padding:"11px 16px",fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:ibm,transition:"border-color .15s ease,box-shadow .15s ease"};
-const hd={fontSize:11,fontWeight:600,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(255,255,255,0.4)",marginBottom:16,fontFamily:ibm,paddingLeft:12,borderLeft:"4px solid #0b7798"};
-const bg2=c=>{const b=c?c+"20":"rgba(255,255,255,.05)";const br=c?c+"40":"rgba(255,255,255,.12)";return{background:b,color:c||s2,padding:"4px 12px",borderRadius:999,fontSize:12,fontWeight:600,border:`1px solid ${br}`,height:"fit-content",flexShrink:0}};
+const lb={display:"block",fontSize:9,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:7,fontFamily:ibm};
+const iS={width:"100%",background:"#ffffff",border:"1px solid rgba(0,0,0,0.12)",color:"#1a202c",borderRadius:12,padding:"11px 16px",fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:ibm,transition:"border-color .15s ease,box-shadow .15s ease"};
+const hd={fontSize:11,fontWeight:600,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:16,fontFamily:ibm,paddingLeft:12,borderLeft:"4px solid #0b7798"};
+const bg2=c=>{const b=c?c+"15":"rgba(0,0,0,.04)";const br=c?c+"30":"rgba(0,0,0,.10)";return{background:b,color:c||s2,padding:"4px 12px",borderRadius:999,fontSize:12,fontWeight:600,border:`1px solid ${br}`,height:"fit-content",flexShrink:0}};
 
 const toSn=o=>{const r={};for(const k in o)r[k.replace(/([A-Z])/g,"_$1").toLowerCase()]=o[k];return r};
 const toCa=o=>{if(!o)return o;const r={};for(const k in o)r[k.replace(/_([a-z])/g,(_,l)=>l.toUpperCase())]=o[k];return r};
@@ -361,9 +359,9 @@ const mxMoVals=Object.values(me.byMo);const mxMo=mxMoVals.length?mxMoVals.reduce
 
 if(aL)return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:bg}}><div style={{animation:"spin 1s linear infinite",width:30,height:30,border:`3px solid ${bd}`,borderTop:`3px solid ${tl}`,borderRadius:"50%"}}/></div>;
 if(!user)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:bg}}>
-  <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:20,padding:36,width:"90%",maxWidth:340,textAlign:"center",boxShadow:"0 32px 64px rgba(0,0,0,.5)"}}>
-    <div style={{fontWeight:700,fontSize:16,letterSpacing:".24em",color:"#ffffff",fontFamily:dsp,marginBottom:4}}>STRYV</div>
-    <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",marginBottom:28,letterSpacing:".12em",textTransform:"uppercase",fontFamily:ibm}}>Centro de comando</div>
+  <div style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:20,padding:36,width:"90%",maxWidth:340,textAlign:"center",boxShadow:"0 32px 64px rgba(0,0,0,.12)"}}>
+    <div style={{fontWeight:700,fontSize:16,letterSpacing:".24em",color:"#1a202c",fontFamily:dsp,marginBottom:4}}>STRYV</div>
+    <div style={{fontSize:10,color:"rgba(0,0,0,0.40)",marginBottom:28,letterSpacing:".12em",textTransform:"uppercase",fontFamily:ibm}}>Centro de comando</div>
     <input value={aEm} onChange={e=>setAEm(e.target.value)} placeholder="Email" type="email" style={{...iS,marginBottom:10}} onKeyDown={e=>e.key==="Enter"&&login()}/>
     <input value={aPw} onChange={e=>setAPw(e.target.value)} placeholder="Contraseña" type="password" style={{...iS,marginBottom:14}} onKeyDown={e=>e.key==="Enter"&&login()}/>
     {aErr&&<div style={{color:"#f87171",fontSize:11,marginBottom:10}}>{aErr}</div>}
@@ -373,49 +371,49 @@ if(!user)return(<div style={{display:"flex",alignItems:"center",justifyContent:"
 
 return(<div style={{minHeight:"100vh",background:bg}}>
 {/* NAV */}
-<div style={{background:"#050e14",borderBottom:"1px solid rgba(255,255,255,0.07)",padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between",height:58,position:"sticky",top:0,zIndex:100}}>
+<div style={{background:"#ffffff",borderBottom:"1px solid rgba(0,0,0,0.08)",padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between",height:58,position:"sticky",top:0,zIndex:100,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
   <div style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0}}>
-    <span style={{fontWeight:700,fontSize:14,letterSpacing:".22em",color:"#ffffff",fontFamily:dsp,cursor:"pointer",userSelect:"none"}} onClick={()=>{setVw("dashboard");setSub(null);setNavOpen(false)}}>STRYV</span>
-    <button className="nav-toggle" onClick={()=>setNavOpen(!navOpen)} style={{background:"none",border:`1px solid ${bd}`,color:"rgba(255,255,255,0.5)",padding:"6px 10px",borderRadius:6,fontSize:16,cursor:"pointer",lineHeight:1}}>{navOpen?"✕":"☰"}</button>
+    <span style={{fontWeight:700,fontSize:14,letterSpacing:".22em",color:"#1a202c",fontFamily:dsp,cursor:"pointer",userSelect:"none"}} onClick={()=>{setVw("dashboard");setSub(null);setNavOpen(false)}}>STRYV</span>
+    <button className="nav-toggle" onClick={()=>setNavOpen(!navOpen)} style={{background:"none",border:`1px solid ${bd}`,color:"rgba(0,0,0,0.45)",padding:"6px 10px",borderRadius:6,fontSize:16,cursor:"pointer",lineHeight:1}}>{navOpen?"✕":"☰"}</button>
     <div className={`nav-btns${navOpen?"":" mob-hide"}`}>
       {[{k:"dashboard",l:"Dashboard"},{k:"clients",l:"Clientes"},{k:"pipeline",l:"Pipeline"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},{k:"projects",l:"Proyectos"},{k:"academy",l:"Academia"},
         ...(isInv?[{k:"investment",l:"Inversión"}]:[]),{k:"team",l:"Equipo"},{k:"stack",l:"Stack"},...(isA?[{k:"prospeccion",l:"Prospección"},{k:"contenido",l:"Contenido"},{k:"historial",l:"Historial"}]:[])].map(n=>
-        <button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false)}} style={{background:vw===n.k?"rgba(11,119,152,0.15)":"transparent",border:vw===n.k?"1px solid rgba(11,119,152,0.3)":"1px solid transparent",color:vw===n.k?tl:"rgba(255,255,255,0.5)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"color .15s ease,border-color .15s ease,background .15s ease",fontFamily:ibm}}>{n.l}</button>)}
+        <button key={n.k} onClick={()=>{setVw(n.k);setSub(null);setEid(null);setSrch("");setNavOpen(false)}} style={{background:vw===n.k?"rgba(11,119,152,0.15)":"transparent",border:vw===n.k?"1px solid rgba(11,119,152,0.3)":"1px solid transparent",color:vw===n.k?tl:"rgba(0,0,0,0.50)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"color .15s ease,border-color .15s ease,background .15s ease",fontFamily:ibm}}>{n.l}</button>)}
     </div>
   </div>
   <div style={{display:"flex",gap:6,alignItems:"center"}}>
-    {ld&&<div style={{animation:"spin .8s linear infinite",width:14,height:14,border:"2px solid rgba(255,255,255,.1)",borderTop:"2px solid #0b7798",borderRadius:"50%"}}/>}
-    <span className="mob-hide" style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>{user?.email}</span>
-    {isA&&<div className="mob-hide" style={{display:"flex",alignItems:"center",gap:4,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:999,padding:"4px 12px"}}>
-      <span style={{fontSize:9,color:"rgba(255,255,255,0.4)",fontWeight:600,fontFamily:ibm}}>TC</span>
-      <input value={tcMXN} onChange={e=>saveTc(e.target.value)} type="number" step="0.1" style={{width:46,background:"transparent",border:"none",color:"#ffffff",fontSize:11,fontWeight:600,outline:"none",textAlign:"center",padding:0}}/>
-      <span style={{fontSize:9,color:"rgba(255,255,255,0.4)"}}>MXN</span>
+    {ld&&<div style={{animation:"spin .8s linear infinite",width:14,height:14,border:"2px solid rgba(0,0,0,.08)",borderTop:"2px solid #0b7798",borderRadius:"50%"}}/>}
+    <span className="mob-hide" style={{fontSize:10,color:"rgba(0,0,0,0.35)"}}>{user?.email}</span>
+    {isA&&<div className="mob-hide" style={{display:"flex",alignItems:"center",gap:4,background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.08)",borderRadius:999,padding:"4px 12px"}}>
+      <span style={{fontSize:9,color:"rgba(0,0,0,0.40)",fontWeight:600,fontFamily:ibm}}>TC</span>
+      <input value={tcMXN} onChange={e=>saveTc(e.target.value)} type="number" step="0.1" style={{width:46,background:"transparent",border:"none",color:"#1a202c",fontSize:11,fontWeight:600,outline:"none",textAlign:"center",padding:0}}/>
+      <span style={{fontSize:9,color:"rgba(0,0,0,0.40)"}}>MXN</span>
       {tcAuto&&<span style={{fontSize:8,color:"#34d399"}} title="Actualizado hoy">✓</span>}
     </div>}
     {isA&&<span style={{background:"rgba(11,119,152,.15)",color:tl,padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,border:"1px solid rgba(11,119,152,.3)"}}>Admin</span>}
     <div style={{position:"relative"}}>
-      <button onClick={()=>setNotifOpen(!notifOpen)} style={{background:notifOpen?"rgba(11,119,152,.15)":"none",border:`1px solid ${notifOpen?"rgba(11,119,152,.3)":bd}`,color:notifOpen?tl:"rgba(255,255,255,0.35)",padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36,position:"relative"}}>🔔{alerts.length>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",fontSize:9,fontWeight:700,width:16,height:16,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>{alerts.length>9?"9+":alerts.length}</span>}</button>
-      {notifOpen&&<><div style={{position:"fixed",inset:0,zIndex:9998}} onClick={()=>setNotifOpen(false)}/><div style={{position:"absolute",right:0,top:"calc(100% + 6px)",width:360,maxHeight:420,overflowY:"auto",background:"#0c1a22",border:`1px solid ${bd}`,borderRadius:16,boxShadow:"0 24px 48px rgba(0,0,0,.6)",zIndex:9999,padding:12}}>
+      <button onClick={()=>setNotifOpen(!notifOpen)} style={{background:notifOpen?"rgba(11,119,152,.15)":"none",border:`1px solid ${notifOpen?"rgba(11,119,152,.3)":bd}`,color:notifOpen?tl:"rgba(0,0,0,0.40)",padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36,position:"relative"}}>🔔{alerts.length>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",fontSize:9,fontWeight:700,width:16,height:16,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>{alerts.length>9?"9+":alerts.length}</span>}</button>
+      {notifOpen&&<><div style={{position:"fixed",inset:0,zIndex:9998}} onClick={()=>setNotifOpen(false)}/><div style={{position:"absolute",right:0,top:"calc(100% + 6px)",width:360,maxHeight:420,overflowY:"auto",background:"#ffffff",border:`1px solid ${bd}`,borderRadius:16,boxShadow:"0 24px 48px rgba(0,0,0,.1)",zIndex:9999,padding:12}}>
         <div style={{fontSize:10,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:mt,fontFamily:ibm,marginBottom:10,paddingLeft:4}}>Alertas {alerts.length>0&&<span style={{color:"#ef4444"}}>({alerts.length})</span>}</div>
         {alerts.length===0?<div style={{textAlign:"center",padding:"20px 0",color:mt,fontSize:12}}>Sin alertas</div>:
-          alerts.map((al,i)=><div key={i} className="card-row" style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${bd}`,borderRadius:10,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>{
+          alerts.map((al,i)=><div key={i} className="card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:10,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>{
             setNotifOpen(false);
             if(al.type==="clients"){ed(al.item,setCF,"clients","cF")}
             else if(al.type==="stack"){ed(al.item,setTF,"stack","tF")}
             else if(al.type==="projects"){ed(al.item,setPF,"projects","pF")}
           }}>
             <span style={{fontSize:16,flexShrink:0}}>{al.icon}</span>
-            <div style={{flex:1,fontSize:12,color:"rgba(255,255,255,.8)",fontFamily:ibm,lineHeight:1.3}}>{al.msg}</div>
+            <div style={{flex:1,fontSize:12,color:"rgba(0,0,0,0.75)",fontFamily:ibm,lineHeight:1.3}}>{al.msg}</div>
             <span style={{fontSize:10,color:tl,flexShrink:0}}>→</span>
           </div>)}
       </div></>}
     </div>
-    <button onClick={()=>setChPw(true)} style={{background:"none",border:`1px solid ${bd}`,color:"rgba(255,255,255,0.35)",padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36}}>🔑</button>
+    <button onClick={()=>setChPw(true)} style={{background:"none",border:`1px solid ${bd}`,color:"rgba(0,0,0,0.40)",padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36}}>🔑</button>
     <button className="btn-logout" onClick={logout} style={{background:"none",border:"1px solid rgba(220,38,38,0.3)",color:"rgba(220,38,38,0.7)",padding:"6px 14px",borderRadius:6,fontSize:11,fontWeight:500,cursor:"pointer",minHeight:36,fontFamily:ibm}}>Salir</button>
   </div>
 </div>
-{chPw&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setChPw(false)}>
-  <div onClick={e=>e.stopPropagation()} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:20,padding:28,width:"90%",maxWidth:320,textAlign:"center",boxShadow:"0 24px 48px rgba(0,0,0,.6)"}}>
+{chPw&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.3)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setChPw(false)}>
+  <div onClick={e=>e.stopPropagation()} style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:20,padding:28,width:"90%",maxWidth:320,textAlign:"center",boxShadow:"0 24px 48px rgba(0,0,0,.1)"}}>
     <div style={{fontSize:14,fontWeight:600,marginBottom:18,fontFamily:ibm,letterSpacing:".02em"}}>Cambiar contraseña</div>
     <input value={nPw} onChange={e=>setNPw(e.target.value)} type="password" placeholder="Nueva (mín 6)" style={{...iS,marginBottom:12}} onKeyDown={e=>e.key==="Enter"&&chPass()}/>
     {pwMsg&&<div style={{color:pwMsg.startsWith("✓")?"#34d399":"#f87171",fontSize:11,marginBottom:10}}>{pwMsg}</div>}
@@ -440,7 +438,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#f87171"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?"#34d399":"#f87171"},{l:"Inversión total",v:fm(me.tIA+me.tISt),c:tl},{l:"Stack clientes",v:fm(me.clSt),c:"#34d399"}]:[]),
       {l:"Leads",v:me.nLeads,c:tx},{l:"Leads web",v:me.nL,c:tx},{l:"Proy. clientes",v:me.active,c:tx},{l:"Equipo",v:me.aTm,c:tx}
     ].map((k,i)=><div key={i} className="card-row" style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:"20px 24px"}}>
-      <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>
+      <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>
       <div style={{fontSize:18,fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
     </div>)}
   </div>
@@ -449,7 +447,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <div style={hd}>Pipeline</div>
       {STAGES.map(s=><div key={s} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
         <div style={{width:8,height:8,borderRadius:"50%",background:SC[s]}}/><span style={{fontSize:12,color:s2,flex:1}}>{s}</span>
-        <div style={{background:"rgba(255,255,255,.06)",borderRadius:999,height:6,flex:2,overflow:"hidden"}}><div style={{height:"100%",background:SC[s],borderRadius:999,width:`${me.tot?(me.byStg[s]/me.tot)*100:0}%`}}/></div>
+        <div style={{background:"rgba(0,0,0,0.04)",borderRadius:999,height:6,flex:2,overflow:"hidden"}}><div style={{height:"100%",background:SC[s],borderRadius:999,width:`${me.tot?(me.byStg[s]/me.tot)*100:0}%`}}/></div>
         <span style={{fontSize:13,fontWeight:600,fontFamily:dsp,minWidth:18,textAlign:"right"}}>{me.byStg[s]}</span>
       </div>)}
     </div>
@@ -458,7 +456,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {Object.keys(me.byMo).length===0?<div style={{color:mt,fontSize:12}}>Sin datos.</div>:
         Object.entries(me.byMo).sort().slice(-6).map(([mo,v])=><div key={mo} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
           <span style={{fontSize:11,color:s2,width:45,flexShrink:0}}>{MO[parseInt(mo.split("-")[1])-1]} {mo.split("-")[0].slice(2)}</span>
-          <div style={{flex:1,background:"rgba(255,255,255,.06)",borderRadius:6,height:10,overflow:"hidden"}}><div style={{height:"100%",background:tl,borderRadius:6,width:`${(v/mxMo)*100}%`}}/></div>
+          <div style={{flex:1,background:"rgba(0,0,0,0.04)",borderRadius:6,height:10,overflow:"hidden"}}><div style={{height:"100%",background:tl,borderRadius:6,width:`${(v/mxMo)*100}%`}}/></div>
           <span style={{fontSize:12,fontWeight:600,color:tl,minWidth:60,textAlign:"right",fontFamily:dsp}}>{fm(v)}</span>
         </div>)}
     </div>
@@ -472,28 +470,28 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     </div>}
     <div style={{background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:28}}>
       <div style={hd}>Tareas clientes ({me.cTasks.length})</div>
-      <div style={{maxHeight:160,overflowY:"auto"}}>{me.cTasks.slice(0,6).map((t,i)=><div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:`1px solid rgba(255,255,255,.05)`,alignItems:"center"}}>
-        <button onClick={()=>togT(t.cid,t.id)} style={{width:18,height:18,borderRadius:6,border:"1.5px solid rgba(255,255,255,.2)",background:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
-        <div><div style={{fontSize:12,fontFamily:ibm,color:"rgba(255,255,255,.8)"}}>{t.text}</div><div style={{fontSize:11,color:"rgba(255,255,255,.3)"}}>{t.cn}</div></div>
-      </div>)}{me.cTasks.length===0&&<div style={{color:"rgba(255,255,255,.25)",fontSize:13,fontFamily:ibm,textAlign:"center",padding:"12px 0"}}>Todo al día</div>}</div>
+      <div style={{maxHeight:160,overflowY:"auto"}}>{me.cTasks.slice(0,6).map((t,i)=><div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:`1px solid rgba(0,0,0,0.06)`,alignItems:"center"}}>
+        <button onClick={()=>togT(t.cid,t.id)} style={{width:18,height:18,borderRadius:6,border:"1.5px solid rgba(0,0,0,.15)",background:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
+        <div><div style={{fontSize:12,fontFamily:ibm,color:"rgba(0,0,0,0.75)"}}>{t.text}</div><div style={{fontSize:11,color:"rgba(0,0,0,0.35)"}}>{t.cn}</div></div>
+      </div>)}{me.cTasks.length===0&&<div style={{color:"rgba(0,0,0,0.30)",fontSize:13,fontFamily:ibm,textAlign:"center",padding:"12px 0"}}>Todo al día</div>}</div>
       {(()=>{const done=[];cl.forEach(c=>{(c.tasks||[]).forEach(t=>{if(t.done)done.push({...t,cn:c.name,cid:c.id})})});const r=done.slice(-3).reverse();return r.length>0?<div style={{borderTop:`1px solid ${bd}`,marginTop:10,paddingTop:10}}>
         <div style={{fontSize:9,color:mt,marginBottom:6,fontWeight:600,letterSpacing:".12em",fontFamily:ibm}}>COMPLETADAS</div>
         {r.map((t,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:5,alignItems:"center"}}>
           <button onClick={()=>togT(t.cid,t.id)} style={{width:18,height:18,borderRadius:6,border:"1.5px solid rgba(11,119,152,.5)",background:"rgba(11,119,152,.2)",cursor:"pointer",flexShrink:0,padding:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:tl}}>✓</button>
-          <div><div style={{fontSize:12,color:"rgba(255,255,255,.3)",textDecoration:"line-through",fontFamily:ibm}}>{t.text}</div><div style={{fontSize:11,color:"rgba(255,255,255,.15)"}}>{t.cn}</div></div>
+          <div><div style={{fontSize:12,color:"rgba(0,0,0,0.35)",textDecoration:"line-through",fontFamily:ibm}}>{t.text}</div><div style={{fontSize:11,color:"rgba(0,0,0,0.20)"}}>{t.cn}</div></div>
         </div>)}</div>:null})()}
     </div>
     <div style={{background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:28}}>
       <div style={hd}>Tareas internas ({me.pTasks.length})</div>
-      <div style={{maxHeight:160,overflowY:"auto"}}>{me.pTasks.slice(0,6).map((t,i)=><div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:`1px solid rgba(255,255,255,.05)`,alignItems:"center"}}>
-        <button onClick={()=>togPT(t.cid,t.id)} style={{width:18,height:18,borderRadius:6,border:"1.5px solid rgba(255,255,255,.2)",background:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
-        <div><div style={{fontSize:12,fontFamily:ibm,color:"rgba(255,255,255,.8)"}}>{t.text}</div><div style={{fontSize:11,color:"rgba(255,255,255,.3)"}}>{t.cn}</div></div>
-      </div>)}{me.pTasks.length===0&&<div style={{color:"rgba(255,255,255,.25)",fontSize:13,fontFamily:ibm,textAlign:"center",padding:"12px 0"}}>Sin pendientes</div>}</div>
+      <div style={{maxHeight:160,overflowY:"auto"}}>{me.pTasks.slice(0,6).map((t,i)=><div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:`1px solid rgba(0,0,0,0.06)`,alignItems:"center"}}>
+        <button onClick={()=>togPT(t.cid,t.id)} style={{width:18,height:18,borderRadius:6,border:"1.5px solid rgba(0,0,0,.15)",background:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
+        <div><div style={{fontSize:12,fontFamily:ibm,color:"rgba(0,0,0,0.75)"}}>{t.text}</div><div style={{fontSize:11,color:"rgba(0,0,0,0.35)"}}>{t.cn}</div></div>
+      </div>)}{me.pTasks.length===0&&<div style={{color:"rgba(0,0,0,0.30)",fontSize:13,fontFamily:ibm,textAlign:"center",padding:"12px 0"}}>Sin pendientes</div>}</div>
       {(()=>{const done=[];pjs.forEach(p=>{(p.tasks||[]).forEach(t=>{if(t.done)done.push({...t,cn:p.name,cid:p.id})})});const r=done.slice(-3).reverse();return r.length>0?<div style={{borderTop:`1px solid ${bd}`,marginTop:10,paddingTop:10}}>
         <div style={{fontSize:9,color:mt,marginBottom:6,fontWeight:600,letterSpacing:".12em",fontFamily:ibm}}>COMPLETADAS</div>
         {r.map((t,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:5,alignItems:"center"}}>
           <button onClick={()=>togPT(t.cid,t.id)} style={{width:18,height:18,borderRadius:6,border:"1.5px solid rgba(11,119,152,.5)",background:"rgba(11,119,152,.2)",cursor:"pointer",flexShrink:0,padding:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:tl}}>✓</button>
-          <div><div style={{fontSize:12,color:"rgba(255,255,255,.3)",textDecoration:"line-through",fontFamily:ibm}}>{t.text}</div><div style={{fontSize:11,color:"rgba(255,255,255,.15)"}}>{t.cn}</div></div>
+          <div><div style={{fontSize:12,color:"rgba(0,0,0,0.35)",textDecoration:"line-through",fontFamily:ibm}}>{t.text}</div><div style={{fontSize:11,color:"rgba(0,0,0,0.20)"}}>{t.cn}</div></div>
         </div>)}</div>:null})()}
     </div>
   </div>
@@ -509,22 +507,22 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{fCl.length}</span>
       </div>
     </div>
-    {isA&&<button onClick={()=>goN("clients","cF",setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>＋ Nuevo</button>}
+    {isA&&<button onClick={()=>goN("clients","cF",setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>＋ Nuevo</button>}
   </div>
   <div className="mob-col" style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
     <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>
     <select value={fSt} onChange={e=>setFSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Todas</option>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
   </div>
   {fCl.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin clientes</div>:
-    fCl.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} className="mob-wrap card-row" style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,cursor:"pointer",marginBottom:8}}>
+    fCl.map(c=><div key={c.id} onClick={()=>ed(c,setCF,"clients","cF")} className="mob-wrap card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,cursor:"pointer",marginBottom:8}}>
       <div style={{width:8,height:8,borderRadius:"50%",background:SC[c.stage],flexShrink:0}}/>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:14,fontWeight:600,color:"#ffffff",fontFamily:ibm}}>{c.name} {c.company&&<span style={{fontWeight:400,color:"rgba(255,255,255,0.4)",fontSize:13}}>· {c.company}</span>}</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.35)",marginTop:2,fontFamily:ibm}}>{(c.solutions||[]).join(", ")||"—"}</div>
+        <div style={{fontSize:14,fontWeight:600,color:"#1a202c",fontFamily:ibm}}>{c.name} {c.company&&<span style={{fontWeight:400,color:"rgba(0,0,0,0.40)",fontSize:13}}>· {c.company}</span>}</div>
+        <div style={{fontSize:12,color:"rgba(0,0,0,0.40)",marginTop:2,fontFamily:ibm}}>{(c.solutions||[]).join(", ")||"—"}</div>
       </div>
       <div style={{textAlign:"right",flexShrink:0}}>
         <div style={{fontSize:14,fontWeight:700,color:"#34d399",fontFamily:dsp}}>{fm(c.amount)}</div>
-        <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>Pagado: {fm(c.amountPaid)}</div>
+        <div style={{fontSize:11,color:"rgba(0,0,0,0.35)"}}>Pagado: {fm(c.amountPaid)}</div>
       </div>
       <span style={bg2(SC[c.stage])}>{c.stage}</span>
     </div>)}
@@ -541,9 +539,9 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       </div>
       {eid&&cF.stage&&<span style={bg2(SC[cF.stage])}>{cF.stage}</span>}
     </div>
-    {eid&&<div style={{display:"flex",gap:0,marginTop:14,background:"rgba(255,255,255,0.03)",borderRadius:14,border:`1px solid ${bd}`,overflow:"hidden"}}>
+    {eid&&<div style={{display:"flex",gap:0,marginTop:14,background:"#fafbfc",borderRadius:14,border:`1px solid ${bd}`,overflow:"hidden"}}>
       {[{l:"Total",v:fm(cF.amount),c:"#34d399"},{l:"Pagado",v:fm(cF.amountPaid),c:"#34d399"},{l:"MRR",v:fm(cF.mrr),c:tl}].map((s,i)=><div key={i} style={{flex:1,padding:"14px 18px",borderRight:i<2?`1px solid ${bd}`:"none"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)",fontFamily:ibm,marginBottom:5}}>{s.l}</div>
+        <div style={{fontSize:9,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",fontFamily:ibm,marginBottom:5}}>{s.l}</div>
         <div style={{fontSize:17,fontWeight:700,color:s.c,fontFamily:dsp}}>{s.v}</div>
       </div>)}
     </div>}
@@ -569,7 +567,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={cF.notes} onChange={e=>setCF({...cF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
   <div className="mob-wrap" style={{display:"flex",gap:8,paddingTop:8}}>
-    <button onClick={()=>sv("clients",cF,setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 28px",borderRadius:10,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>{eid?"Guardar cambios":"Registrar cliente"}</button>
+    <button onClick={()=>sv("clients",cF,setCF,eC)} style={{background:tl,border:"none",color:bg,padding:"12px 28px",borderRadius:10,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>{eid?"Guardar cambios":"Registrar cliente"}</button>
     <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:10,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
     {eid&&isA&&<button onClick={()=>dl("clients",eid)} style={{background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.22)",color:"#ff6b6b",padding:"12px 18px",borderRadius:10,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
@@ -577,24 +575,24 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 
 {/* PIPELINE */}
 {vw==="pipeline"&&(<div style={{overflowX:"auto"}}><div className="mob-col" style={{display:"flex",gap:0}}>
-  {STAGES.map((stg,si)=>{const sc=cl.filter(c=>c.stage===stg);return <div key={stg} style={{flex:1,minWidth:155,borderRight:si<STAGES.length-1?"1px solid rgba(255,255,255,0.05)":"none",paddingRight:si<STAGES.length-1?16:0,paddingLeft:si>0?16:0}}>
-    <div style={{marginBottom:14,paddingBottom:12,borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+  {STAGES.map((stg,si)=>{const sc=cl.filter(c=>c.stage===stg);return <div key={stg} style={{flex:1,minWidth:155,borderRight:si<STAGES.length-1?"1px solid rgba(0,0,0,0.06)":"none",paddingRight:si<STAGES.length-1?16:0,paddingLeft:si>0?16:0}}>
+    <div style={{marginBottom:14,paddingBottom:12,borderBottom:"1px solid rgba(0,0,0,0.06)"}}>
       <div style={{display:"flex",alignItems:"center",gap:7}}>
         <div style={{width:7,height:7,borderRadius:"50%",background:SC[stg],flexShrink:0}}/>
-        <span style={{fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".1em",color:"rgba(255,255,255,0.5)",fontFamily:ibm}}>{stg}</span>
-        <span style={{fontSize:10,color:"rgba(255,255,255,0.25)",marginLeft:"auto"}}>{sc.length}</span>
+        <span style={{fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".1em",color:"rgba(0,0,0,0.45)",fontFamily:ibm}}>{stg}</span>
+        <span style={{fontSize:10,color:"rgba(0,0,0,0.30)",marginLeft:"auto"}}>{sc.length}</span>
       </div>
     </div>
-    {sc.map(c=><div key={c.id} className="card-row" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:18,marginBottom:8}}>
-      <div style={{fontSize:13,fontWeight:600,color:"#ffffff",fontFamily:ibm,marginBottom:3}}>{c.name}</div>
-      {c.company&&<div style={{fontSize:12,color:"rgba(255,255,255,0.4)",fontFamily:ibm}}>{c.company}</div>}
+    {sc.map(c=><div key={c.id} className="card-row" style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:14,padding:18,marginBottom:8}}>
+      <div style={{fontSize:13,fontWeight:600,color:"#1a202c",fontFamily:ibm,marginBottom:3}}>{c.name}</div>
+      {c.company&&<div style={{fontSize:12,color:"rgba(0,0,0,0.40)",fontFamily:ibm}}>{c.company}</div>}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12}}>
         <div style={{fontSize:13,fontWeight:700,color:tl,fontFamily:dsp}}>{fm(c.amount)}</div>
-        {c.mrr>0&&<div style={{fontSize:10,color:"rgba(255,255,255,0.3)",fontFamily:ibm}}>MRR {fm(c.mrr)}</div>}
+        {c.mrr>0&&<div style={{fontSize:10,color:"rgba(0,0,0,0.35)",fontFamily:ibm}}>MRR {fm(c.mrr)}</div>}
       </div>
-      {isA&&<div style={{display:"flex",gap:4,marginTop:10,flexWrap:"wrap"}}>{STAGES.filter(s=>s!==stg).map(s=><button key={s} className="pipe-move" onClick={()=>mvSt(c.id,s)} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.5)",padding:"4px 8px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:500,fontFamily:ibm}}>→ {s.substring(0,4)}</button>)}</div>}
+      {isA&&<div style={{display:"flex",gap:4,marginTop:10,flexWrap:"wrap"}}>{STAGES.filter(s=>s!==stg).map(s=><button key={s} className="pipe-move" onClick={()=>mvSt(c.id,s)} style={{background:"rgba(0,0,0,0.03)",border:"1px solid rgba(0,0,0,0.08)",color:"rgba(0,0,0,0.45)",padding:"4px 8px",borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:500,fontFamily:ibm}}>→ {s.substring(0,4)}</button>)}</div>}
     </div>)}
-    {sc.length===0&&<div style={{color:"rgba(255,255,255,0.25)",fontSize:13,fontFamily:ibm,textAlign:"center",padding:"20px 0"}}>Vacío</div>}
+    {sc.length===0&&<div style={{color:"rgba(0,0,0,0.30)",fontSize:13,fontFamily:ibm,textAlign:"center",padding:"20px 0"}}>Vacío</div>}
   </div>})}
 </div></div>)}
 
@@ -631,7 +629,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{pjs.length}</span>
       </div>
     </div>
-    {isA&&<button onClick={()=>goN("projects","pF",setPF,eP)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>＋ Nuevo</button>}
+    {isA&&<button onClick={()=>goN("projects","pF",setPF,eP)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>＋ Nuevo</button>}
   </div>
   {pjs.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin proyectos</div>:
     <div className="g-auto">
@@ -959,22 +957,22 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{fPros.length}</span>
       </div>
     </div>
-    <button onClick={()=>goN("prospeccion","prF",setPrF,ePr)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>＋ Nuevo</button>
+    <button onClick={()=>goN("prospeccion","prF",setPrF,ePr)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>＋ Nuevo</button>
   </div>
   <div className="mob-col" style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
     <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>
     <select value={fSt} onChange={e=>setFSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Todas</option>{PROSTAGES.map(s=><option key={s}>{s}</option>)}</select>
   </div>
   {fPros.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin prospectos</div>:
-    fPros.map(p=><div key={p.id} className="mob-wrap card-row" style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+    fPros.map(p=><div key={p.id} className="mob-wrap card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
       <div style={{width:8,height:8,borderRadius:"50%",background:PROSC[p.stage],flexShrink:0}}/>
       <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>ed(p,setPrF,"prospeccion","prF")}>
-        <div style={{fontSize:14,fontWeight:600,color:"#ffffff",fontFamily:ibm}}>{p.name} {p.business&&<span style={{fontWeight:400,color:"rgba(255,255,255,0.4)",fontSize:13}}>· {p.business}</span>}</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.35)",marginTop:2,fontFamily:ibm}}>{p.city||"—"} {p.email&&<span>· {p.email}</span>}</div>
+        <div style={{fontSize:14,fontWeight:600,color:"#1a202c",fontFamily:ibm}}>{p.name} {p.business&&<span style={{fontWeight:400,color:"rgba(0,0,0,0.40)",fontSize:13}}>· {p.business}</span>}</div>
+        <div style={{fontSize:12,color:"rgba(0,0,0,0.40)",marginTop:2,fontFamily:ibm}}>{p.city||"—"} {p.email&&<span>· {p.email}</span>}</div>
       </div>
       <div style={{display:"flex",gap:4,alignItems:"center",flexShrink:0,flexWrap:"wrap"}}>
         {p.emailV1&&<button onClick={e=>{e.stopPropagation();navigator.clipboard.writeText(p.emailV1);alert("Email V1 copiado")}} style={{background:"rgba(78,205,196,.08)",border:`1px solid rgba(78,205,196,.25)`,color:tl,padding:"6px 10px",borderRadius:8,fontSize:10,fontWeight:600,cursor:"pointer"}}>Copiar V1</button>}
-        <select value={p.stage} onClick={e=>e.stopPropagation()} onChange={e=>mvPrSt(p.id,e.target.value)} style={{background:cd2,border:`1px solid ${bd}`,color:PROSC[p.stage]||s2,borderRadius:8,padding:"6px 8px",fontSize:11,fontWeight:600,cursor:"pointer",outline:"none"}}>{PROSTAGES.map(s=><option key={s} style={{color:"#fff",background:"#0a0c10"}}>{s}</option>)}</select>
+        <select value={p.stage} onClick={e=>e.stopPropagation()} onChange={e=>mvPrSt(p.id,e.target.value)} style={{background:cd2,border:`1px solid ${bd}`,color:PROSC[p.stage]||s2,borderRadius:8,padding:"6px 8px",fontSize:11,fontWeight:600,cursor:"pointer",outline:"none"}}>{PROSTAGES.map(s=><option key={s} style={{color:"#1a202c",background:"#fff"}}>{s}</option>)}</select>
         {p.stage!=="Cerrado"&&p.stage!=="Descartado"&&<button onClick={e=>{e.stopPropagation();convProspect(p)}} style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.3)",color:"#34d399",padding:"6px 10px",borderRadius:8,fontSize:10,fontWeight:700,cursor:"pointer"}}>→ Cliente</button>}
       </div>
     </div>)}
@@ -1008,7 +1006,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   </div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={prF.notes} onChange={e=>setPrF({...prF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
   <div className="mob-wrap" style={{display:"flex",gap:8,paddingTop:8}}>
-    <button onClick={()=>sv("prospects",prF,setPrF,ePr)} style={{background:tl,border:"none",color:bg,padding:"12px 28px",borderRadius:10,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>{eid?"Guardar cambios":"Registrar prospecto"}</button>
+    <button onClick={()=>sv("prospects",prF,setPrF,ePr)} style={{background:tl,border:"none",color:bg,padding:"12px 28px",borderRadius:10,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>{eid?"Guardar cambios":"Registrar prospecto"}</button>
     <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:10,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
     {eid&&<button onClick={()=>dl("prospects",eid)} style={{background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.22)",color:"#ff6b6b",padding:"12px 18px",borderRadius:10,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
@@ -1029,11 +1027,11 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{cts.length}</span>
       </div>
     </div>
-    <button onClick={()=>goN("contenido","ctF",setCtF,eCt)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>＋ Nuevo</button>
+    <button onClick={()=>goN("contenido","ctF",setCtF,eCt)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>＋ Nuevo</button>
   </div>
   <div className="g-cards" style={{marginBottom:16}}>
     {[{l:"Total piezas",v:ctMe.total,c:tx},{l:"Publicadas",v:ctMe.pub,c:"#56d4a0"},{l:"En producción",v:ctMe.prod,c:"#4ECDC4"},{l:"Ideas",v:ctMe.ideas,c:"#8b949e"}].map((k,i)=><div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:"20px 24px"}}>
-      <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>
+      <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>
       <div style={{fontSize:18,fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
     </div>)}
   </div>
@@ -1047,11 +1045,11 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <select value={ctFiltPl} onChange={e=>setCtFiltPl(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Pilar: Todos</option>{CPILLARS.map(s=><option key={s}>{s}</option>)}</select>
     </div>
     {fCts.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin contenido</div>:
-      fCts.map(c=><div key={c.id} onClick={()=>ed(c,setCtF,"contenido","ctF")} className="mob-wrap card-row" style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,cursor:"pointer",marginBottom:8}}>
+      fCts.map(c=><div key={c.id} onClick={()=>ed(c,setCtF,"contenido","ctF")} className="mob-wrap card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,cursor:"pointer",marginBottom:8}}>
         <div style={{width:8,height:8,borderRadius:"50%",background:CSTATC[c.status],flexShrink:0}}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,fontWeight:600,color:"#ffffff",fontFamily:ibm}}>{c.title}</div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.35)",marginTop:2,fontFamily:ibm}}>{c.pillar} · {c.format} · {c.platform}{c.scheduledDate?` · ${(c.scheduledDate+"").substring(0,10)}`:""}</div>
+          <div style={{fontSize:14,fontWeight:600,color:"#1a202c",fontFamily:ibm}}>{c.title}</div>
+          <div style={{fontSize:12,color:"rgba(0,0,0,0.40)",marginTop:2,fontFamily:ibm}}>{c.pillar} · {c.format} · {c.platform}{c.scheduledDate?` · ${(c.scheduledDate+"").substring(0,10)}`:""}</div>
         </div>
         <span style={bg2(CSTATC[c.status])}>{c.status}</span>
       </div>)}
@@ -1099,7 +1097,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   <div style={{marginBottom:16}}><label style={lb}>URL</label><input value={ctF.url} onChange={e=>setCtF({...ctF,url:e.target.value})} placeholder="https://..." style={iS}/></div>
   <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={ctF.notes} onChange={e=>setCtF({...ctF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
   <div className="mob-wrap" style={{display:"flex",gap:8,paddingTop:8}}>
-    <button onClick={()=>sv("content",ctF,setCtF,eCt)} style={{background:tl,border:"none",color:bg,padding:"12px 28px",borderRadius:10,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 8px 20px rgba(78,205,196,.24)"}}>{eid?"Guardar cambios":"Crear pieza"}</button>
+    <button onClick={()=>sv("content",ctF,setCtF,eCt)} style={{background:tl,border:"none",color:bg,padding:"12px 28px",borderRadius:10,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>{eid?"Guardar cambios":"Crear pieza"}</button>
     <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:10,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
     {eid&&<button onClick={()=>dl("content",eid)} style={{background:"rgba(255,107,107,.08)",border:"1px solid rgba(255,107,107,.22)",color:"#ff6b6b",padding:"12px 18px",borderRadius:10,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
   </div>
@@ -1258,7 +1256,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>
 </div>);
 }
-class EB extends React.Component{constructor(p){super(p);this.state={err:null}}static getDerivedStateFromError(e){return{err:e}}componentDidCatch(e,i){console.error("STRYV Error:",e,i)}render(){if(this.state.err)return <div style={{padding:40,textAlign:"center",color:"#ff6b6b",background:"#0a0c10",minHeight:"100vh"}}><h2>Error en el dashboard</h2><pre style={{fontSize:12,color:"#e0e6e4",marginTop:16,textAlign:"left",maxWidth:600,margin:"16px auto",whiteSpace:"pre-wrap"}}>{this.state.err.toString()}</pre><button onClick={()=>this.setState({err:null})} style={{marginTop:16,background:"#4ECDC4",border:"none",color:"#0a0c10",padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>Reintentar</button></div>;return this.props.children}}
+class EB extends React.Component{constructor(p){super(p);this.state={err:null}}static getDerivedStateFromError(e){return{err:e}}componentDidCatch(e,i){console.error("STRYV Error:",e,i)}render(){if(this.state.err)return <div style={{padding:40,textAlign:"center",color:"#ff6b6b",background:"#f5f7fa",minHeight:"100vh"}}><h2>Error en el dashboard</h2><pre style={{fontSize:12,color:"#374151",marginTop:16,textAlign:"left",maxWidth:600,margin:"16px auto",whiteSpace:"pre-wrap"}}>{this.state.err.toString()}</pre><button onClick={()=>this.setState({err:null})} style={{marginTop:16,background:"#4ECDC4",border:"none",color:"#fff",padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>Reintentar</button></div>;return this.props.children}}
 ReactDOM.createRoot(document.getElementById("root")).render(<EB><App/></EB>);
 </script>
 </body>

@@ -835,7 +835,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       const rows=[];
       invs.forEach(x=>{if(!x.date)return;const m=(x.date+"").substring(0,7);rows.push({month:m,investor:x.investor||"Sin asignar",concept:x.type,amount:toUSD(x.amount,x.currency),detail:x.notes||"",src:"mov",_inv:x})});
       const _cm=new Date().toISOString().substring(0,7);
-      tls.filter(t=>t.status==="Activo"&&(!t.cancelDate||t.cancelDate.substring(0,7)>=_cm)).filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const inv=x.paidBy==="STRYV"?"STRYV":x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(mo<=0)return;const cm=_cm;const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;const ms=[];let cur=start;while(cur<=cm){ms.push(cur);const [y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}ms.forEach(m=>{rows.push({month:m,investor:inv,concept:"Herramienta: "+x.name,amount:mo,detail:x.billing,src:"tool"})})});
+      tls.filter(t=>t.status==="Activo"&&(!t.cancelDate||t.cancelDate.substring(0,7)>=_cm)).filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const inv=x.paidBy==="STRYV"?"STRYV":x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(mo<=0)return;const cm=_cm;const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;const ms=[];let cur=start;while(cur<=cm){ms.push(cur);const [y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}ms.forEach(m=>{rows.push({month:m,investor:inv,concept:"Herramienta: "+x.name,amount:mo,detail:x.billing,src:"tool",_tool:x})})});
       if(rows.length===0)return <div style={{color:mt,fontSize:12}}>Sin movimientos</div>;
       const byMo={};rows.forEach(r=>{if(!byMo[r.month])byMo[r.month]=[];byMo[r.month].push(r)});
       const months=Object.keys(byMo).sort();
@@ -848,10 +848,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
           <th style={{textAlign:"right",padding:"8px 10px",color:mt,fontSize:10,fontWeight:700,fontFamily:"'Geist Mono',monospace"}}>MONTO</th>
         </tr></thead>
         <tbody>{months.map(m=>{const items=byMo[m];const moTotal=items.reduce((s,r)=>s+r.amount,0);acc+=moTotal;return <React.Fragment key={m}>
-          {items.sort((a,b)=>a.investor.localeCompare(b.investor)||a.concept.localeCompare(b.concept)).map((r,i)=><tr key={i} style={{borderBottom:`1px solid ${bd}`,opacity:r.src==="tool"?.8:1,cursor:r.src==="mov"?"pointer":"default"}} onClick={()=>{if(r.src==="mov"&&r._inv&&isA){setIF({...r._inv});setEid(r._inv.id);setSub("iF")}}}>
+          {items.sort((a,b)=>a.investor.localeCompare(b.investor)||a.concept.localeCompare(b.concept)).map((r,i)=><tr key={i} style={{borderBottom:`1px solid ${bd}`,cursor:isA?"pointer":"default"}} onClick={()=>{if(!isA)return;if(r.src==="mov"&&r._inv){setIF({...r._inv});setEid(r._inv.id);setSub("iF")}else if(r.src==="tool"&&r._tool){ed(r._tool,setTF,"stack","tF")}}}>
             {i===0?<td rowSpan={items.length+1} style={{padding:"10px 10px",fontWeight:700,fontFamily:"'Geist Mono',monospace",verticalAlign:"top",borderRight:`1px solid ${bd}`}}>{MO[parseInt(m.split("-")[1])-1]} {m.split("-")[0]}</td>:null}
             <td style={{padding:"6px 10px",color:"#b392f0",fontWeight:600,fontSize:11}}>{r.investor}</td>
-            <td style={{padding:"6px 10px",color:r.src==="tool"?s2:tx,fontSize:11}}>{r.src==="tool"?"🔧 ":""}{r.concept}{r.src==="mov"&&<span style={{fontSize:9,color:tl,marginLeft:4}}>✎</span>}</td>
+            <td style={{padding:"6px 10px",color:tx,fontSize:11}}>{r.src==="tool"?"🔧 ":""}{r.concept}<span style={{fontSize:9,color:tl,marginLeft:4}}>✎</span></td>
             <td style={{textAlign:"right",padding:"6px 10px",fontWeight:700,color:tx}}>{fm(r.amount)}</td>
           </tr>)}
           <tr style={{borderBottom:`2px solid ${bd}`,background:"rgba(179,146,240,.04)"}}>

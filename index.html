@@ -1225,8 +1225,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Ciclo</label><select value={tF.billing} onChange={e=>setTF({...tF,billing:e.target.value})} style={iS}>{BILL.map(b=><option key={b}>{b}</option>)}</select></div>
     <div><label style={lb}>Estado</label><select value={tF.status} onChange={e=>setTF({...tF,status:e.target.value})} style={iS}><option>Activo</option><option>Inactivo</option><option>Trial</option></select></div>
   </div>
-  <div className="g2" style={{marginBottom:16}}>
-    <div><label style={lb}>Fecha de cancelación</label><input value={tF.cancelDate||""} onChange={e=>setTF({...tF,cancelDate:e.target.value})} type="date" style={iS}/>{tF.cancelDate&&<div style={{fontSize:9,color:s2,marginTop:2}}>Último mes activo: {tF.cancelDate.substring(0,7)}</div>}{tF.cancelDate&&<button onClick={()=>setTF({...tF,cancelDate:""})} style={{background:"transparent",border:"none",color:"#f47067",fontSize:10,cursor:"pointer",padding:"2px 0",marginTop:2}}>✕ Quitar fecha de cancelación</button>}</div>
+  <div style={{marginBottom:16}}>
     <div><label style={lb}>Fecha de renovación</label><input value={tF.renewDate||""} onChange={e=>setTF({...tF,renewDate:e.target.value})} type="date" style={iS}/>{tF.renewDate&&(()=>{const rd=new Date(tF.renewDate+"T00:00:00");const diff=Math.ceil((rd-new Date())/(1000*60*60*24));return <div style={{fontSize:9,color:diff<=7?"#f47067":s2,marginTop:2}}>{diff<0?"Fecha pasada — actualizar":diff===0?"Renueva hoy":`Renueva en ${diff} día${diff!==1?"s":""}`}</div>})()}</div>
   </div>
   <div className="g2" style={{marginBottom:16}}>

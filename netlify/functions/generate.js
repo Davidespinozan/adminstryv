@@ -159,6 +159,7 @@ exports.handler = async function(event) {
       prompt = body.prompt;
     }
 
+    const model = body.mode === 'agent' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514';
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -167,7 +168,7 @@ exports.handler = async function(event) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model,
         max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }]
       })

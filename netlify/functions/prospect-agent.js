@@ -1,5 +1,3 @@
-const { schedule } = require("@netlify/functions");
-
 const SUPABASE_URL = "https://ltveorvqvvlyivjwxjlc.supabase.co";
 
 const sbHeaders = (key) => ({
@@ -237,19 +235,6 @@ async function runAgent(searches) {
   return results;
 }
 
-// ─── Scheduled handler (runs daily) — takes 30 oldest searches from DB ───
-const scheduledHandler = schedule("@daily", async () => {
-  const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-  if (!SB_KEY) return { statusCode: 500, body: "Missing SUPABASE_SERVICE_KEY" };
-
-  const searches = await getSearches(SB_KEY, 30);
-  if (!searches.length) return { statusCode: 200, body: "No active searches" };
-
-  const results = await runAgent(searches);
-  console.log("Agent results:", JSON.stringify(results));
-  return { statusCode: 200, body: JSON.stringify(results) };
-});
-
 // ─── Manual trigger handler ───
 async function manualHandler(event) {
   if (event.httpMethod === "OPTIONS") {
@@ -285,9 +270,4 @@ async function manualHandler(event) {
   }
 }
 
-exports.handler = async (event) => {
-  if (event.headers?.["x-netlify-event"] === "schedule") {
-    return scheduledHandler.handler(event);
-  }
-  return manualHandler(event);
-};
+exports.handler = manualHandler;

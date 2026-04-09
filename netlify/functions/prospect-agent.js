@@ -16,7 +16,7 @@ async function searchPlaces(query, city, apiKey) {
       "X-Goog-Api-Key": apiKey,
       "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.websiteUri,places.rating,places.userRatingCount,places.types,places.editorialSummary,places.nationalPhoneNumber,places.googleMapsUri,places.primaryType,places.shortFormattedAddress",
     },
-    body: JSON.stringify({ textQuery, maxResultCount: 20 }),
+    body: JSON.stringify({ textQuery, maxResultCount: 3 }),
   });
   const data = await res.json();
   return (data.places || []).map((p) => ({
@@ -199,7 +199,7 @@ async function processSearch(search, keys, results) {
 
         await createProspect(place, keys.sb);
         results.new++;
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 500));
       } catch (err) {
         results.errors.push(`${place.business}: ${err.message}`);
       }

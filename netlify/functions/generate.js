@@ -36,12 +36,17 @@ PROSPECTO:
 
 Con los datos disponibles infiere:
 
-SISTEMA QUE APLICA:
-— Negocio físico con clientes recurrentes → Conversión Local
-— Muchos mensajes o consultas → Atención con IA
-— Vende servicios, consultoría o infoproductos → Ventas Digitales
+SISTEMAS QUE APLICAN — pueden ser uno o varios combinados:
+— Negocio físico con clientes recurrentes → Conversión Local (casi siempre + Atención con IA)
+— Muchos mensajes o consultas sin sistema → Atención con IA
+— Vende servicios, consultoría o infoproductos → Ventas Digitales (frecuentemente + Contenido con IA)
 — Tiene inventario, producción o equipo → Operación Interna
-— Sin web o presencia digital débil → Contenido con IA
+— Sin web o presencia digital débil → Contenido con IA (como punto de entrada al sistema completo)
+— Coach / terapeuta / nutriólogo → Ventas Digitales + Atención con IA + Contenido con IA
+— Restaurante → Conversión Local + Atención con IA
+— Fábrica o distribuidora → Operación Interna + Ventas Digitales
+
+En el email menciona máximo 2 sistemas combinados — nunca los 5. Elige los que más duelen para este negocio específico y mencionarlos de forma natural, no como lista.
 
 DOLOR MÁS PROBABLE POR TIPO:
 — Restaurante / local físico → clientes que no regresan, sin seguimiento, sin reseñas organizadas, todo depende del dueño

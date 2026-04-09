@@ -211,92 +211,100 @@ async function createProspect(data, sbKey) {
   return res.json();
 }
 
+// ─── Get oldest searches from Supabase ───
+async function getSearches(sbKey, limit = 30) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/prospect_searches?active=eq.true&order=last_run.asc.nullsfirst&limit=${limit}`,
+    { headers: sbHeaders(sbKey) }
+  );
+  return res.json();
+}
+
+// ─── Update last_run on a search ───
+async function updateSearchRun(id, sbKey) {
+  await fetch(`${SUPABASE_URL}/rest/v1/prospect_searches?id=eq.${id}`, {
+    method: "PATCH",
+    headers: sbHeaders(sbKey),
+    body: JSON.stringify({ last_run: new Date().toISOString() }),
+  });
+}
+
+// ─── Process a single search ───
+async function processSearch(search, keys, results) {
+  try {
+    const places = await searchPlaces(search.query, search.city, keys.google);
+    results.searched += places.length;
+
+    for (const place of places) {
+      try {
+        const exists = await prospectExists(place.googlePlaceId, keys.sb);
+        if (exists) { results.skipped++; continue; }
+
+        if (place.url) {
+          const scraped = await scrapeEmail(place.url);
+          if (scraped) { place.email = scraped; results.emailsScraped++; }
+        }
+
+        const emailData = await generateEmails(place, keys.anthropic);
+        const emails = emailData.emails || [];
+        place.subjectV1 = emails[0]?.subject || "";
+        place.emailV1 = emails[0]?.body || "";
+        place.subjectV2 = emails[1]?.subject || "";
+        place.emailV2 = emails[1]?.body || "";
+        place.subjectV3 = emails[2]?.subject || "";
+        place.emailV3 = emails[2]?.body || "";
+
+        if (place.email && keys.resend) {
+          const sendResult = await sendEmail(place.email, place.subjectV1, place.emailV1, keys.resend);
+          if (sendResult.id) { place.stage = "Contactado"; results.emailed++; }
+        }
+
+        await createProspect(place, keys.sb);
+        results.new++;
+        await new Promise((r) => setTimeout(r, 2000));
+      } catch (err) {
+        results.errors.push(`${place.business}: ${err.message}`);
+      }
+    }
+
+    // Update last_run
+    if (search.id) await updateSearchRun(search.id, keys.sb);
+  } catch (err) {
+    results.errors.push(`Search "${search.query} ${search.city}": ${err.message}`);
+  }
+}
+
 // ─── Main agent logic ───
 async function runAgent(searches) {
-  const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY;
-  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-  const RESEND_KEY = process.env.RESEND_API_KEY;
-  const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
+  const keys = {
+    google: process.env.GOOGLE_PLACES_API_KEY,
+    anthropic: process.env.ANTHROPIC_API_KEY,
+    resend: process.env.RESEND_API_KEY,
+    sb: process.env.SUPABASE_SERVICE_KEY,
+  };
 
-  if (!GOOGLE_KEY || !ANTHROPIC_KEY || !SB_KEY) {
+  if (!keys.google || !keys.anthropic || !keys.sb) {
     return { error: "Missing API keys (GOOGLE_PLACES_API_KEY, ANTHROPIC_API_KEY, SUPABASE_SERVICE_KEY)" };
   }
 
-  const results = { searched: 0, new: 0, skipped: 0, emailed: 0, emailsScraped: 0, errors: [] };
+  const results = { searched: 0, new: 0, skipped: 0, emailed: 0, emailsScraped: 0, searchesProcessed: 0, errors: [] };
 
   for (const search of searches) {
-    try {
-      const places = await searchPlaces(search.query, search.city, GOOGLE_KEY);
-      results.searched += places.length;
-
-      for (const place of places) {
-        try {
-          // Check duplicate
-          const exists = await prospectExists(place.googlePlaceId, SB_KEY);
-          if (exists) {
-            results.skipped++;
-            continue;
-          }
-
-          // Try to scrape email from website
-          if (place.url) {
-            const scraped = await scrapeEmail(place.url);
-            if (scraped) {
-              place.email = scraped;
-              results.emailsScraped++;
-            }
-          }
-
-          // Generate emails with Claude
-          const emailData = await generateEmails(place, ANTHROPIC_KEY);
-          const emails = emailData.emails || [];
-
-          place.subjectV1 = emails[0]?.subject || "";
-          place.emailV1 = emails[0]?.body || "";
-          place.subjectV2 = emails[1]?.subject || "";
-          place.emailV2 = emails[1]?.body || "";
-          place.subjectV3 = emails[2]?.subject || "";
-          place.emailV3 = emails[2]?.body || "";
-
-          // Send V1 if we have email and Resend key
-          if (place.email && RESEND_KEY) {
-            const sendResult = await sendEmail(place.email, place.subjectV1, place.emailV1, RESEND_KEY);
-            if (sendResult.id) {
-              place.stage = "Contactado";
-              results.emailed++;
-            }
-          }
-
-          // Save to Supabase
-          await createProspect(place, SB_KEY);
-          results.new++;
-
-          // Delay to avoid rate limits
-          await new Promise((r) => setTimeout(r, 2000));
-        } catch (err) {
-          results.errors.push(`${place.business}: ${err.message}`);
-        }
-      }
-    } catch (err) {
-      results.errors.push(`Search "${search.query} ${search.city}": ${err.message}`);
-    }
+    await processSearch(search, keys, results);
+    results.searchesProcessed++;
   }
 
   return results;
 }
 
-// ─── Scheduled handler (runs daily) ───
+// ─── Scheduled handler (runs daily) — takes 30 oldest searches from DB ───
 const scheduledHandler = schedule("@daily", async () => {
-  const searchesEnv = process.env.PROSPECT_SEARCHES || "[]";
-  let searches;
-  try {
-    searches = JSON.parse(searchesEnv);
-  } catch {
-    return { statusCode: 400, body: "Invalid PROSPECT_SEARCHES env var" };
-  }
-  if (searches.length === 0) {
-    return { statusCode: 200, body: "No searches configured" };
-  }
+  const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
+  if (!SB_KEY) return { statusCode: 500, body: "Missing SUPABASE_SERVICE_KEY" };
+
+  const searches = await getSearches(SB_KEY, 30);
+  if (!searches.length) return { statusCode: 200, body: "No active searches" };
+
   const results = await runAgent(searches);
   console.log("Agent results:", JSON.stringify(results));
   return { statusCode: 200, body: JSON.stringify(results) };
@@ -309,10 +317,19 @@ async function manualHandler(event) {
   }
   try {
     const body = JSON.parse(event.body || "{}");
-    const searches = body.searches || [];
-    if (searches.length === 0) {
+    const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+    let searches;
+    if (body.useDb) {
+      // Run from DB searches
+      searches = await getSearches(SB_KEY, body.limit || 30);
+    } else if (body.searches?.length) {
+      // Run specific searches (from dashboard input)
+      searches = body.searches;
+    } else {
       return { statusCode: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "No searches provided" }) };
     }
+
     const results = await runAgent(searches);
     return {
       statusCode: 200,

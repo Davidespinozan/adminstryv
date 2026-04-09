@@ -166,7 +166,7 @@ const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",
 const _eL={week:1,title:"",description:"",type:"Video",status:"Borrador",version:"v1",assets:[],notes:""};
 const _eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:"",convertedToClient:false,notes:"",currency:"USD"};
 const _eI={type:"Inyección de capital",investor:"",amount:0,date:"",notes:"",currency:"USD"};
-const _ePr={name:"",business:"",city:"",email:"",phone:"",url:"",stage:"Sin contactar",emailV1:"",emailV2:"",emailV3:"",subjectV1:"",subjectV2:"",subjectV3:"",notes:"",source:"",activity:"",howSells:[],whatDelivers:[],operation:[],pain:""};
+const _ePr={name:"",business:"",city:"",email:"",phone:"",url:"",stage:"Sin contactar",emailV1:"",emailV2:"",emailV3:"",subjectV1:"",subjectV2:"",subjectV3:"",notes:"",source:"",activity:"",howSells:[],whatDelivers:[],operation:[],pain:"",googlePlaceId:"",googleMapsUrl:"",googleRating:null,googleReviews:0,googleCategory:"",googleTypes:"",address:""};
 const PR_SELLS=["WhatsApp o llamada directa","Presencial en local","Web o tienda en línea","Redes sociales","Referidos y boca en boca","Marketplace","Ventas B2B","Membresías o suscripciones"];
 const PR_DELIVERS=["Servicio o consultoría","Producto físico","Cursos o infoproductos","Proyectos","Salud o terapia","Asesoría profesional","Alimentos o bebidas","Agricultura o agro","Eventos o experiencias","Coaching o mentoría"];
 const PR_OPS=["Solo o 1-3 personas","Equipo de 4-15","Más de 15 empleados","Maneja inventario","Clientes recurrentes","Varias sedes","Muchas consultas al día","Proceso de producción","Equipo de ventas"];
@@ -1050,16 +1050,31 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <select value={fSt} onChange={e=>setFSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Todas</option>{PROSTAGES.map(s=><option key={s}>{s}</option>)}</select>
   </div>
   {fPros.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin prospectos</div>:
-    fPros.map(p=><div key={p.id} className="mob-wrap card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 24px",display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
-      <div style={{width:8,height:8,borderRadius:"50%",background:PROSC[p.stage],flexShrink:0}}/>
-      <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>ed(p,setPrF,"prospeccion","prF")}>
-        <div style={{fontSize:14,fontWeight:600,color:"#1a202c",fontFamily:ibm}}>{p.name} {p.business&&<span style={{fontWeight:400,color:"rgba(0,0,0,0.40)",fontSize:13}}>· {p.business}</span>}</div>
-        <div style={{fontSize:12,color:"rgba(0,0,0,0.40)",marginTop:2,fontFamily:ibm}}>{p.city||"—"} {p.email&&<span>· {p.email}</span>}</div>
-      </div>
-      <div style={{display:"flex",gap:4,alignItems:"center",flexShrink:0,flexWrap:"wrap"}}>
-        {p.emailV1&&<button onClick={e=>{e.stopPropagation();navigator.clipboard.writeText(p.emailV1);alert("Email V1 copiado")}} style={{background:"rgba(78,205,196,.08)",border:`1px solid rgba(78,205,196,.25)`,color:tl,padding:"6px 10px",borderRadius:8,fontSize:10,fontWeight:600,cursor:"pointer"}}>Copiar V1</button>}
-        <select value={p.stage} onClick={e=>e.stopPropagation()} onChange={e=>mvPrSt(p.id,e.target.value)} style={{background:cd2,border:`1px solid ${bd}`,color:PROSC[p.stage]||s2,borderRadius:8,padding:"6px 8px",fontSize:11,fontWeight:600,cursor:"pointer",outline:"none"}}>{PROSTAGES.map(s=><option key={s} style={{color:"#1a202c",background:"#fff"}}>{s}</option>)}</select>
-        {p.stage!=="Cerrado"&&p.stage!=="Descartado"&&<button onClick={e=>{e.stopPropagation();convProspect(p)}} style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.3)",color:"#34d399",padding:"6px 10px",borderRadius:8,fontSize:10,fontWeight:700,cursor:"pointer"}}>→ Cliente</button>}
+    fPros.map(p=><div key={p.id} className="card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:14,padding:"16px 20px",marginBottom:8}}>
+      <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:PROSC[p.stage],flexShrink:0,marginTop:6}}/>
+        <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>ed(p,setPrF,"prospeccion","prF")}>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+            <span style={{fontSize:14,fontWeight:600,color:tx,fontFamily:ibm}}>{p.business||p.name}</span>
+            {p.googleRating&&<span style={{fontSize:10,color:"#f59e0b",fontWeight:600}}>★ {p.googleRating}</span>}
+            {p.googleReviews>0&&<span style={{fontSize:9,color:mt}}>({p.googleReviews})</span>}
+            {p.googleCategory&&<span style={{fontSize:9,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:4,padding:"1px 6px"}}>{p.googleCategory}</span>}
+          </div>
+          <div style={{fontSize:12,color:s2,marginTop:2,fontFamily:ibm}}>
+            {p.business&&p.name!==p.business?p.name+" · ":""}{p.city||""}{p.address&&p.address!==p.city?" · "+p.address:""}
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:4,flexWrap:"wrap",alignItems:"center"}}>
+            {p.email?<span style={{fontSize:11,color:tl,fontWeight:600}}>{p.email}</span>:<span style={{fontSize:10,color:"#f87171",fontStyle:"italic"}}>Sin email</span>}
+            {p.phone&&<span style={{fontSize:11,color:mt}}>{p.phone}</span>}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:4,alignItems:"center",flexShrink:0,flexWrap:"wrap"}}>
+          {p.googleMapsUrl&&<a href={p.googleMapsUrl} target="_blank" rel="noopener" onClick={e=>e.stopPropagation()} style={{background:"rgba(0,0,0,0.04)",border:`1px solid ${bd}`,color:s2,padding:"5px 8px",borderRadius:6,fontSize:10,fontWeight:600,textDecoration:"none",cursor:"pointer"}} title="Google Maps">Maps</a>}
+          {p.url&&<a href={p.url} target="_blank" rel="noopener" onClick={e=>e.stopPropagation()} style={{background:"rgba(0,0,0,0.04)",border:`1px solid ${bd}`,color:tl,padding:"5px 8px",borderRadius:6,fontSize:10,fontWeight:600,textDecoration:"none",cursor:"pointer"}} title="Sitio web">Web</a>}
+          {p.emailV1&&<button onClick={e=>{e.stopPropagation();navigator.clipboard.writeText("Asunto: "+p.subjectV1+"\n\n"+p.emailV1);alert("Email V1 copiado")}} style={{background:"rgba(78,205,196,.08)",border:"1px solid rgba(78,205,196,.25)",color:tl,padding:"5px 8px",borderRadius:6,fontSize:10,fontWeight:600,cursor:"pointer"}}>V1</button>}
+          <select value={p.stage} onClick={e=>e.stopPropagation()} onChange={e=>mvPrSt(p.id,e.target.value)} style={{background:cd2,border:`1px solid ${bd}`,color:PROSC[p.stage]||s2,borderRadius:6,padding:"5px 6px",fontSize:10,fontWeight:600,cursor:"pointer",outline:"none"}}>{PROSTAGES.map(s=><option key={s} style={{color:"#1a202c",background:"#fff"}}>{s}</option>)}</select>
+          {p.stage!=="Cerrado"&&p.stage!=="Descartado"&&<button onClick={e=>{e.stopPropagation();convProspect(p)}} style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.3)",color:"#34d399",padding:"5px 8px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer"}}>→ Cliente</button>}
+        </div>
       </div>
     </div>)}
 </div>)}

@@ -82,19 +82,32 @@ async function prospectExists(googlePlaceId, sbKey) {
   return data.length > 0;
 }
 
-// ─── Generate emails with Claude via generate.js function ───
-async function generateEmails(d, anthropicKey) {
-  // Call our own generate function internally with agent mode
+// ─── Generate emails with Claude via generate.js function (with retry) ───
+async function generateEmails(d, anthropicKey, attempt = 1) {
   const siteUrl = process.env.URL || "https://adminstryv.netlify.app";
-  const res = await fetch(`${siteUrl}/.netlify/functions/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mode: "agent", data: d }),
-  });
-  const data = await res.json();
-  const raw = data.content?.find((b) => b.type === "text")?.text || "";
-  const clean = raw.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
+  try {
+    const res = await fetch(`${siteUrl}/.netlify/functions/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "agent", data: d }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const raw = data.content?.find((b) => b.type === "text")?.text || "";
+    if (!raw) throw new Error("Empty response from Claude");
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+    if (!parsed.emails || parsed.emails.length < 3) throw new Error("Incomplete emails");
+    return parsed;
+  } catch (err) {
+    if (attempt < 2) {
+      console.log(`Retry generating for ${d.business}: ${err.message}`);
+      await new Promise((r) => setTimeout(r, 1000));
+      return generateEmails(d, anthropicKey, attempt + 1);
+    }
+    throw err;
+  }
 }
 
 // ─── Send email via Resend ───

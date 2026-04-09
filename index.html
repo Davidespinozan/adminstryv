@@ -1029,6 +1029,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       </div>
     </div>
     <div style={{display:"flex",gap:6}}>
+      <button onClick={()=>loadAll()} style={{background:"rgba(0,0,0,0.04)",border:`1px solid ${bd}`,color:s2,padding:"12px 14px",borderRadius:10,fontSize:12,minHeight:44,cursor:"pointer",fontFamily:ibm}}>↻</button>
       <button onClick={()=>setAgentOpen(!agentOpen)} style={{background:agentOpen?"rgba(167,139,250,.15)":"rgba(167,139,250,.08)",border:"1px solid rgba(167,139,250,.3)",color:"#a78bfa",padding:"12px 16px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:ibm}}>Agente IA</button>
       <button onClick={()=>goN("prospeccion","prF",setPrF,ePr)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>＋ Nuevo</button>
     </div>

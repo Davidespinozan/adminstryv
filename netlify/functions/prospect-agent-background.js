@@ -16,7 +16,7 @@ async function searchPlaces(query, city, apiKey) {
       "X-Goog-Api-Key": apiKey,
       "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.websiteUri,places.rating,places.userRatingCount,places.types,places.editorialSummary,places.nationalPhoneNumber,places.googleMapsUri,places.primaryType,places.shortFormattedAddress",
     },
-    body: JSON.stringify({ textQuery, maxResultCount: 3 }),
+    body: JSON.stringify({ textQuery, maxResultCount: 20 }),
   });
   const data = await res.json();
   return (data.places || []).map((p) => ({

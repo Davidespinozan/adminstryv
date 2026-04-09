@@ -128,7 +128,8 @@ const iS={width:"100%",background:"#ffffff",border:"1px solid rgba(0,0,0,0.10)",
 const hd={fontSize:11,fontWeight:600,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:16,fontFamily:ibm,paddingLeft:12,borderLeft:"4px solid #0b7798"};
 const bg2=c=>{const b=c?c+"15":"rgba(0,0,0,.04)";const br=c?c+"30":"rgba(0,0,0,.10)";return{background:b,color:c||s2,padding:"4px 12px",borderRadius:999,fontSize:12,fontWeight:600,border:`1px solid ${br}`,height:"fit-content",flexShrink:0}};
 
-const toSn=o=>{const r={};for(const k in o)r[k.replace(/([A-Z])/g,"_$1").toLowerCase()]=o[k];return r};
+const _dateKeys=new Set(["cancel_date","renew_date","start_date","deadline","est_delivery","scheduled_date","date"]);
+const toSn=o=>{const r={};for(const k in o){const sk=k.replace(/([A-Z])/g,"_$1").toLowerCase();const v=o[k];r[sk]=_dateKeys.has(sk)&&v===""?null:v}return r};
 const toCa=o=>{if(!o)return o;const r={};for(const k in o)r[k.replace(/_([a-z])/g,(_,l)=>l.toUpperCase())]=o[k];return r};
 const toCaA=a=>(a||[]).map(toCa);
 async function dSel(t){
@@ -160,7 +161,7 @@ async function dDel(t,id){
 
 const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],stage:"Lead",amount:0,amountPaid:0,mrr:0,notes:"",tasks:[],payments:[],adsPayments:[],currency:"USD"};
 const _eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:"",currency:"USD"};
-const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",cancelDate:"",renewDate:"",paidBy:"STRYV",paidByName:"",currency:"USD",costHistory:{}};
+const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",cancelDate:null,renewDate:null,paidBy:"STRYV",paidByName:"",currency:"USD",costHistory:{}};
 const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,description:"",tasks:[],notes:"",currency:"USD"};
 const _eL={week:1,title:"",description:"",type:"Video",status:"Borrador",version:"v1",assets:[],notes:""};
 const _eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:"",convertedToClient:false,notes:"",currency:"USD"};

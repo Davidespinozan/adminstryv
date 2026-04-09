@@ -221,17 +221,23 @@ async function runAgent(searches) {
     sb: process.env.SUPABASE_SERVICE_KEY,
   };
 
+  console.log("Agent starting. Keys present:", { google: !!keys.google, anthropic: !!keys.anthropic, resend: !!keys.resend, sb: !!keys.sb });
   if (!keys.google || !keys.anthropic || !keys.sb) {
+    console.error("Missing API keys");
     return { error: "Missing API keys (GOOGLE_PLACES_API_KEY, ANTHROPIC_API_KEY, SUPABASE_SERVICE_KEY)" };
   }
 
+  console.log("Processing", searches.length, "searches");
   const results = { searched: 0, new: 0, skipped: 0, emailed: 0, emailsScraped: 0, searchesProcessed: 0, errors: [] };
 
   for (const search of searches) {
+    console.log("Search:", search.query, search.city);
     await processSearch(search, keys, results);
     results.searchesProcessed++;
+    console.log("Progress:", JSON.stringify(results));
   }
 
+  console.log("Agent done:", JSON.stringify(results));
   return results;
 }
 
@@ -242,12 +248,14 @@ async function manualHandler(event) {
   }
   try {
     const body = JSON.parse(event.body || "{}");
+    console.log("Manual trigger received:", JSON.stringify(body));
     const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
+    console.log("SB_KEY present:", !!SB_KEY);
 
     let searches;
     if (body.useDb) {
-      // Run from DB searches
       searches = await getSearches(SB_KEY, body.limit || 30);
+      console.log("Got", searches.length, "searches from DB");
     } else if (body.searches?.length) {
       // Run specific searches (from dashboard input)
       searches = body.searches;

@@ -231,6 +231,8 @@ const eCt={..._eCt};
 
 const[cF,setCF]=useState({...eC});const[mF,setMF]=useState({...eM});const[tF,setTF]=useState({...eT});
 const[pF,setPF]=useState({...eP});const[lF,setLF]=useState({...eL});const[sF,setSF]=useState({...eSt});const[iF,setIF]=useState({...eI});const[prF,setPrF]=useState({...ePr});const[ctF,setCtF]=useState({...eCt});const[prGenLoading,setPrGenLoading]=useState(false);
+const[agentQuery,setAgentQuery]=useState("");const[agentCity,setAgentCity]=useState("");const[agentRunning,setAgentRunning]=useState(false);const[agentResult,setAgentResult]=useState(null);const[agentOpen,setAgentOpen]=useState(false);
+const runAgent=async()=>{if(!agentQuery||!agentCity){alert("Tipo de negocio y ciudad requeridos");return}setAgentRunning(true);setAgentResult(null);try{const res=await fetch("/.netlify/functions/prospect-agent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({searches:[{query:agentQuery,city:agentCity}]})});const data=await res.json();setAgentResult(data);await loadAll()}catch(err){setAgentResult({error:err.message})}setAgentRunning(false)};
 const[ctVw,setCtVw]=useState("lista");
 
 const cl=D.clients,tm=D.team,tls=D.tools,pjs=D.projects,lsns=D.lessons,sts=D.students,invs=D.investments,leads=D.leads,snaps=D.snapshots||[],pros=D.prospects||[],cts=D.content||[];
@@ -1026,8 +1028,23 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{fPros.length}</span>
       </div>
     </div>
-    <button onClick={()=>goN("prospeccion","prF",setPrF,ePr)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>＋ Nuevo</button>
+    <div style={{display:"flex",gap:6}}>
+      <button onClick={()=>setAgentOpen(!agentOpen)} style={{background:agentOpen?"rgba(167,139,250,.15)":"rgba(167,139,250,.08)",border:"1px solid rgba(167,139,250,.3)",color:"#a78bfa",padding:"12px 16px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:ibm}}>Agente IA</button>
+      <button onClick={()=>goN("prospeccion","prF",setPrF,ePr)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>＋ Nuevo</button>
+    </div>
   </div>
+  {agentOpen&&<div style={{background:cd,border:"1px solid rgba(167,139,250,.2)",borderRadius:14,padding:16,marginBottom:14}}>
+    <div style={{...hd,color:"#a78bfa",borderLeftColor:"#a78bfa",marginBottom:12}}>Agente de prospección</div>
+    <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+      <input value={agentQuery} onChange={e=>setAgentQuery(e.target.value)} placeholder="Tipo de negocio (ej. gimnasios, restaurantes...)" style={{...iS,flex:2,minWidth:180}}/>
+      <input value={agentCity} onChange={e=>setAgentCity(e.target.value)} placeholder="Ciudad (ej. Guadalajara)" style={{...iS,flex:1,minWidth:120}}/>
+      <button onClick={runAgent} disabled={agentRunning} style={{background:agentRunning?"rgba(167,139,250,.3)":"#a78bfa",border:"none",color:"#fff",padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:agentRunning?"wait":"pointer",fontFamily:ibm,display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>{agentRunning?<><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>Buscando...</>:"Buscar y generar"}</button>
+    </div>
+    {agentResult&&<div style={{fontSize:11,padding:10,background:agentResult.error?"rgba(239,68,68,.06)":"rgba(52,211,153,.06)",border:`1px solid ${agentResult.error?"rgba(239,68,68,.2)":"rgba(52,211,153,.2)"}`,borderRadius:8,color:agentResult.error?"#ef4444":tx}}>
+      {agentResult.error?`Error: ${agentResult.error}`:`Encontrados: ${agentResult.searched} · Nuevos: ${agentResult.new} · Ya existían: ${agentResult.skipped} · Emails enviados: ${agentResult.emailed}${agentResult.errors?.length?` · Errores: ${agentResult.errors.length}`:""}`}
+    </div>}
+    <div style={{fontSize:9,color:mt,marginTop:8}}>Busca negocios en Google, genera 3 emails con IA y envía el V1 automáticamente. Los prospectos aparecen en la lista.</div>
+  </div>}
   <div className="mob-col" style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
     <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>
     <select value={fSt} onChange={e=>setFSt(e.target.value)} style={{...iS,width:"auto"}}><option value="Todos">Todas</option>{PROSTAGES.map(s=><option key={s}>{s}</option>)}</select>

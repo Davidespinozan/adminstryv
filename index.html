@@ -1036,8 +1036,10 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   {agentOpen&&<div style={{background:cd,border:"1px solid rgba(167,139,250,.2)",borderRadius:14,padding:16,marginBottom:14}}>
     <div style={{...hd,color:"#a78bfa",borderLeftColor:"#a78bfa",marginBottom:12}}>Agente de prospección</div>
     <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-      <input value={agentQuery} onChange={e=>setAgentQuery(e.target.value)} placeholder="Tipo de negocio (ej. gimnasios)" style={{...iS,flex:2,minWidth:140}}/>
-      <input value={agentCity} onChange={e=>setAgentCity(e.target.value)} placeholder="Ciudad" style={{...iS,flex:1,minWidth:100}}/>
+      {(()=>{const ps=D.prospectSearches||[];const queries=[...new Set(ps.map(s=>s.query))].sort();const cities=[...new Set(ps.map(s=>s.city))].sort();return<>
+      <><input list="agentQueries" value={agentQuery} onChange={e=>setAgentQuery(e.target.value)} placeholder="Tipo de negocio..." style={{...iS,flex:2,minWidth:140}}/><datalist id="agentQueries">{queries.map(q=><option key={q} value={q}/>)}</datalist></>
+      <><input list="agentCities" value={agentCity} onChange={e=>setAgentCity(e.target.value)} placeholder="Ciudad..." style={{...iS,flex:1,minWidth:100}}/><datalist id="agentCities">{cities.map(c=><option key={c} value={c}/>)}</datalist></>
+      </>})()}
       <button onClick={async()=>{if(!agentQuery||!agentCity)return alert("Llena tipo y ciudad");await dIns("prospect_searches",{query:agentQuery,city:agentCity,active:true});setAgentQuery("");setAgentCity("");await loadAll()}} style={{background:"rgba(167,139,250,.1)",border:"1px solid rgba(167,139,250,.3)",color:"#a78bfa",padding:"10px 14px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>＋ Guardar</button>
       <button onClick={runAgent} disabled={agentRunning} style={{background:agentRunning?"rgba(167,139,250,.3)":"#a78bfa",border:"none",color:"#fff",padding:"10px 16px",borderRadius:8,fontSize:11,minHeight:40,fontWeight:700,cursor:agentRunning?"wait":"pointer",fontFamily:ibm,display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>{agentRunning?<><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>Ejecutando...</>:"Ejecutar ahora"}</button>
     </div>

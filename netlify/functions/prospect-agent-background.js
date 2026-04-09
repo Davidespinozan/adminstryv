@@ -37,39 +37,53 @@ async function searchPlaces(query, city, apiKey) {
   }));
 }
 
-// ─── Scrape email from website ───
-async function scrapeEmail(url) {
-  if (!url) return null;
+// ─── Fetch a single page ───
+async function fetchPage(url) {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 6000);
     const res = await fetch(url, {
       signal: controller.signal,
       headers: { "User-Agent": "Mozilla/5.0 (compatible; STRYVBot/1.0)" },
     });
     clearTimeout(timeout);
-    if (!res.ok) return null;
-    const html = await res.text();
-    // Find emails in HTML — exclude common false positives
-    const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
-    const found = [...new Set(html.match(emailRegex) || [])];
-    const filtered = found.filter(
-      (e) =>
-        !e.includes("example.com") &&
-        !e.includes("sentry") &&
-        !e.includes("wixpress") &&
-        !e.includes("wordpress") &&
-        !e.includes(".png") &&
-        !e.includes(".jpg") &&
-        !e.includes(".webp") &&
-        !e.endsWith(".js") &&
-        !e.endsWith(".css") &&
-        e.length < 60
-    );
-    return filtered[0] || null;
-  } catch {
-    return null;
+    if (!res.ok) return "";
+    return await res.text();
+  } catch { return ""; }
+}
+
+// ─── Extract emails from HTML ───
+function extractEmails(html) {
+  const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+  const found = [...new Set(html.match(emailRegex) || [])];
+  return found.filter(e =>
+    !e.includes("example.com") && !e.includes("sentry") && !e.includes("wixpress") &&
+    !e.includes("wordpress") && !e.includes(".png") && !e.includes(".jpg") &&
+    !e.includes(".webp") && !e.endsWith(".js") && !e.endsWith(".css") && e.length < 60
+  );
+}
+
+// ─── Deep scrape: main page + /contacto, /contact, /about, /nosotros ───
+async function scrapeWebsite(url) {
+  if (!url) return { email: null, context: "" };
+  const base = url.replace(/\/+$/, "");
+  const pages = [base, base + "/contacto", base + "/contact", base + "/about", base + "/nosotros"];
+  let allEmails = [];
+  let context = "";
+
+  for (const page of pages) {
+    const html = await fetchPage(page);
+    if (!html) continue;
+    allEmails.push(...extractEmails(html));
+    // Extract useful text snippets (meta description, title, about text)
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+    if (titleMatch && !context.includes(titleMatch[1])) context += titleMatch[1] + ". ";
+    if (descMatch && !context.includes(descMatch[1])) context += descMatch[1] + ". ";
   }
+
+  const uniqueEmails = [...new Set(allEmails)];
+  return { email: uniqueEmails[0] || null, context: context.substring(0, 500) };
 }
 
 // ─── Check if prospect exists in Supabase ───
@@ -154,6 +168,11 @@ async function createProspect(data, sbKey) {
       subject_v1: data.subjectV1 || "",
       subject_v2: data.subjectV2 || "",
       subject_v3: data.subjectV3 || "",
+      inferred_how_sells: data.inferredHowSells || "",
+      inferred_what_delivers: data.inferredWhatDelivers || "",
+      inferred_operation: data.inferredOperation || "",
+      inferred_pain: data.inferredPain || "",
+      inferred_system: data.inferredSystem || "",
       email_v1: data.emailV1 || "",
       email_v2: data.emailV2 || "",
       email_v3: data.emailV3 || "",
@@ -191,19 +210,28 @@ async function processSearch(search, keys, results) {
         const exists = await prospectExists(place.googlePlaceId, keys.sb);
         if (exists) { results.skipped++; continue; }
 
+        // Deep scrape website for email + context
         if (place.url) {
-          const scraped = await scrapeEmail(place.url);
-          if (scraped) { place.email = scraped; results.emailsScraped++; }
+          const scrapeResult = await scrapeWebsite(place.url);
+          if (scrapeResult.email) { place.email = scrapeResult.email; results.emailsScraped++; }
+          if (scrapeResult.context) place.websiteContext = scrapeResult.context;
         }
 
+        // Generate emails + analysis with Claude
         const emailData = await generateEmails(place, keys.anthropic);
         const emails = emailData.emails || [];
+        const analysis = emailData.analysis || {};
         place.subjectV1 = emails[0]?.subject || "";
         place.emailV1 = emails[0]?.body || "";
         place.subjectV2 = emails[1]?.subject || "";
         place.emailV2 = emails[1]?.body || "";
         place.subjectV3 = emails[2]?.subject || "";
         place.emailV3 = emails[2]?.body || "";
+        place.inferredHowSells = analysis.howSells || "";
+        place.inferredWhatDelivers = analysis.whatDelivers || "";
+        place.inferredOperation = analysis.operation || "";
+        place.inferredPain = analysis.pain || "";
+        place.inferredSystem = analysis.system || "";
 
         if (place.email && keys.resend) {
           const sendResult = await sendEmail(place.email, place.subjectV1, place.emailV1, keys.resend);

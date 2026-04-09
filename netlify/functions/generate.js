@@ -35,6 +35,7 @@ PROSPECTO:
 - Descripción: ${d.googleDescription || 'no proporcionada'}
 - Rating: ${d.googleRating || 'N/A'} (${d.googleReviews || 0} reseñas)
 - Contacto: ${d.name || 'dueño/a'}
+${d.websiteContext ? '- Contexto del sitio web: ' + d.websiteContext : ''}
 
 Con los datos disponibles infiere:
 
@@ -104,7 +105,7 @@ CTA OBLIGATORIO para los 3 emails (úsalo textual o con variación mínima):
 — Firma siempre: David Espinoza / STRYV · Sistemas Operativos Digitales / stryvstudio.com
 
 RESPONDE SOLO EN JSON sin markdown ni texto adicional:
-{"emails":[{"subject":"...","body":"..."},{"subject":"...","body":"..."},{"subject":"...","body":"..."}]}`;
+{"analysis":{"howSells":"...","whatDelivers":"...","operation":"...","pain":"...","system":"..."},"emails":[{"subject":"...","body":"..."},{"subject":"...","body":"..."},{"subject":"...","body":"..."}]}`;
 
 function buildManualPrompt(d) {
   return `Eres David Espinoza, fundador de STRYV (stryvstudio.com), escribiendo desde Valencia, España.

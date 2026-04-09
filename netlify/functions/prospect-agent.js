@@ -84,74 +84,14 @@ async function prospectExists(googlePlaceId, sbKey) {
   return data.length > 0;
 }
 
-// ─── Generate emails with Claude (agent mode) ───
+// ─── Generate emails with Claude via generate.js function ───
 async function generateEmails(d, anthropicKey) {
-  const prompt = `Eres David Espinoza, fundador de STRYV (stryvstudio.com) — un estudio que construye sistemas operativos digitales para negocios en México y Latinoamérica. Escribes desde Madrid, España.
-
-STRYV ofrece 5 sistemas según lo que el negocio necesite:
-1. Sistema de Ventas y Entrega — para negocios que venden online o quieren sistematizar su proceso comercial
-2. Sistema de Atención y Soporte — para negocios con muchos mensajes, consultas o casos sin sistema
-3. Sistema de Conversión y Retención Local — para negocios físicos que quieren más recurrencia de clientes
-4. Sistema de Operación Interna — para negocios con inventario, producción, equipos o procesos internos complejos
-5. Sistema de Contenido con IA — para negocios que necesitan generar contenido de forma sistemática
-
-STRYV NO hace: branding, logos, contenido, redes sociales, ni publicidad pagada. Solo construye sistemas operativos digitales.
-Los proyectos son por ticket de implementación (no mensualidades). Duran 4 a 6 semanas. Los primeros resultados se ven en 48-72 horas.
-
-PROSPECTO (datos de Google Places — analiza e infiere):
-- Nombre del negocio: ${d.business}
-- Ciudad: ${d.city || "no especificada"}
-- Dirección: ${d.address || "no proporcionada"}
-- URL: ${d.url || "no proporcionada"}
-- Categoría: ${d.googleCategory || "no especificada"}
-- Tipos: ${d.googleTypes || "no especificados"}
-- Descripción: ${d.googleDescription || "no proporcionada"}
-- Rating: ${d.googleRating || "N/A"} (${d.googleReviews || 0} reseñas)
-- Contacto: ${d.name || "dueño/a"}
-
-IMPORTANTE — ANÁLISIS AUTOMÁTICO:
-A partir de la categoría, descripción y URL del negocio, TÚ debes inferir:
-1. Qué hace este negocio y cuál es su actividad principal
-2. Cómo probablemente vende (presencial, online, WhatsApp, redes, etc.)
-3. Qué entrega (servicio, producto, consultoría, etc.)
-4. Cómo opera probablemente (tamaño del equipo, tipo de operación)
-5. Cuál es el problema más probable que tiene basado en su tipo de negocio
-
-Usa esas inferencias para escribir emails que suenen como si David hubiera investigado el negocio personalmente.
-Si hay URL, menciona algo específico que hayas "notado" en su presencia digital.
-Si hay reseñas/rating, puedes usarlo como gancho positivo.
-
-INSTRUCCIONES:
-Escribe 3 emails de prospección completamente distintos en tono y ángulo.
-
-Reglas de tono:
-- Suenan como un email que David escribió específicamente para este prospecto, no un template
-- Arrancan con "Buen día" o "Hola" — nunca menciones la ciudad de David ni la del prospecto en el saludo
-- Nunca suena a plantilla de ventas — es conversacional, directo, sin exageraciones
-- Menciona los sistemas de STRYV que aplican de forma natural dentro del texto, no como lista
-- El CTA es siempre una invitación a platicar 20 minutos, sin presión
-- Firma siempre: David Espinoza / STRYV · Sistemas Operativos Digitales / stryvstudio.com
-
-Los 3 emails deben tener:
-- V1: tono personal y observacional — abre con algo específico que notó del negocio
-- V2: tono cercano y conversacional — como alguien que tiene una idea y quiere compartirla
-- V3: muy corto — una sola observación o pregunta incómoda, sin pitch largo
-
-Responde SOLO en este formato JSON (sin markdown, sin explicaciones):
-{"emails":[{"subject":"...","body":"..."},{"subject":"...","body":"..."},{"subject":"...","body":"..."}]}`;
-
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  // Call our own generate function internally with agent mode
+  const siteUrl = process.env.URL || "https://adminstryv.netlify.app";
+  const res = await fetch(`${siteUrl}/.netlify/functions/generate`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": anthropicKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
-      messages: [{ role: "user", content: prompt }],
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: "agent", data: d }),
   });
   const data = await res.json();
   const raw = data.content?.find((b) => b.type === "text")?.text || "";

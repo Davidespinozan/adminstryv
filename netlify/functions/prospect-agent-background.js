@@ -241,35 +241,79 @@ async function runAgent(searches) {
   return results;
 }
 
+// ─── Lock mechanism ───
+async function acquireLock(sbKey) {
+  // Try to insert lock row — fails if one already exists
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/agent_lock`, {
+    method: "POST",
+    headers: { ...sbHeaders(sbKey), Prefer: "return=representation" },
+    body: JSON.stringify({ id: "prospect-agent", started_at: new Date().toISOString() }),
+  });
+  if (!res.ok) {
+    // Check if lock is stale (older than 14 minutes)
+    const check = await fetch(`${SUPABASE_URL}/rest/v1/agent_lock?id=eq.prospect-agent&select=started_at`, { headers: sbHeaders(sbKey) });
+    const rows = await check.json();
+    if (rows.length && rows[0].started_at) {
+      const age = Date.now() - new Date(rows[0].started_at).getTime();
+      if (age > 14 * 60 * 1000) {
+        // Stale lock — release and retry
+        await releaseLock(sbKey);
+        const retry = await fetch(`${SUPABASE_URL}/rest/v1/agent_lock`, {
+          method: "POST",
+          headers: { ...sbHeaders(sbKey), Prefer: "return=representation" },
+          body: JSON.stringify({ id: "prospect-agent", started_at: new Date().toISOString() }),
+        });
+        return retry.ok;
+      }
+    }
+    return false;
+  }
+  return true;
+}
+
+async function releaseLock(sbKey) {
+  await fetch(`${SUPABASE_URL}/rest/v1/agent_lock?id=eq.prospect-agent`, {
+    method: "DELETE",
+    headers: sbHeaders(sbKey),
+  });
+}
+
 // ─── Manual trigger handler ───
 async function manualHandler(event) {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" }, body: "" };
   }
+  const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
   try {
+    const locked = await acquireLock(SB_KEY);
+    if (!locked) {
+      console.log("Agent already running, skipping");
+      return { statusCode: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "El agente ya está ejecutándose. Espera a que termine." }) };
+    }
+
     const body = JSON.parse(event.body || "{}");
     console.log("Manual trigger received:", JSON.stringify(body));
-    const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-    console.log("SB_KEY present:", !!SB_KEY);
 
     let searches;
     if (body.useDb) {
       searches = await getSearches(SB_KEY, body.limit || 30);
       console.log("Got", searches.length, "searches from DB");
     } else if (body.searches?.length) {
-      // Run specific searches (from dashboard input)
       searches = body.searches;
     } else {
+      await releaseLock(SB_KEY);
       return { statusCode: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "No searches provided" }) };
     }
 
     const results = await runAgent(searches);
+    await releaseLock(SB_KEY);
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify(results),
     };
   } catch (err) {
+    await releaseLock(SB_KEY);
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },

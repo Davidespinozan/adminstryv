@@ -112,6 +112,7 @@ async function generateEmails(d, anthropicKey, attempt = 1) {
     if (!raw) throw new Error("Empty response from Claude");
     const clean = raw.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
+    if (parsed.skip) return { skip: true, reason: parsed.reason || "Filtered" };
     if (!parsed.emails || parsed.emails.length < 3) throw new Error("Incomplete emails");
     return parsed;
   } catch (err) {
@@ -219,6 +220,7 @@ async function processSearch(search, keys, results) {
 
         // Generate emails + analysis with Claude
         const emailData = await generateEmails(place, keys.anthropic);
+        if (emailData.skip) { console.log(`Skipped ${place.business}: ${emailData.reason}`); results.skipped++; continue; }
         const emails = emailData.emails || [];
         const analysis = emailData.analysis || {};
         place.subjectV1 = emails[0]?.subject || "";

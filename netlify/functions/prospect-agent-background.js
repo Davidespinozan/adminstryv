@@ -139,6 +139,7 @@ async function sendEmail(to, subject, body, resendKey) {
       to: [to],
       subject: subject,
       text: body,
+      html: body.replace(/\n/g, "<br>"),
     }),
   });
   return res.json();

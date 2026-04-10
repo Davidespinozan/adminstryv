@@ -125,6 +125,29 @@ async function generateEmails(d, anthropicKey, attempt = 1) {
   }
 }
 
+// ─── Daily send limit (escalating) ───
+async function getDailyLimit() {
+  // Start date: when we began sending
+  const startDate = new Date("2026-04-10");
+  const now = new Date();
+  const daysSinceStart = Math.floor((now - startDate) / 86400000);
+  const week = Math.floor(daysSinceStart / 7);
+  if (week <= 0) return 500;
+  if (week === 1) return 1000;
+  if (week === 2) return 2000;
+  return 3500;
+}
+
+async function getSentToday(sbKey) {
+  const today = new Date().toISOString().split("T")[0];
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/prospects?stage=eq.Contactado&created_at=gte.${today}T00:00:00&select=id`,
+    { headers: sbHeaders(sbKey), method: "HEAD" }
+  );
+  const count = parseInt(res.headers.get("content-range")?.split("/")[1] || "0");
+  return count;
+}
+
 // ─── Send email via Resend ───
 async function sendEmail(to, subject, body, resendKey) {
   const res = await fetch("https://api.resend.com/emails", {
@@ -227,11 +250,16 @@ async function processSearch(search, keys, results) {
         place.emailV3 = emails[2]?.body || "";
         place.inferredAnalysis = emailData.analysis || "";
 
-        // ENVÍOS PAUSADOS — acumulando prospectos sin enviar
-        // if (place.email && keys.resend) {
-        //   const sendResult = await sendEmail(place.email, place.subjectV1, place.emailV1, keys.resend);
-        //   if (sendResult.id) { place.stage = "Contactado"; results.emailed++; }
-        // }
+        if (place.email && keys.resend) {
+          const limit = await getDailyLimit();
+          const sent = await getSentToday(keys.sb);
+          if (sent < limit) {
+            const sendResult = await sendEmail(place.email, place.subjectV1, place.emailV1, keys.resend);
+            if (sendResult.id) { place.stage = "Contactado"; results.emailed++; }
+          } else {
+            console.log(`Daily limit reached (${sent}/${limit}), skipping send for ${place.business}`);
+          }
+        }
 
         await createProspect(place, keys.sb);
         results.new++;

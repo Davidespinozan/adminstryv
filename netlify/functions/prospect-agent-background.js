@@ -53,9 +53,9 @@ async function fetchPage(url) {
 }
 
 // ─── Blocked email patterns (bounce-prone) ───
-const BLOCKED_PREFIXES = ["noreply","no-reply","no_reply","donotreply","mailer-daemon","postmaster","abuse","spam","bounce","unsubscribe","newsletter","notifications","alert","system","admin@localhost"];
+const BLOCKED_PREFIXES = ["noreply","no-reply","no_reply","donotreply","mailer-daemon","postmaster","abuse","spam","bounce","unsubscribe","newsletter","notifications","alert","system","admin@localhost","privacy","soporte","support","legal","compliance","webmaster","hostmaster","security","billing","sales","marketing"];
 const BLOCKED_DOMAINS = ["example.com","test.com","sentry.io","wixpress.com","wordpress.com","squarespace.com","godaddy.com","shopify.com","mailchimp.com","sendgrid.net","amazonaws.com","googlemail.com","outlook.com","hotmail.com","yahoo.com","gmail.com","icloud.com","protonmail.com"];
-const BLOCKED_PATTERNS = [".png",".jpg",".jpeg",".webp",".gif",".svg",".css",".js",".woff",".ttf","@2x","@3x"];
+const BLOCKED_PATTERNS = [".png",".jpg",".jpeg",".webp",".gif",".svg",".css",".js",".woff",".ttf",".ico",".pdf","@2x","@3x","%20","%40","correo.com","email.com","mail.com","test."];
 
 // ─── Extract and validate emails from HTML ───
 function extractEmails(html) {
@@ -68,6 +68,7 @@ function extractEmails(html) {
     if (lower.length > 60 || lower.length < 6) return false;
     if (BLOCKED_PREFIXES.some(bp => prefix === bp || prefix.startsWith(bp + "+"))) return false;
     if (BLOCKED_DOMAINS.some(bd => domain === bd || domain.endsWith("." + bd))) return false;
+    if (domain.includes(".edu.") || domain.endsWith(".edu") || domain.includes(".gob.") || domain.endsWith(".gob") || domain.includes(".gov.") || domain.endsWith(".gov")) return false;
     if (BLOCKED_PATTERNS.some(bp => lower.includes(bp))) return false;
     // Must have valid TLD
     const tld = domain.split(".").pop();

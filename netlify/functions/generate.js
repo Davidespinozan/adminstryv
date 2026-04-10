@@ -65,7 +65,7 @@ V2 — PREGUNTA Y CONTEXTO (máximo 80 palabras)
 - Saludo
 - Una pregunta directa que toque el dolor más probable de este negocio
 - Una línea de contexto de cómo STRYV resuelve eso
-- CTA flexible
+- Usa el CTA completo o una versión corta: responde este correo o escríbenos por WhatsApp al +1 (737) 368-3464 — sin compromiso.
 - Firma completa
 
 V3 — OBSERVACIÓN DIRECTA (máximo 40 palabras + firma)
@@ -80,7 +80,7 @@ V3 — OBSERVACIÓN DIRECTA (máximo 40 palabras + firma)
 
 Soy David, fundador de STRYV — construimos sistemas operativos digitales para negocios.
 
-Tienen un spa termal con mucho volumen de clientes — ese tipo de experiencia genera lealtad. Lo que casi siempre falta es el sistema que hace que esos clientes regresen solos, sin que nadie del equipo tenga que hacer seguimiento manual.
+Tienen un spa termal con mucho volumen de clientes — ese tipo de experiencia genera lealtad. Me pareció que un sistema que haga que esos clientes regresen automáticamente les funcionaría muy bien.
 
 Creo que les vendría muy bien un sistema de conversión local que automatice exactamente eso.
 
@@ -114,6 +114,7 @@ POR QUÉ EL PRIMERO ES MEJOR:
 8. NUNCA escribas algo que pueda enviarse a otro negocio sin cambiar nada — cada email es único
 9. NUNCA menciones que el negocio "depende del dueño"
 10. V1 máximo 120 palabras · V2 máximo 80 palabras · V3 máximo 40 palabras + firma
+11. ASUNTOS: máximo 6 palabras, específicos al negocio, que generen curiosidad. NUNCA genéricos como "Una propuesta para tu negocio" o "Hola desde STRYV". Ejemplos buenos: "¿Tus clientes regresan solos?" · "Una idea para Altotermal" · "Algo que noté en tu negocio"
 
 FIRMA DE TODOS LOS EMAILS:
 ${FIRMA}

@@ -53,9 +53,9 @@ async function fetchPage(url) {
 }
 
 // ─── Blocked email patterns (bounce-prone) ───
-const BLOCKED_PREFIXES = ["noreply","no-reply","no_reply","donotreply","mailer-daemon","postmaster","abuse","spam","bounce","unsubscribe","newsletter","notifications","alert","system","admin@localhost","privacy","soporte","support","legal","compliance","webmaster","hostmaster","security","billing","sales","marketing"];
-const BLOCKED_DOMAINS = ["example.com","test.com","sentry.io","wixpress.com","wordpress.com","squarespace.com","godaddy.com","shopify.com","mailchimp.com","sendgrid.net","amazonaws.com","googlemail.com","outlook.com","hotmail.com","yahoo.com","gmail.com","icloud.com","protonmail.com"];
-const BLOCKED_PATTERNS = [".png",".jpg",".jpeg",".webp",".gif",".svg",".css",".js",".woff",".ttf",".ico",".pdf","@2x","@3x","%20","%40","correo.com","email.com","mail.com","test."];
+const BLOCKED_PREFIXES = ["noreply","no-reply","no_reply","donotreply","mailer-daemon","postmaster","abuse","spam","bounce","unsubscribe","newsletter","notifications","alert","system","webmaster","hostmaster","security","privacy","compliance","root"];
+const BLOCKED_DOMAINS = ["example.com","test.com","sentry.io","wixpress.com","wordpress.com","squarespace.com","godaddy.com","shopify.com","mailchimp.com","sendgrid.net","amazonaws.com"];
+const BLOCKED_PATTERNS = [".png",".jpg",".jpeg",".webp",".gif",".svg",".css",".js",".woff",".ttf",".ico","@2x","@3x","%20","%40"];
 
 // ─── Extract and validate emails from HTML ───
 function extractEmails(html) {

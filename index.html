@@ -135,7 +135,7 @@ const toCaA=a=>(a||[]).map(toCa);
 async function dSel(t){
   let q=SB.from(t).select("*",{count:"exact"});
   if(_softDelTables.includes(t))q=q.is("deleted_at",null);
-  q=q.order("created_at",{ascending:true}).limit(2000);
+  q=q.order("created_at",{ascending:t!=="prospects"}).limit(2000);
   const{data,error,count}=await q;
   if(!error&&count>2000)console.warn(`⚠ ${t}: ${count} rows, mostrando 2000`);
   return error?[]:toCaA(data);
@@ -1077,7 +1077,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
             {p.googleReviews>0&&<span style={{fontSize:9,color:mt}}>({p.googleReviews})</span>}
           </div>
           <div style={{fontSize:11,color:s2,marginTop:2,fontFamily:ibm}}>{p.city||""}{p.googleCategory?" · "+p.googleCategory:""}</div>
-          <div style={{fontSize:11,color:mt,marginTop:1}}>{p.email?<span style={{color:tl,fontWeight:600}}>{p.email}</span>:<span style={{color:"#f87171",fontStyle:"italic"}}>Sin email</span>}{p.phone?" · "+p.phone:""}</div>
+          <div style={{fontSize:11,color:mt,marginTop:1}}>{p.email?<span style={{color:tl,fontWeight:600}}>{p.email}</span>:<span style={{color:"#f87171",fontStyle:"italic"}}>Sin email</span>}{p.phone?" · "+p.phone:""}{p.createdAt&&<span style={{marginLeft:6,fontSize:9,color:mt,fontFamily:"'Geist Mono',monospace"}}>{(p.createdAt+"").substring(0,16).replace("T"," ")}</span>}</div>
         </div>
         <span style={bg2(PROSC[p.stage])}>{p.stage}</span>
       </div>

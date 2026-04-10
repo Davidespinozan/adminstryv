@@ -169,11 +169,7 @@ async function createProspect(data, sbKey) {
       subject_v1: data.subjectV1 || "",
       subject_v2: data.subjectV2 || "",
       subject_v3: data.subjectV3 || "",
-      inferred_how_sells: data.inferredHowSells || "",
-      inferred_what_delivers: data.inferredWhatDelivers || "",
-      inferred_operation: data.inferredOperation || "",
-      inferred_pain: data.inferredPain || "",
-      inferred_system: data.inferredSystem || "",
+      inferred_analysis: data.inferredAnalysis || "",
       email_v1: data.emailV1 || "",
       email_v2: data.emailV2 || "",
       email_v3: data.emailV3 || "",
@@ -222,18 +218,13 @@ async function processSearch(search, keys, results) {
         const emailData = await generateEmails(place, keys.anthropic);
         if (emailData.skip) { console.log(`Skipped ${place.business}: ${emailData.reason}`); results.skipped++; continue; }
         const emails = emailData.emails || [];
-        const analysis = emailData.analysis || {};
         place.subjectV1 = emails[0]?.subject || "";
         place.emailV1 = emails[0]?.body || "";
         place.subjectV2 = emails[1]?.subject || "";
         place.emailV2 = emails[1]?.body || "";
         place.subjectV3 = emails[2]?.subject || "";
         place.emailV3 = emails[2]?.body || "";
-        place.inferredHowSells = analysis.howSells || "";
-        place.inferredWhatDelivers = analysis.whatDelivers || "";
-        place.inferredOperation = analysis.operation || "";
-        place.inferredPain = analysis.pain || "";
-        place.inferredSystem = analysis.system || "";
+        place.inferredAnalysis = emailData.analysis || "";
 
         if (place.email && keys.resend) {
           const sendResult = await sendEmail(place.email, place.subjectV1, place.emailV1, keys.resend);

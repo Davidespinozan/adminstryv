@@ -226,10 +226,11 @@ async function processSearch(search, keys, results) {
         place.emailV3 = emails[2]?.body || "";
         place.inferredAnalysis = emailData.analysis || "";
 
-        if (place.email && keys.resend) {
-          const sendResult = await sendEmail(place.email, place.subjectV1, place.emailV1, keys.resend);
-          if (sendResult.id) { place.stage = "Contactado"; results.emailed++; }
-        }
+        // ENVÍOS PAUSADOS — acumulando prospectos sin enviar
+        // if (place.email && keys.resend) {
+        //   const sendResult = await sendEmail(place.email, place.subjectV1, place.emailV1, keys.resend);
+        //   if (sendResult.id) { place.stage = "Contactado"; results.emailed++; }
+        // }
 
         await createProspect(place, keys.sb);
         results.new++;

@@ -82,12 +82,15 @@ async function validateEmail(email) {
   if (!email) return false;
   const domain = email.split("@")[1];
   try {
-    // Check if domain has MX records via DNS-over-HTTPS
     const res = await fetch(`https://dns.google/resolve?name=${domain}&type=MX`);
     const data = await res.json();
-    return data.Answer && data.Answer.length > 0;
+    if (data.Answer && data.Answer.length > 0) return true;
+    // Fallback: check A record (some domains receive mail without MX)
+    const res2 = await fetch(`https://dns.google/resolve?name=${domain}&type=A`);
+    const data2 = await res2.json();
+    return data2.Answer && data2.Answer.length > 0;
   } catch {
-    return true; // If DNS check fails, allow it (benefit of the doubt)
+    return true;
   }
 }
 
@@ -192,9 +195,11 @@ async function getSentToday(sbKey) {
   const today = new Date().toISOString().split("T")[0];
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/prospects?stage=eq.Contactado&created_at=gte.${today}T00:00:00&select=id`,
-    { headers: sbHeaders(sbKey), method: "HEAD" }
+    { headers: { ...sbHeaders(sbKey), Prefer: "count=exact" } }
   );
-  const count = parseInt(res.headers.get("content-range")?.split("/")[1] || "0");
+  const range = res.headers.get("content-range") || "";
+  const count = parseInt(range.split("/")[1] || "0");
+  console.log(`Sent today: ${count}, range header: ${range}`);
   return count;
 }
 
@@ -303,12 +308,16 @@ async function processSearch(search, keys, results) {
         if (place.email && keys.resend) {
           const limit = await getDailyLimit();
           const sent = await getSentToday(keys.sb);
+          console.log(`Email: ${place.email} | Limit: ${sent}/${limit}`);
           if (sent < limit) {
             const sendResult = await sendEmail(place.email, place.subjectV1, place.emailV1, keys.resend);
+            console.log(`Send result for ${place.business}:`, JSON.stringify(sendResult));
             if (sendResult.id) { place.stage = "Contactado"; results.emailed++; }
           } else {
             console.log(`Daily limit reached (${sent}/${limit}), skipping send for ${place.business}`);
           }
+        } else {
+          console.log(`No email for ${place.business}, skipping send`);
         }
 
         await createProspect(place, keys.sb);

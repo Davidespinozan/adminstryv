@@ -44,11 +44,12 @@ ${d.websiteContext ? '- Contexto del sitio web: ' + d.websiteContext : ''}
 
 Con los datos disponibles infiere en máximo 50 palabras: qué hace este negocio, cuál es su dolor más probable, qué sistema le aplica mejor. Guarda esto como campo analysis.
 
-═══ DETECTA EL PAÍS Y USA EL ESPAÑOL CORRECTO ═══
+═══ ESPAÑOL NEUTRO ═══
 
-- México, LATAM, USA hispanohablante → tú/ustedes mexicano. NUNCA uses "os" ni "vosotros"
-- España → puedes usar tú/vosotros español
-- NUNCA mezcles los dos estilos en el mismo email
+- USA SIEMPRE español neutro latinoamericano — funciona para todos los mercados
+- Tutea con "tú/ustedes" — NUNCA uses "vosotros", "os", "vuestro" ni conjugaciones de España
+- Sin modismos regionales — ni mexicanismos ni españolismos
+- Tono profesional pero cercano, como conversación entre colegas
 
 ═══ ESTRUCTURA DE LOS 3 EMAILS ═══
 

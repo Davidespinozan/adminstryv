@@ -52,15 +52,60 @@ async function fetchPage(url) {
   } catch { return ""; }
 }
 
-// ─── Extract emails from HTML ───
+// ─── Blocked email patterns (bounce-prone) ───
+const BLOCKED_PREFIXES = ["noreply","no-reply","no_reply","donotreply","mailer-daemon","postmaster","abuse","spam","bounce","unsubscribe","newsletter","notifications","alert","system","admin@localhost"];
+const BLOCKED_DOMAINS = ["example.com","test.com","sentry.io","wixpress.com","wordpress.com","squarespace.com","godaddy.com","shopify.com","mailchimp.com","sendgrid.net","amazonaws.com","googlemail.com","outlook.com","hotmail.com","yahoo.com","gmail.com","icloud.com","protonmail.com"];
+const BLOCKED_PATTERNS = [".png",".jpg",".jpeg",".webp",".gif",".svg",".css",".js",".woff",".ttf","@2x","@3x"];
+
+// ─── Extract and validate emails from HTML ───
 function extractEmails(html) {
   const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
   const found = [...new Set(html.match(emailRegex) || [])];
-  return found.filter(e =>
-    !e.includes("example.com") && !e.includes("sentry") && !e.includes("wixpress") &&
-    !e.includes("wordpress") && !e.includes(".png") && !e.includes(".jpg") &&
-    !e.includes(".webp") && !e.endsWith(".js") && !e.endsWith(".css") && e.length < 60
-  );
+  return found.filter(e => {
+    const lower = e.toLowerCase();
+    const prefix = lower.split("@")[0];
+    const domain = lower.split("@")[1];
+    if (lower.length > 60 || lower.length < 6) return false;
+    if (BLOCKED_PREFIXES.some(bp => prefix === bp || prefix.startsWith(bp + "+"))) return false;
+    if (BLOCKED_DOMAINS.some(bd => domain === bd || domain.endsWith("." + bd))) return false;
+    if (BLOCKED_PATTERNS.some(bp => lower.includes(bp))) return false;
+    // Must have valid TLD
+    const tld = domain.split(".").pop();
+    if (tld.length < 2 || tld.length > 10) return false;
+    return true;
+  });
+}
+
+// ─── Validate email is likely real (DNS MX check) ───
+async function validateEmail(email) {
+  if (!email) return false;
+  const domain = email.split("@")[1];
+  try {
+    // Check if domain has MX records via DNS-over-HTTPS
+    const res = await fetch(`https://dns.google/resolve?name=${domain}&type=MX`);
+    const data = await res.json();
+    return data.Answer && data.Answer.length > 0;
+  } catch {
+    return true; // If DNS check fails, allow it (benefit of the doubt)
+  }
+}
+
+// ─── Prioritize business emails over generic ones ───
+function pickBestEmail(emails) {
+  if (emails.length === 0) return null;
+  // Prefer: contacto@, info@, hola@, ventas@ > random personal emails
+  const priority = ["contacto","info","hola","ventas","contact","hello","hi","reservas","reservaciones","citas","atencion"];
+  for (const p of priority) {
+    const match = emails.find(e => e.toLowerCase().startsWith(p + "@"));
+    if (match) return match;
+  }
+  // Then prefer emails with the business domain (not gmail/hotmail)
+  const businessEmails = emails.filter(e => {
+    const domain = e.split("@")[1].toLowerCase();
+    return !["gmail.com","hotmail.com","yahoo.com","outlook.com","icloud.com","protonmail.com","live.com","aol.com"].includes(domain);
+  });
+  if (businessEmails.length > 0) return businessEmails[0];
+  return emails[0];
 }
 
 // ─── Deep scrape: main page + /contacto, /contact, /about, /nosotros ───
@@ -83,7 +128,10 @@ async function scrapeWebsite(url) {
   }
 
   const uniqueEmails = [...new Set(allEmails)];
-  return { email: uniqueEmails[0] || null, context: context.substring(0, 500) };
+  const bestEmail = pickBestEmail(uniqueEmails);
+  // Validate MX records
+  const isValid = bestEmail ? await validateEmail(bestEmail) : false;
+  return { email: isValid ? bestEmail : null, context: context.substring(0, 500) };
 }
 
 // ─── Check if prospect exists in Supabase ───
@@ -126,16 +174,18 @@ async function generateEmails(d, anthropicKey, attempt = 1) {
 }
 
 // ─── Daily send limit (escalating) ───
+// PAUSED: bounce rate at 9.21% — reactivate when fixed
+// Change startDate to reactivation date when ready
 async function getDailyLimit() {
-  // Start date: when we began sending
-  const startDate = new Date("2026-04-10");
-  const now = new Date();
-  const daysSinceStart = Math.floor((now - startDate) / 86400000);
-  const week = Math.floor(daysSinceStart / 7);
-  if (week <= 0) return 500;
-  if (week === 1) return 1000;
-  if (week === 2) return 2000;
-  return 3500;
+  return 0; // PAUSED — email validation improvements needed first
+  // const startDate = new Date("2026-04-10");
+  // const now = new Date();
+  // const daysSinceStart = Math.floor((now - startDate) / 86400000);
+  // const week = Math.floor(daysSinceStart / 7);
+  // if (week <= 0) return 500;
+  // if (week === 1) return 1000;
+  // if (week === 2) return 2000;
+  // return 3500;
 }
 
 async function getSentToday(sbKey) {

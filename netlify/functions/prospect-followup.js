@@ -19,6 +19,7 @@ async function sendEmail(to, subject, body, resendKey) {
       from: "David Espinoza <equipo@stryvstudio.com>",
       reply_to: "stryv.studio@gmail.com",
       to: [to],
+      bcc: ["stryv.studio@gmail.com"],
       subject: subject,
       text: body,
       html: body.replace(/\n/g, "<br>"),

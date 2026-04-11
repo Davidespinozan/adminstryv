@@ -295,7 +295,7 @@ async function processSearch(search, keys, results) {
 
         // Generate emails + analysis with Claude
         const emailData = await generateEmails(place, keys.anthropic);
-        if (emailData.skip) { console.log(`Skipped ${place.business}: ${emailData.reason}`); results.skipped++; continue; }
+        if (emailData.skip) { console.log(`Skipped by Claude: ${place.business} — ${emailData.reason}`); results.skipped++; continue; }
         const emails = emailData.emails || [];
         place.subjectV1 = emails[0]?.subject || "";
         place.emailV1 = emails[0]?.body || "";

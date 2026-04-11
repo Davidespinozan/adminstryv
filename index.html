@@ -135,7 +135,7 @@ const toCaA=a=>(a||[]).map(toCa);
 async function dSel(t){
   let q=SB.from(t).select("*",{count:"exact"});
   if(_softDelTables.includes(t))q=q.is("deleted_at",null);
-  q=q.order("created_at",{ascending:t!=="prospects"}).limit(2000);
+  q=q.order("created_at",{ascending:t!=="prospects"}).limit(5000);
   const{data,error,count}=await q;
   if(!error&&count>2000)console.warn(`⚠ ${t}: ${count} rows, mostrando 2000`);
   return error?[]:toCaA(data);

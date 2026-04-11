@@ -249,6 +249,7 @@ async function createProspect(data, sbKey) {
       subject_v2: data.subjectV2 || "",
       subject_v3: data.subjectV3 || "",
       inferred_analysis: data.inferredAnalysis || "",
+      emails_sent: data.emailsSent || 0,
       email_v1: data.emailV1 || "",
       email_v2: data.emailV2 || "",
       email_v3: data.emailV3 || "",
@@ -314,7 +315,7 @@ async function processSearch(search, keys, results, processedIds) {
           if (sent < limit) {
             const sendResult = await sendEmail(place.email, place.subjectV1, place.emailV1, keys.resend);
             console.log(`Send result for ${place.business}:`, JSON.stringify(sendResult));
-            if (sendResult.id) { place.stage = "Contactado"; results.emailed++; }
+            if (sendResult.id) { place.stage = "Contactado"; place.emailsSent = 1; results.emailed++; }
           } else {
             console.log(`Daily limit reached (${sent}/${limit}), skipping send for ${place.business}`);
           }

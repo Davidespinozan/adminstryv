@@ -218,6 +218,8 @@ const[ld,setLd]=useState(false);const[vw,setVw]=useState("dashboard");const[sub,
 const[AW,setAW]=useState(()=>{try{const v=localStorage.getItem("stryv_aw");return v?JSON.parse(v):_AW}catch(e){return _AW}});
 const saveAW=(idx,field,val)=>{const nw=[...AW];nw[idx]={...nw[idx],[field]:val};setAW(nw);try{localStorage.setItem("stryv_aw",JSON.stringify(nw))}catch(e){}};
 const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");const[notifOpen,setNotifOpen]=useState(false);const[navGrp,setNavGrp]=useState(null);const[clVw,setClVw]=useState("lista");
+const[dismissedAlerts,setDismissedAlerts]=useState(()=>{try{return JSON.parse(localStorage.getItem("stryv_dismissed")||"[]")}catch{return[]}});
+const dismissAlert=(msg)=>{const nw=[...dismissedAlerts,msg];setDismissedAlerts(nw);try{localStorage.setItem("stryv_dismissed",JSON.stringify(nw))}catch{}};
 const loadLock=React.useRef(false);
 
 // Fix 1: templates from outside, add today() for dates
@@ -458,21 +460,21 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     </div>}
     {isA&&<span style={{background:"rgba(11,119,152,.15)",color:tl,padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,border:"1px solid rgba(11,119,152,.3)"}}>Admin</span>}
     <div style={{position:"relative"}}>
-      <button onClick={()=>setNotifOpen(!notifOpen)} style={{background:notifOpen?"rgba(11,119,152,.2)":"none",border:`1px solid ${notifOpen?"rgba(11,119,152,.4)":"rgba(255,255,255,.15)"}`,color:notifOpen?"#4ECDC4":"rgba(255,255,255,0.4)",padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36,position:"relative"}}>🔔{alerts.length>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",fontSize:9,fontWeight:700,width:16,height:16,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>{alerts.length>9?"9+":alerts.length}</span>}</button>
+      {(()=>{const activeAlerts=alerts.filter(a=>!dismissedAlerts.includes(a.msg));return<>
+      <button onClick={()=>setNotifOpen(!notifOpen)} style={{background:notifOpen?"rgba(11,119,152,.2)":"none",border:`1px solid ${notifOpen?"rgba(11,119,152,.4)":"rgba(255,255,255,.15)"}`,color:notifOpen?"#4ECDC4":"rgba(255,255,255,0.4)",padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36,position:"relative"}}>🔔{activeAlerts.length>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",fontSize:9,fontWeight:700,width:16,height:16,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>{activeAlerts.length>9?"9+":activeAlerts.length}</span>}</button>
       {notifOpen&&<><div style={{position:"fixed",inset:0,zIndex:9998}} onClick={()=>setNotifOpen(false)}/><div style={{position:"absolute",right:0,top:"calc(100% + 6px)",width:360,maxHeight:420,overflowY:"auto",background:"#ffffff",border:`1px solid ${bd}`,borderRadius:16,boxShadow:"0 24px 48px rgba(0,0,0,.1)",zIndex:9999,padding:12}}>
-        <div style={{fontSize:10,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:mt,fontFamily:ibm,marginBottom:10,paddingLeft:4}}>Alertas {alerts.length>0&&<span style={{color:"#ef4444"}}>({alerts.length})</span>}</div>
-        {alerts.length===0?<div style={{textAlign:"center",padding:"20px 0",color:mt,fontSize:12}}>Sin alertas</div>:
-          alerts.map((al,i)=><div key={i} className="card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:10,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>{
-            setNotifOpen(false);
-            if(al.type==="clients"){ed(al.item,setCF,"clients","cF")}
-            else if(al.type==="stack"){ed(al.item,setTF,"stack","tF")}
-            else if(al.type==="projects"){ed(al.item,setPF,"projects","pF")}
-          }}>
-            <span style={{fontSize:16,flexShrink:0}}>{al.icon}</span>
-            <div style={{flex:1,fontSize:12,color:"rgba(0,0,0,0.75)",fontFamily:ibm,lineHeight:1.3}}>{al.msg}</div>
-            <span style={{fontSize:10,color:tl,flexShrink:0}}>→</span>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,paddingLeft:4}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:mt,fontFamily:ibm}}>Alertas {activeAlerts.length>0&&<span style={{color:"#ef4444"}}>({activeAlerts.length})</span>}</div>
+          {dismissedAlerts.length>0&&<button onClick={()=>{setDismissedAlerts([]);try{localStorage.removeItem("stryv_dismissed")}catch{}}} style={{background:"none",border:"none",color:mt,fontSize:9,cursor:"pointer"}}>Mostrar todas</button>}
+        </div>
+        {activeAlerts.length===0?<div style={{textAlign:"center",padding:"20px 0",color:mt,fontSize:12}}>Sin alertas</div>:
+          activeAlerts.map((al,i)=><div key={i} className="card-row" style={{background:"#fafbfc",border:`1px solid ${bd}`,borderRadius:10,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:16,flexShrink:0,cursor:"pointer"}} onClick={()=>{setNotifOpen(false);if(al.type==="clients"){ed(al.item,setCF,"clients","cF")}else if(al.type==="stack"){ed(al.item,setTF,"stack","tF")}else if(al.type==="projects"){ed(al.item,setPF,"projects","pF")}}}>{al.icon}</span>
+            <div style={{flex:1,fontSize:12,color:"rgba(0,0,0,0.75)",fontFamily:ibm,lineHeight:1.3,cursor:"pointer"}} onClick={()=>{setNotifOpen(false);if(al.type==="clients"){ed(al.item,setCF,"clients","cF")}else if(al.type==="stack"){ed(al.item,setTF,"stack","tF")}else if(al.type==="projects"){ed(al.item,setPF,"projects","pF")}}}>{al.msg}</div>
+            <button onClick={e=>{e.stopPropagation();dismissAlert(al.msg)}} style={{background:"none",border:"none",color:mt,fontSize:10,cursor:"pointer",padding:"4px",flexShrink:0}} title="Descartar">✕</button>
           </div>)}
       </div></>}
+    </>})()}
     </div>
     <button onClick={()=>setChPw(true)} style={{background:"none",border:"1px solid rgba(255,255,255,.15)",color:"rgba(255,255,255,0.4)",padding:"6px 10px",borderRadius:6,fontSize:12,cursor:"pointer",minHeight:36}}>🔑</button>
     <button className="btn-logout" onClick={logout} style={{background:"none",border:"1px solid rgba(220,38,38,0.35)",color:"rgba(220,38,38,0.75)",padding:"6px 14px",borderRadius:6,fontSize:11,fontWeight:500,cursor:"pointer",minHeight:36,fontFamily:ibm}}>Salir</button>

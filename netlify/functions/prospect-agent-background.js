@@ -276,15 +276,17 @@ async function updateSearchRun(id, sbKey) {
 }
 
 // ─── Process a single search ───
-async function processSearch(search, keys, results) {
+async function processSearch(search, keys, results, processedIds) {
   try {
     const places = await searchPlaces(search.query, search.city, keys.google);
     results.searched += places.length;
 
     for (const place of places) {
       try {
+        if (processedIds.has(place.googlePlaceId)) { results.skipped++; continue; }
         const exists = await prospectExists(place.googlePlaceId, keys.sb);
-        if (exists) { results.skipped++; continue; }
+        if (exists) { results.skipped++; processedIds.add(place.googlePlaceId); continue; }
+        processedIds.add(place.googlePlaceId);
 
         // Deep scrape website for email + context
         if (place.url) {
@@ -352,10 +354,11 @@ async function runAgent(searches) {
 
   console.log("Processing", searches.length, "searches");
   const results = { searched: 0, new: 0, skipped: 0, emailed: 0, emailsScraped: 0, searchesProcessed: 0, errors: [] };
+  const processedIds = new Set();
 
   for (const search of searches) {
     console.log("Search:", search.query, search.city);
-    await processSearch(search, keys, results);
+    await processSearch(search, keys, results, processedIds);
     results.searchesProcessed++;
     console.log("Progress:", JSON.stringify(results));
   }

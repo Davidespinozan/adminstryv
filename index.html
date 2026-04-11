@@ -132,12 +132,13 @@ const _dateKeys=new Set(["cancel_date","renew_date","start_date","deadline","est
 const toSn=o=>{const r={};for(const k in o){const sk=k.replace(/([A-Z])/g,"_$1").toLowerCase();const v=o[k];r[sk]=_dateKeys.has(sk)&&v===""?null:v}return r};
 const toCa=o=>{if(!o)return o;const r={};for(const k in o)r[k.replace(/_([a-z])/g,(_,l)=>l.toUpperCase())]=o[k];return r};
 const toCaA=a=>(a||[]).map(toCa);
+const _counts={};
 async function dSel(t){
   let q=SB.from(t).select("*",{count:"exact"});
   if(_softDelTables.includes(t))q=q.is("deleted_at",null);
   q=q.order("created_at",{ascending:t!=="prospects"}).limit(5000);
   const{data,error,count}=await q;
-  if(!error&&count>2000)console.warn(`⚠ ${t}: ${count} rows, mostrando 2000`);
+  _counts[t]=count||0;
   return error?[]:toCaA(data);
 }
 async function dIns(t,row){const c={...toSn(row)};delete c.id;delete c.created_at;delete c.updated_at;const{data,error}=await SB.from(t).insert(c).select();if(error){console.error("INSERT error",t,error.message,error.details,error.hint,c);alert("Error DB: "+error.message);return null}return toCa(data[0])}
@@ -1025,7 +1026,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <div style={{fontSize:9,fontWeight:700,letterSpacing:".18em",textTransform:"uppercase",color:mt,fontFamily:"'Geist Mono',monospace",marginBottom:5}}>Outbound</div>
       <div style={{display:"flex",alignItems:"center",gap:10}}>
         <div style={{fontSize:20,fontWeight:700,fontFamily:dsp,letterSpacing:"-.02em"}}>Prospección</div>
-        <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{fPros.length}</span>
+        <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{_counts.prospects||fPros.length}{fPros.length!==(_counts.prospects||fPros.length)?" · "+fPros.length+" filtrados":""}</span>
       </div>
     </div>
     <div style={{display:"flex",gap:6}}>

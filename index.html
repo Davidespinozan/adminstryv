@@ -31,6 +31,7 @@ body{
 ::selection{background:rgba(11,119,152,.2);color:#1a202c}
 input,select,textarea,button{font-family:inherit;font-size:16px;-webkit-tap-highlight-color:transparent}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes ds-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 
 /* ─── INTERACTIVE CARDS ─── */
@@ -1035,33 +1036,60 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <button onClick={()=>goN("prospeccion","prF",setPrF,ePr)} style={{background:tl,border:"none",color:bg,padding:"12px 20px",borderRadius:10,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>＋ Nuevo</button>
     </div>
   </div>
-  {agentOpen&&<div style={{background:cd,border:"1px solid rgba(167,139,250,.2)",borderRadius:14,padding:16,marginBottom:14}}>
-    <div style={{...hd,color:"#a78bfa",borderLeftColor:"#a78bfa",marginBottom:12}}>Agente de prospección</div>
-    <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-      {(()=>{const ps=D.prospectSearches||[];const queries=[...new Set(ps.map(s=>s.query))].sort();const cities=[...new Set(ps.map(s=>s.city))].sort();return<>
-      <><input list="agentQueries" value={agentQuery} onChange={e=>setAgentQuery(e.target.value)} placeholder="Tipo de negocio..." style={{...iS,flex:2,minWidth:140}}/><datalist id="agentQueries">{queries.map(q=><option key={q} value={q}/>)}</datalist></>
-      <><input list="agentCities" value={agentCity} onChange={e=>setAgentCity(e.target.value)} placeholder="Ciudad..." style={{...iS,flex:1,minWidth:100}}/><datalist id="agentCities">{cities.map(c=><option key={c} value={c}/>)}</datalist></>
-      </>})()}
-      <button onClick={async()=>{if(!agentQuery||!agentCity)return alert("Llena tipo y ciudad");await dIns("prospect_searches",{query:agentQuery,city:agentCity,active:true});setAgentQuery("");setAgentCity("");await loadAll()}} style={{background:"rgba(167,139,250,.1)",border:"1px solid rgba(167,139,250,.3)",color:"#a78bfa",padding:"10px 14px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>＋ Guardar</button>
-      <button onClick={runAgent} disabled={agentRunning} style={{background:agentRunning?"rgba(167,139,250,.3)":"#a78bfa",border:"none",color:"#fff",padding:"10px 16px",borderRadius:8,fontSize:11,minHeight:40,fontWeight:700,cursor:agentRunning?"wait":"pointer",fontFamily:ibm,display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>{agentRunning?<><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>Ejecutando...</>:"Ejecutar ahora"}</button>
-    </div>
-    {agentResult&&<div style={{fontSize:11,padding:10,marginBottom:10,background:agentResult.error?"rgba(239,68,68,.06)":"rgba(52,211,153,.06)",border:`1px solid ${agentResult.error?"rgba(239,68,68,.2)":"rgba(52,211,153,.2)"}`,borderRadius:8,color:agentResult.error?"#ef4444":tx}}>
-      {agentResult.error?`Error: ${agentResult.error}`:agentResult.message?agentResult.message:`Búsquedas: ${agentResult.searchesProcessed} · Encontrados: ${agentResult.searched} · Nuevos: ${agentResult.new} · Duplicados: ${agentResult.skipped} · Emails scrapeados: ${agentResult.emailsScraped} · Enviados: ${agentResult.emailed}${agentResult.errors?.length?` · Errores: ${agentResult.errors.length}`:""}`}
-    </div>}
-    {(D.prospectSearches||[]).length>0&&<div style={{marginTop:8}}>
-      <div style={{fontSize:9,fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:6}}>Búsquedas guardadas ({(D.prospectSearches||[]).length})</div>
-      <div style={{display:"flex",flexDirection:"column",gap:4}}>
-        {(D.prospectSearches||[]).map(s=><div key={s.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:cd2,border:`1px solid ${bd}`,borderRadius:8}}>
-          <div style={{width:6,height:6,borderRadius:"50%",background:s.active?"#34d399":"#f87171",flexShrink:0}}/>
-          <span style={{fontSize:12,fontWeight:600,flex:1}}>{s.query}</span>
-          <span style={{fontSize:11,color:mt}}>{s.city}</span>
-          {s.lastRun&&<span style={{fontSize:9,color:mt,fontFamily:"'Geist Mono',monospace"}}>{(s.lastRun+"").substring(0,10)}</span>}
-          <button onClick={()=>dUpd("prospect_searches",s.id,{active:!s.active}).then(()=>loadAll())} style={{background:"none",border:`1px solid ${bd}`,color:s.active?mt:tl,padding:"2px 8px",borderRadius:4,fontSize:9,cursor:"pointer",fontWeight:600}}>{s.active?"Pausar":"Activar"}</button>
-          <button onClick={()=>{if(confirm("¿Eliminar búsqueda?"))dDel("prospect_searches",s.id).then(()=>loadAll())}} style={{background:"none",border:"none",color:"#f47067",fontSize:11,cursor:"pointer"}}>✕</button>
-        </div>)}
+  {agentOpen&&<div style={{background:"linear-gradient(135deg, #0f0a1e 0%, #1a1030 100%)",border:"1px solid rgba(167,139,250,.25)",borderRadius:16,padding:20,marginBottom:14,color:"#fff"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg, #a78bfa, #7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,boxShadow:"0 4px 12px rgba(167,139,250,.3)"}}>S</div>
+        <div>
+          <div style={{fontSize:14,fontWeight:700,letterSpacing:"-.02em",fontFamily:dsp}}>STRYV Agent</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,.45)",display:"flex",alignItems:"center",gap:4}}><div style={{width:6,height:6,borderRadius:"50%",background:agentRunning?"#34d399":"rgba(255,255,255,.3)",boxShadow:agentRunning?"0 0 8px #34d399":"none",animation:agentRunning?"pulse 2s infinite":"none"}}/>{agentRunning?"Ejecutando...":"En espera"}</div>
+        </div>
       </div>
+      <button onClick={runAgent} disabled={agentRunning} style={{background:agentRunning?"rgba(167,139,250,.2)":"linear-gradient(135deg, #a78bfa, #7c3aed)",border:"none",color:"#fff",padding:"10px 20px",borderRadius:10,fontSize:12,fontWeight:700,cursor:agentRunning?"wait":"pointer",fontFamily:ibm,boxShadow:agentRunning?"none":"0 4px 12px rgba(167,139,250,.3)",display:"flex",alignItems:"center",gap:6}}>{agentRunning?<><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.2)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>Procesando</>:"Ejecutar agente"}</button>
+    </div>
+    {agentResult&&<div style={{fontSize:11,padding:10,marginBottom:12,background:agentResult.error?"rgba(239,68,68,.1)":"rgba(52,211,153,.1)",border:`1px solid ${agentResult.error?"rgba(239,68,68,.25)":"rgba(52,211,153,.25)"}`,borderRadius:8,color:agentResult.error?"#fca5a5":"#6ee7b7"}}>
+      {agentResult.error?agentResult.error:agentResult.message||`Procesados: ${agentResult.searchesProcessed} · Nuevos: ${agentResult.new} · Enviados: ${agentResult.emailed}`}
     </div>}
-    <div style={{fontSize:9,color:mt,marginTop:8}}>El agente corre diario — toma las 30 búsquedas más antiguas, busca en Google, genera emails con IA y envía V1. También puedes ejecutarlo manualmente.</div>
+    <div style={{marginBottom:12}}>
+      <div style={{fontSize:9,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:"rgba(255,255,255,.35)",marginBottom:8}}>Actividad reciente</div>
+      <div style={{maxHeight:200,overflowY:"auto",display:"flex",flexDirection:"column",gap:4}}>
+        {(()=>{const recent=pros.filter(p=>p.stage==="Contactado").slice(0,15);return recent.length===0?<div style={{fontSize:11,color:"rgba(255,255,255,.3)",padding:"12px 0",textAlign:"center"}}>Sin actividad reciente</div>:recent.map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"rgba(255,255,255,.04)",borderRadius:8,animation:`ds-in .3s ease ${i*0.05}s both`}}>
+          <div style={{width:6,height:6,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 6px rgba(52,211,153,.4)",flexShrink:0}}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,.9)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.business||p.name}</div>
+            <div style={{fontSize:9,color:"rgba(255,255,255,.35)"}}>{p.city}{p.email?" · "+p.email:""}</div>
+          </div>
+          <div style={{fontSize:8,color:"rgba(255,255,255,.25)",fontFamily:"'Geist Mono',monospace",flexShrink:0}}>{p.createdAt?(p.createdAt+"").substring(11,16):""}</div>
+          <span style={{fontSize:8,color:"#34d399",background:"rgba(52,211,153,.1)",padding:"2px 6px",borderRadius:4,fontWeight:600,flexShrink:0}}>V{p.emailsSent||1} enviado</span>
+        </div>)})()}
+      </div>
+    </div>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+      <div style={{flex:1,background:"rgba(255,255,255,.04)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+        <div style={{fontSize:18,fontWeight:800,color:"#a78bfa",fontFamily:dsp}}>{pros.filter(p=>p.stage==="Contactado").length}</div>
+        <div style={{fontSize:8,color:"rgba(255,255,255,.35)",fontWeight:600,letterSpacing:".1em",textTransform:"uppercase"}}>Contactados</div>
+      </div>
+      <div style={{flex:1,background:"rgba(255,255,255,.04)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+        <div style={{fontSize:18,fontWeight:800,color:"#34d399",fontFamily:dsp}}>{pros.filter(p=>p.stage==="Respondió").length}</div>
+        <div style={{fontSize:8,color:"rgba(255,255,255,.35)",fontWeight:600,letterSpacing:".1em",textTransform:"uppercase"}}>Respondieron</div>
+      </div>
+      <div style={{flex:1,background:"rgba(255,255,255,.04)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+        <div style={{fontSize:18,fontWeight:800,color:"#f59e0b",fontFamily:dsp}}>{pros.filter(p=>p.emailsSent>=2).length}</div>
+        <div style={{fontSize:8,color:"rgba(255,255,255,.35)",fontWeight:600,letterSpacing:".1em",textTransform:"uppercase"}}>Follow-ups</div>
+      </div>
+      <div style={{flex:1,background:"rgba(255,255,255,.04)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+        <div style={{fontSize:18,fontWeight:800,color:"#fff",fontFamily:dsp}}>{_counts.prospects||pros.length}</div>
+        <div style={{fontSize:8,color:"rgba(255,255,255,.35)",fontWeight:600,letterSpacing:".1em",textTransform:"uppercase"}}>Total</div>
+      </div>
+    </div>
+    <div style={{marginTop:12,display:"flex",gap:6,flexWrap:"wrap"}}>
+      {(()=>{const ps=D.prospectSearches||[];const queries=[...new Set(ps.map(s=>s.query))].sort();const cities=[...new Set(ps.map(s=>s.city))].sort();return<>
+      <input list="agentQueries" value={agentQuery} onChange={e=>setAgentQuery(e.target.value)} placeholder="Tipo de negocio..." style={{...iS,flex:2,minWidth:120,background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",color:"#fff",fontSize:11}}/><datalist id="agentQueries">{queries.map(q=><option key={q} value={q}/>)}</datalist>
+      <input list="agentCities" value={agentCity} onChange={e=>setAgentCity(e.target.value)} placeholder="Ciudad..." style={{...iS,flex:1,minWidth:90,background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",color:"#fff",fontSize:11}}/><datalist id="agentCities">{cities.map(c=><option key={c} value={c}/>)}</datalist>
+      </>})()}
+      <button onClick={async()=>{if(!agentQuery||!agentCity)return;await dIns("prospect_searches",{query:agentQuery,city:agentCity,active:true});setAgentQuery("");setAgentCity("");await loadAll()}} style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.6)",padding:"8px 12px",borderRadius:8,fontSize:10,fontWeight:600,cursor:"pointer"}}>＋</button>
+    </div>
+    <div style={{fontSize:8,color:"rgba(255,255,255,.25)",marginTop:8,textAlign:"center"}}>{(D.prospectSearches||[]).filter(s=>s.active).length} búsquedas activas · Cron diario + follow-up cada 12h · V2 día 3 · V3 día 7</div>
   </div>}
   <div className="mob-col" style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
     <input value={srch} onChange={e=>setSrch(e.target.value)} placeholder="Buscar..." style={{...iS,flex:1,minWidth:160}}/>

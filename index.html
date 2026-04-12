@@ -1112,7 +1112,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
             {p.googleReviews>0&&<span style={{fontSize:9,color:mt}}>({p.googleReviews})</span>}
           </div>
           <div style={{fontSize:11,color:s2,marginTop:2,fontFamily:ibm}}>{p.city||""}{p.googleCategory?" · "+p.googleCategory:""}</div>
-          <div style={{fontSize:11,color:mt,marginTop:1}}>{p.email?<span style={{color:tl,fontWeight:600}}>{p.email}</span>:<span style={{color:"#f87171",fontStyle:"italic"}}>Sin email</span>}{p.phone?" · "+p.phone:""}{p.createdAt&&<span style={{marginLeft:6,fontSize:9,color:mt,fontFamily:"'Geist Mono',monospace"}}>{(p.createdAt+"").substring(0,16).replace("T"," ")}</span>}</div>
+          <div style={{fontSize:11,color:mt,marginTop:1}}>{p.email?<span style={{color:tl,fontWeight:600}}>{p.email}</span>:<span style={{color:"#f87171",fontStyle:"italic"}}>Sin email</span>}{p.phone?" · "+p.phone:""}{p.instagram&&<span style={{color:"#a78bfa",fontWeight:600}}> · {p.instagram}</span>}{p.createdAt&&<span style={{marginLeft:6,fontSize:9,color:mt,fontFamily:"'Geist Mono',monospace"}}>{(p.createdAt+"").substring(0,16).replace("T"," ")}</span>}</div>
         </div>
         <span style={bg2(PROSC[p.stage])}>{p.stage}</span>
       </div>

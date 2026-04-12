@@ -32,6 +32,9 @@ body{
 input,select,textarea,button{font-family:inherit;font-size:16px;-webkit-tap-highlight-color:transparent}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glow{0%,100%{box-shadow:0 0 4px rgba(52,211,153,.3)}50%{box-shadow:0 0 12px rgba(52,211,153,.6)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+@keyframes typewriter{from{width:0}to{width:100%}}
 @keyframes ds-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 
 /* ─── INTERACTIVE CARDS ─── */
@@ -235,7 +238,10 @@ const eCt={..._eCt};
 
 const[cF,setCF]=useState({...eC});const[mF,setMF]=useState({...eM});const[tF,setTF]=useState({...eT});
 const[pF,setPF]=useState({...eP});const[lF,setLF]=useState({...eL});const[sF,setSF]=useState({...eSt});const[iF,setIF]=useState({...eI});const[prF,setPrF]=useState({...ePr});const[ctF,setCtF]=useState({...eCt});const[prGenLoading,setPrGenLoading]=useState(false);
-const[agentQuery,setAgentQuery]=useState("");const[agentCity,setAgentCity]=useState("");const[agentRunning,setAgentRunning]=useState(false);const[agentResult,setAgentResult]=useState(null);const[agentOpen,setAgentOpen]=useState(false);
+const[agentQuery,setAgentQuery]=useState("");const[agentCity,setAgentCity]=useState("");const[agentRunning,setAgentRunning]=useState(false);const[agentResult,setAgentResult]=useState(null);const[agentOpen,setAgentOpen]=useState(false);const[agentTick,setAgentTick]=useState(0);
+// Auto-refresh prospects every 30s when agent panel is open
+useEffect(()=>{if(!agentOpen||!user)return;const iv=setInterval(()=>{loadAll();setAgentTick(t=>t+1)},30000);return()=>clearInterval(iv)},[agentOpen,user]);
+const timeAgo=(dt)=>{if(!dt)return"";const d=new Date(dt);const s=Math.floor((Date.now()-d.getTime())/1000);if(s<60)return"ahora";if(s<3600)return Math.floor(s/60)+"m";if(s<86400)return Math.floor(s/3600)+"h";return Math.floor(s/86400)+"d"};
 const runAgent=async()=>{if(agentRunning)return;setAgentRunning(true);setAgentResult(null);try{const res=await fetch("/.netlify/functions/prospect-agent-background",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({useDb:true,limit:10})});if(res.status===202){setAgentResult({message:"Agente ejecutándose en background. Los prospectos aparecerán en la lista en unos minutos. Refresca para ver resultados."});setTimeout(()=>{loadAll();setAgentRunning(false)},120000)}else{const data=await res.json();setAgentResult(data);await loadAll();setAgentRunning(false)}}catch(err){setAgentResult({error:err.message});setAgentRunning(false)}};
 const[ctVw,setCtVw]=useState("lista");
 
@@ -1044,7 +1050,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
         <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg, #a78bfa, #7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,boxShadow:"0 4px 12px rgba(167,139,250,.3)"}}>S</div>
         <div>
           <div style={{fontSize:14,fontWeight:700,letterSpacing:"-.02em",fontFamily:dsp}}>STRYV Agent</div>
-          <div style={{fontSize:10,color:"rgba(255,255,255,.45)",display:"flex",alignItems:"center",gap:4}}><div style={{width:6,height:6,borderRadius:"50%",background:agentRunning?"#34d399":"rgba(255,255,255,.3)",boxShadow:agentRunning?"0 0 8px #34d399":"none",animation:agentRunning?"pulse 2s infinite":"none"}}/>{agentRunning?"Ejecutando...":"En espera"}</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,.45)",display:"flex",alignItems:"center",gap:4}}><div style={{width:6,height:6,borderRadius:"50%",background:"#34d399",animation:"glow 2s ease infinite"}}/><span style={{color:"#34d399",fontWeight:600}}>Online</span> · próximo ciclo {agentRunning?"ahora":"auto"}</div>
         </div>
       </div>
       <button onClick={runAgent} disabled={agentRunning} style={{background:agentRunning?"rgba(167,139,250,.2)":"linear-gradient(135deg, #a78bfa, #7c3aed)",border:"none",color:"#fff",padding:"10px 20px",borderRadius:10,fontSize:12,fontWeight:700,cursor:agentRunning?"wait":"pointer",fontFamily:ibm,boxShadow:agentRunning?"none":"0 4px 12px rgba(167,139,250,.3)",display:"flex",alignItems:"center",gap:6}}>{agentRunning?<><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.2)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>Procesando</>:"Ejecutar agente"}</button>
@@ -1053,17 +1059,25 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       {agentResult.error?agentResult.error:agentResult.message||`Procesados: ${agentResult.searchesProcessed} · Nuevos: ${agentResult.new} · Enviados: ${agentResult.emailed}`}
     </div>}
     <div style={{marginBottom:12}}>
-      <div style={{fontSize:9,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:"rgba(255,255,255,.35)",marginBottom:8}}>Actividad reciente</div>
-      <div style={{maxHeight:200,overflowY:"auto",display:"flex",flexDirection:"column",gap:4}}>
-        {(()=>{const recent=pros.filter(p=>p.stage==="Contactado").slice(0,15);return recent.length===0?<div style={{fontSize:11,color:"rgba(255,255,255,.3)",padding:"12px 0",textAlign:"center"}}>Sin actividad reciente</div>:recent.map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"rgba(255,255,255,.04)",borderRadius:8,animation:`ds-in .3s ease ${i*0.05}s both`}}>
-          <div style={{width:6,height:6,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 6px rgba(52,211,153,.4)",flexShrink:0}}/>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,.9)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.business||p.name}</div>
-            <div style={{fontSize:9,color:"rgba(255,255,255,.35)"}}>{p.city}{p.email?" · "+p.email:""}</div>
-          </div>
-          <div style={{fontSize:8,color:"rgba(255,255,255,.25)",fontFamily:"'Geist Mono',monospace",flexShrink:0}}>{p.createdAt?(p.createdAt+"").substring(11,16):""}</div>
-          <span style={{fontSize:8,color:"#34d399",background:"rgba(52,211,153,.1)",padding:"2px 6px",borderRadius:4,fontWeight:600,flexShrink:0}}>V{p.emailsSent||1} enviado</span>
-        </div>)})()}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:9,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:"rgba(255,255,255,.35)"}}>Feed en vivo</div>
+        <div style={{fontSize:8,color:"rgba(255,255,255,.2)",fontFamily:"'Geist Mono',monospace"}}>{agentTick>0?"actualizado":"en espera"}</div>
+      </div>
+      <div style={{maxHeight:240,overflowY:"auto",display:"flex",flexDirection:"column",gap:3}}>
+        {(()=>{const recent=pros.slice(0,20);return recent.length===0?<div style={{fontSize:11,color:"rgba(255,255,255,.3)",padding:"12px 0",textAlign:"center"}}>Sin actividad — el agente arrancará pronto</div>:recent.map((p,i)=>{
+          const action=p.stage==="Contactado"?"sent":p.emailOpened?"opened":p.stage==="Respondió"?"replied":"found";
+          const colors={sent:"#34d399",opened:"#60a5fa",replied:"#f59e0b",found:"#a78bfa"};
+          const labels={sent:"Enviado",opened:"Abierto",replied:"Respondió",found:"Encontrado"};
+          const icons={sent:"→",opened:"◉",replied:"←",found:"+"};
+          return <div key={p.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 8px",background:"rgba(255,255,255,.03)",borderRadius:6,borderLeft:`2px solid ${colors[action]}`,animation:`slideIn .3s ease ${i*0.03}s both`}}>
+            <span style={{fontSize:10,color:colors[action],fontWeight:800,width:12,textAlign:"center",flexShrink:0}}>{icons[action]}</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:10,fontWeight:600,color:"rgba(255,255,255,.85)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.business||p.name}</div>
+              <div style={{fontSize:8,color:"rgba(255,255,255,.3)"}}>{p.city}{p.instagram?" · "+p.instagram:""}</div>
+            </div>
+            <span style={{fontSize:7,color:colors[action],background:colors[action]+"15",padding:"1px 5px",borderRadius:3,fontWeight:700,flexShrink:0}}>{labels[action]}</span>
+            <span style={{fontSize:7,color:"rgba(255,255,255,.2)",fontFamily:"'Geist Mono',monospace",flexShrink:0}}>{timeAgo(p.createdAt)}</span>
+          </div>})})()}
       </div>
     </div>
     {(()=>{const contacted=pros.filter(p=>p.stage==="Contactado"||p.emailsSent>=1).length;const opened=pros.filter(p=>p.emailOpened).length;const openRate=contacted>0?Math.round(opened/contacted*100):0;return<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>

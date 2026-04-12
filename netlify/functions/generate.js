@@ -78,10 +78,10 @@ NO listes componentes del sistema. Menciona UNA sola cosa concreta que resuelve 
 
 ═══ IDIOMA ═══
 
-DETECTA el idioma del negocio basándote en: nombre del negocio, descripción, contenido web, ciudad y país.
-- Si el negocio es hispanohablante (nombre en español, descripción en español, país hispanohablante) → escribe en español neutro latinoamericano
-- Si el negocio es angloparlante (nombre en inglés, descripción en inglés, ciudad en USA/UK/etc.) → escribe en inglés profesional pero cercano
-- Si no es claro, usa el idioma dominante de la ciudad
+DETECTA el idioma según la CIUDAD del negocio:
+- Ciudad en México, Colombia, Argentina, Chile, Perú, España, Uruguay, Venezuela, Ecuador, Panamá → ESPAÑOL
+- Ciudad en USA (Miami, Houston, Los Ángeles, Chicago, Nueva York, etc.) → INGLÉS por defecto. Solo usa español si el nombre del negocio está claramente en español (ej: "Tacos El Güero", "Panadería La Rosa")
+- Si no es claro → INGLÉS
 
 CUANDO ESCRIBAS EN ESPAÑOL:
 - Tutea con "tú/ustedes" — NUNCA uses "vosotros", "os", "vuestro", "vuestra", "vuestras", "vuestros". Si escribes alguna de estas palabras el email queda INVALIDADO

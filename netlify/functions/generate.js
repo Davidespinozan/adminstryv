@@ -84,7 +84,7 @@ DETECTA el idioma del negocio basándote en: nombre del negocio, descripción, c
 - Si no es claro, usa el idioma dominante de la ciudad
 
 CUANDO ESCRIBAS EN ESPAÑOL:
-- Tutea con "tú/ustedes" — NUNCA uses "vosotros", "os", "vuestro"
+- Tutea con "tú/ustedes" — NUNCA uses "vosotros", "os", "vuestro", "vuestra", "vuestras", "vuestros". Si escribes alguna de estas palabras el email queda INVALIDADO
 - Sin modismos regionales
 - Tono profesional pero cercano
 
@@ -163,7 +163,7 @@ POR QUÉ EL PRIMERO ES MEJOR:
 4. NUNCA hagas suposiciones internas — solo observa lo visible
 5. NUNCA uses "probablemente", "seguramente", "apuesto a que", "imagino que", "me imagino", "la realidad es que", "la mayoría de negocios como el tuyo"
 6. NUNCA listes los 5 sistemas — menciona máximo 2 de forma natural
-7. NUNCA uses "vosotros", "os", "vuestro" — español neutro siempre
+7. NUNCA uses "vosotros", "os", "vuestro", "vuestra", "vuestras", "vuestros" — español neutro siempre. Usa "tu", "su", "sus", "ustedes"
 8. NUNCA escribas algo que pueda enviarse a otro negocio sin cambiar nada
 9. Si no hay nombre disponible usa "Buen día," — nunca "Hola," sin nombre
 10. V1 máximo 120 palabras · V2 máximo 80 palabras · V3 máximo 40 palabras + firma

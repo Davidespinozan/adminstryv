@@ -1235,7 +1235,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
           <button onClick={()=>{navigator.clipboard.writeText(`GANCHO: ${idea.title}\n\nCORE: ${core}\n\nCTA: ${cta}\n\nFORMATO: ${idea.format}\n\nPILAR: ${idea.pillar}`);alert("Brief copiado")}} style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.5)",padding:"3px 8px",borderRadius:5,fontSize:8,cursor:"pointer",fontWeight:600}}>Brief</button>
         </div>
       </div>})}
-    </div>}
+    </div>})()}
   </div>
   <div style={{display:"flex",gap:4,marginBottom:14}}>
     {[{k:"lista",l:"Lista"},{k:"cal",l:"Calendario"}].map(t=><button key={t.k} onClick={()=>setCtVw(t.k)} style={{background:ctVw===t.k?"rgba(11,119,152,0.15)":"transparent",border:ctVw===t.k?"1px solid rgba(11,119,152,0.3)":"1px solid transparent",color:ctVw===t.k?tl:s2,padding:"8px 16px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:ibm}}>{t.l}</button>)}

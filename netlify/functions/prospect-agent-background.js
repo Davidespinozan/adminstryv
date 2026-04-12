@@ -181,14 +181,17 @@ async function generateEmails(d, anthropicKey, attempt = 1) {
 // PAUSED: bounce rate at 9.21% — reactivate when fixed
 // Change startDate to reactivation date when ready
 async function getDailyLimit() {
-  const startDate = new Date("2026-04-10");
-  const now = new Date();
-  const daysSinceStart = Math.floor((now - startDate) / 86400000);
-  const week = Math.floor(daysSinceStart / 7);
-  if (week <= 0) return 500;
-  if (week === 1) return 1000;
-  if (week === 2) return 2000;
-  return 3500;
+  // PAUSED — warming up domain. Change startDate when reactivating.
+  return 0;
+  // const startDate = new Date("2026-04-26"); // Set to warmup completion date
+  // const now = new Date();
+  // const daysSinceStart = Math.floor((now - startDate) / 86400000);
+  // const week = Math.floor(daysSinceStart / 7);
+  // if (week <= 0) return 50;
+  // if (week === 1) return 100;
+  // if (week === 2) return 200;
+  // if (week === 3) return 500;
+  // return 1000;
 }
 
 async function getSentToday(sbKey) {

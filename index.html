@@ -243,7 +243,8 @@ const[agentQuery,setAgentQuery]=useState("");const[agentCity,setAgentCity]=useSt
 useEffect(()=>{if(!agentOpen||!user)return;const iv=setInterval(()=>{loadAll();setAgentTick(t=>t+1)},30000);return()=>clearInterval(iv)},[agentOpen,user]);
 const timeAgo=(dt)=>{if(!dt)return"";const d=new Date(dt);const s=Math.floor((Date.now()-d.getTime())/1000);if(s<60)return"ahora";if(s<3600)return Math.floor(s/60)+"m";if(s<86400)return Math.floor(s/3600)+"h";return Math.floor(s/86400)+"d"};
 const runAgent=async()=>{if(agentRunning)return;setAgentRunning(true);setAgentResult(null);try{const res=await fetch("/.netlify/functions/prospect-agent-background",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({useDb:true,limit:10})});if(res.status===202){setAgentResult({message:"Agente ejecutándose en background. Los prospectos aparecerán en la lista en unos minutos. Refresca para ver resultados."});setTimeout(()=>{loadAll();setAgentRunning(false)},120000)}else{const data=await res.json();setAgentResult(data);await loadAll();setAgentRunning(false)}}catch(err){setAgentResult({error:err.message});setAgentRunning(false)}};
-const[ctVw,setCtVw]=useState("lista");
+const[ctVw,setCtVw]=useState("lista");const[ctInput,setCtInput]=useState("");const[ctGenLoading,setCtGenLoading]=useState(false);const[ctIdeas,setCtIdeas]=useState(null);
+const genContent=async()=>{if(!ctInput.trim())return;setCtGenLoading(true);setCtIdeas(null);try{const res=await fetch("/.netlify/functions/generate-content",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({input:ctInput})});const data=await res.json();const raw=data.content?.find(b=>b.type==="text")?.text||"";const clean=raw.replace(/```json|```/g,"").trim();const parsed=JSON.parse(clean);setCtIdeas(parsed.ideas||[])}catch(err){alert("Error: "+err.message)}setCtGenLoading(false)};
 
 const cl=D.clients,tm=D.team,tls=D.tools,pjs=D.projects,lsns=D.lessons,sts=D.students,invs=D.investments,leads=D.leads,snaps=D.snapshots||[],pros=D.prospects||[],cts=D.content||[];
 
@@ -1209,6 +1210,28 @@ return(<div style={{minHeight:"100vh",background:bg}}>
       <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>
       <div style={{fontSize:18,fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
     </div>)}
+  </div>
+  <div style={{background:"linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",border:"1px solid rgba(11,119,152,.25)",borderRadius:14,padding:16,marginBottom:14,color:"#fff"}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <div style={{width:28,height:28,borderRadius:8,background:"linear-gradient(135deg, #0b7798, #4ECDC4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>C</div>
+      <div style={{fontSize:13,fontWeight:700,fontFamily:dsp}}>Generador de Ideas</div>
+    </div>
+    <div style={{display:"flex",gap:6,marginBottom:10}}>
+      <input value={ctInput} onChange={e=>setCtInput(e.target.value)} placeholder="Noticia, idea, observación, lo que sea..." onKeyDown={e=>e.key==="Enter"&&genContent()} style={{...iS,flex:1,background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",color:"#fff",fontSize:12}}/>
+      <button onClick={genContent} disabled={ctGenLoading} style={{background:ctGenLoading?"rgba(11,119,152,.3)":"linear-gradient(135deg, #0b7798, #4ECDC4)",border:"none",color:"#fff",padding:"10px 16px",borderRadius:8,fontSize:11,fontWeight:700,cursor:ctGenLoading?"wait":"pointer",display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>{ctGenLoading?<><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>Generando</>:"Generar"}</button>
+    </div>
+    {ctIdeas&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {ctIdeas.map((idea,i)=><div key={i} style={{background:"rgba(255,255,255,.04)",borderRadius:10,padding:14,borderLeft:`3px solid ${i===0?"#4ECDC4":i===1?"#0b7798":"#a78bfa"}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <span style={{fontSize:9,fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",color:i===0?"#4ECDC4":i===1?"#0b7798":"#a78bfa"}}>{idea.voice}</span>
+          <span style={{fontSize:9,color:"rgba(255,255,255,.3)",background:"rgba(255,255,255,.06)",padding:"2px 8px",borderRadius:4}}>{idea.format}</span>
+        </div>
+        <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:6,lineHeight:1.3}}>{idea.hook}</div>
+        <div style={{fontSize:11,color:"rgba(255,255,255,.6)",marginBottom:6,lineHeight:1.5}}>{idea.core}</div>
+        <div style={{fontSize:10,color:"rgba(255,255,255,.35)",fontStyle:"italic"}}>{idea.cta}</div>
+        <button onClick={()=>{navigator.clipboard.writeText(`GANCHO: ${idea.hook}\n\n${idea.core}\n\nCTA: ${idea.cta}\n\nFormato: ${idea.format}`);alert("Idea copiada")}} style={{marginTop:8,background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.5)",padding:"4px 10px",borderRadius:6,fontSize:9,cursor:"pointer",fontWeight:600}}>Copiar</button>
+      </div>)}
+    </div>}
   </div>
   <div style={{display:"flex",gap:4,marginBottom:14}}>
     {[{k:"lista",l:"Lista"},{k:"cal",l:"Calendario"}].map(t=><button key={t.k} onClick={()=>setCtVw(t.k)} style={{background:ctVw===t.k?"rgba(11,119,152,0.15)":"transparent",border:ctVw===t.k?"1px solid rgba(11,119,152,0.3)":"1px solid transparent",color:ctVw===t.k?tl:s2,padding:"8px 16px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:ibm}}>{t.l}</button>)}

@@ -1,6 +1,6 @@
 const { schedule } = require("@netlify/functions");
 
-exports.handler = schedule("@daily", async () => {
+exports.handler = schedule("0 */8 * * *", async () => {
   const siteUrl = process.env.URL || "https://adminstryv.netlify.app";
   try {
     const res = await fetch(`${siteUrl}/.netlify/functions/prospect-agent-background`, {

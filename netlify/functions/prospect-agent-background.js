@@ -112,19 +112,42 @@ function pickBestEmail(emails) {
   return emails[0];
 }
 
+// ─── Extract Instagram handle from HTML ───
+function extractInstagram(html) {
+  const patterns = [
+    /(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9._]{1,30})\/?/gi,
+    /(?:@)([a-zA-Z0-9._]{1,30})/g
+  ];
+  const found = new Set();
+  for (const p of patterns) {
+    let match;
+    while ((match = p.exec(html)) !== null) {
+      const handle = match[1].toLowerCase();
+      if (!["p","reel","stories","explore","accounts","about","developer","legal","privacy","terms","help"].includes(handle) && handle.length > 2) {
+        found.add(handle);
+      }
+    }
+  }
+  // Return first Instagram-specific match (from instagram.com URL)
+  const igUrls = [...html.matchAll(/instagram\.com\/([a-zA-Z0-9._]{1,30})\/?/gi)];
+  if (igUrls.length > 0) return "@" + igUrls[0][1].toLowerCase();
+  return found.size > 0 ? "@" + [...found][0] : null;
+}
+
 // ─── Deep scrape: main page + /contacto, /contact, /about, /nosotros ───
 async function scrapeWebsite(url) {
-  if (!url) return { email: null, context: "" };
+  if (!url) return { email: null, context: "", instagram: null };
   const base = url.replace(/\/+$/, "");
   const pages = [base, base + "/contacto", base + "/contact", base + "/about", base + "/nosotros"];
   let allEmails = [];
   let context = "";
+  let instagram = null;
 
   for (const page of pages) {
     const html = await fetchPage(page);
     if (!html) continue;
     allEmails.push(...extractEmails(html));
-    // Extract useful text snippets (meta description, title, about text)
+    if (!instagram) instagram = extractInstagram(html);
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
     if (titleMatch && !context.includes(titleMatch[1])) context += titleMatch[1] + ". ";
@@ -135,7 +158,7 @@ async function scrapeWebsite(url) {
   const bestEmail = pickBestEmail(uniqueEmails);
   // Validate MX records
   const isValid = bestEmail ? await validateEmail(bestEmail) : false;
-  return { email: isValid ? bestEmail : null, context: context.substring(0, 500) };
+  return { email: isValid ? bestEmail : null, context: context.substring(0, 500), instagram };
 }
 
 // ─── Check if prospect exists in Supabase ───
@@ -252,6 +275,7 @@ async function createProspect(data, sbKey) {
       subject_v2: data.subjectV2 || "",
       subject_v3: data.subjectV3 || "",
       inferred_analysis: data.inferredAnalysis || "",
+      instagram: data.instagram || "",
       emails_sent: data.emailsSent || 0,
       resend_id: data.resendId || null,
       email_v1: data.emailV1 || "",
@@ -298,6 +322,7 @@ async function processSearch(search, keys, results, processedIds) {
           const scrapeResult = await scrapeWebsite(place.url);
           if (scrapeResult.email) { place.email = scrapeResult.email; results.emailsScraped++; }
           if (scrapeResult.context) place.websiteContext = scrapeResult.context;
+          if (scrapeResult.instagram) place.instagram = scrapeResult.instagram;
         }
 
         // Generate emails + analysis with Claude

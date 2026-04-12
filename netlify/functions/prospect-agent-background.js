@@ -7,8 +7,10 @@ const sbHeaders = (key) => ({
 });
 
 // ─── Google Places Search ───
+const US_CITIES = ["miami","houston","los ángeles","los angeles","chicago","nueva york","new york","san antonio","dallas","phoenix","san diego","san jose","austin","el paso","san francisco","denver","las vegas","tucson","albuquerque","orlando","tampa"];
 async function searchPlaces(query, city, apiKey) {
-  const textQuery = `${query} en ${city}`;
+  const isUS = US_CITIES.some(c => city.toLowerCase().includes(c));
+  const textQuery = isUS ? `${query} latino hispano en ${city}` : `${query} en ${city}`;
   const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
     headers: {

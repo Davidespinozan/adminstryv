@@ -46,16 +46,17 @@ Genera 3 ideas de contenido en español:
 3. COMODÍN — lo que surja naturalmente. Sin forzar.
 
 Cada idea:
-- hook: primera línea que detiene el scroll. Sin clickbait barato.
-- core: la tesis en 2-3 líneas. Con postura, no neutralidad.
-- cta: qué quieres que sienta, piense o haga quien lo lee.
-- format: reel, carrusel, imagen con texto, o texto solo.
+- hook: primera línea que detiene el scroll. Sin clickbait barato. Máximo 15 palabras.
+- core: la tesis en 2-3 líneas. Con postura, no neutralidad. Algo que la gente quiera compartir.
+- cta: qué quieres que sienta, piense o haga. NO "sígueme para más". Algo que provoque acción real.
+- format: uno de: Reel, Carrusel, Story, o texto solo.
 - pillar: uno de estos 7: "Dueño de negocio", "Sistemas y automatización", "Newsjacking", "El mundo cambia", "Dolor social", "Detrás de cámaras", "Mentalidad"
+- caption: copy completo listo para publicar en Instagram. Gancho, desarrollo, CTA. Máximo 300 palabras. Con saltos de línea. Máximo 3 hashtags específicos al final.
 
-Tono: Directo. Natural. Con peso. Sin emojis. Sin "5 tips". Sin motivación de calendario.
+Tono: Directo. Natural. Con peso. Sin emojis. Sin "5 tips". Sin motivación de calendario. Como si David hablara en una cena con amigos inteligentes.
 
 RESPONDE SOLO EN JSON sin markdown:
-{"ideas":[{"voice":"David","hook":"...","core":"...","cta":"...","format":"...","pillar":"..."},{"voice":"STRYV","hook":"...","core":"...","cta":"...","format":"...","pillar":"..."},{"voice":"Comodín","hook":"...","core":"...","cta":"...","format":"...","pillar":"..."}]}`;
+{"ideas":[{"voice":"David","hook":"...","core":"...","cta":"...","format":"...","pillar":"...","caption":"..."},{"voice":"STRYV","hook":"...","core":"...","cta":"...","format":"...","pillar":"...","caption":"..."},{"voice":"Comodín","hook":"...","core":"...","cta":"...","format":"...","pillar":"...","caption":"..."}]}`;
 
 async function getTodayCount(sbKey) {
   const today = new Date().toISOString().split("T")[0];
@@ -77,7 +78,7 @@ async function saveIdea(idea, topic, sbKey) {
       format: idea.format === "reel" ? "Reel" : idea.format === "carrusel" ? "Carrusel" : idea.format === "imagen con texto" ? "Story" : "Reel",
       status: "Idea",
       platform: "Instagram",
-      notes: `VOZ: ${idea.voice}\n\nCORE: ${idea.core}\n\nCTA: ${idea.cta}\n\nTEMA: ${topic}`,
+      notes: `VOZ: ${idea.voice}\n\nCORE: ${idea.core}\n\nCTA: ${idea.cta}\n\nCAPTION:\n${idea.caption||""}\n\nTEMA: ${topic}`,
       source: "agent",
     }),
   });

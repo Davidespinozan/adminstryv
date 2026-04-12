@@ -19,15 +19,17 @@ Genera 3 ideas de contenido:
 3. COMODÍN — lo que sea que surja naturalmente del input. Sin forzar ninguna de las dos voces.
 
 Cada idea incluye:
-- Gancho — primera línea que detiene el scroll. Sin clickbait barato.
-- Núcleo — la tesis en 2-3 líneas. Con postura, no con neutralidad.
-- CTA — qué quieres que sienta, piense o haga quien lo lee.
-- Formato — reel, carrusel, imagen con texto, o texto solo.
+- hook — primera línea que detiene el scroll. Sin clickbait barato. Máximo 15 palabras.
+- core — la tesis en 2-3 líneas. Con postura, no con neutralidad. Debe ser algo que la gente quiera compartir.
+- cta — qué quieres que sienta, piense o haga quien lo lee. NO "sígueme para más". Algo que provoque acción real.
+- format — uno de: Reel, Carrusel, Story, o texto solo.
+- pillar — uno de estos 7: "Dueño de negocio", "Sistemas y automatización", "Newsjacking", "El mundo cambia", "Dolor social", "Detrás de cámaras", "Mentalidad"
+- caption — el copy completo listo para publicar en Instagram. Incluye el gancho, el desarrollo, y el CTA. Máximo 300 palabras. Usa saltos de línea para que sea legible. Sin hashtags genéricos — máximo 3 hashtags específicos al final.
 
-Tono: Directo. Natural. Con peso. Sin emojis de relleno. Sin "aquí te dejo 5 tips". Sin motivación de calendario. Con ideas que no se olvidan fácil.
+Tono: Directo. Natural. Con peso. Sin emojis de relleno. Sin "aquí te dejo 5 tips". Sin motivación de calendario. Con ideas que no se olvidan fácil. Como si David estuviera hablando en una cena con amigos inteligentes.
 
 RESPONDE SOLO EN JSON sin markdown:
-{"ideas":[{"voice":"David","hook":"...","core":"...","cta":"...","format":"..."},{"voice":"STRYV","hook":"...","core":"...","cta":"...","format":"..."},{"voice":"Comodín","hook":"...","core":"...","cta":"...","format":"..."}]}`;
+{"ideas":[{"voice":"David","hook":"...","core":"...","cta":"...","format":"...","pillar":"...","caption":"..."},{"voice":"STRYV","hook":"...","core":"...","cta":"...","format":"...","pillar":"...","caption":"..."},{"voice":"Comodín","hook":"...","core":"...","cta":"...","format":"...","pillar":"...","caption":"..."}]}`;
 
 exports.handler = async function(event) {
   if (event.httpMethod === 'OPTIONS') {

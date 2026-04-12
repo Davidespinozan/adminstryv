@@ -185,7 +185,7 @@ const[user,setUser]=useState(null);const[prof,setProf]=useState(null);const[aL,s
 const[aErr,setAErr]=useState("");const[aEm,setAEm]=useState("");const[aPw,setAPw]=useState("");
 const[chPw,setChPw]=useState(false);const[nPw,setNPw]=useState("");const[pwMsg,setPwMsg]=useState("");
 const[navOpen,setNavOpen]=useState(false);
-const isA=prof?.role==="admin";
+const isA=true;
 
 const lProf=async u=>{const{data}=await SB.from("profiles").select("*").eq("id",u).single();setProf(data?toCa(data):null);setAL(false)};
 

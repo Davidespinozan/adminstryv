@@ -276,6 +276,7 @@ async function createProspect(data, sbKey) {
       subject_v3: data.subjectV3 || "",
       inferred_analysis: data.inferredAnalysis || "",
       instagram: data.instagram || "",
+      dm_v4: data.dmV4 || "",
       emails_sent: data.emailsSent || 0,
       resend_id: data.resendId || null,
       email_v1: data.emailV1 || "",
@@ -335,6 +336,7 @@ async function processSearch(search, keys, results, processedIds) {
         place.emailV2 = emails[1]?.body || "";
         place.subjectV3 = emails[2]?.subject || "";
         place.emailV3 = emails[2]?.body || "";
+        place.dmV4 = emails[3]?.body || "";
         place.inferredAnalysis = emailData.analysis || "";
 
         if (place.email && keys.resend) {

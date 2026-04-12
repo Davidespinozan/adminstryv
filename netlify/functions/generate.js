@@ -106,6 +106,14 @@ V3 — OBSERVACIÓN DIRECTA (máximo 40 palabras + firma)
 - CTA mínimo: solo la firma
 - Firma completa
 
+V4 — DM DE INSTAGRAM (máximo 60 palabras, sin firma)
+Tono: como si le escribieras a alguien que acabas de descubrir en redes. Casual, directo, humano.
+- Abre con "Hola" + algo específico que notaste de su negocio o perfil
+- Dale la idea directamente — qué sistema le serviría y por qué, en una oración
+- Cierra con: "Si te interesa, checa stryvstudio.com — ahí está todo. Saludos, David."
+- SIN firma corporativa, SIN CTA formal, SIN "¿tienes 20 minutos?"
+- Suena como un mensaje entre personas, no como prospección
+
 ═══ EJEMPLO DE EMAIL BUENO (V1) ═══
 
 "Buen día Agurto Logistics,
@@ -150,7 +158,7 @@ FIRMA DE TODOS LOS EMAILS:
 ${FIRMA}
 
 RESPONDE SOLO EN JSON sin markdown ni texto adicional:
-{"emails":[{"subject":"...","body":"..."},{"subject":"...","body":"..."},{"subject":"...","body":"..."}],"analysis":"..."}`;
+{"emails":[{"subject":"...","body":"..."},{"subject":"...","body":"..."},{"subject":"...","body":"..."},{"subject":"DM","body":"..."}],"analysis":"..."}`;
 
 function buildManualPrompt(d) {
   return `Eres David Espinoza, fundador de STRYV, escribiendo emails de prospección en frío desde Valencia, España.

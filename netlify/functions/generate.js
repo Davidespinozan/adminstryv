@@ -95,32 +95,34 @@ CUANDO ESCRIBAS EN INGLÉS:
 
 ═══ ESTRUCTURA DE LOS 3 EMAILS ═══
 
-V1 — PRESENTACIÓN Y PROPUESTA (máximo 120 palabras)
+V1 — PRESENTACIÓN Y PROPUESTA (máximo 130 palabras)
 - Saludo: "Buen día ${d.business || d.name || ''}," o "Hola ${d.business || d.name || ''},"
 - Presentación: "Soy David, fundador de STRYV, un estudio que construye sistemas operativos digitales para negocios."
 - Observación específica: algo concreto y verificable de ESTE negocio — tipo exacto de servicio, ubicación específica, algo de su web. NUNCA uses reseñas como gancho principal.
 - Propuesta: UNA sola cosa concreta que el sistema resuelve para este negocio específico — en una oración natural
+- PD al final: "PD: También ayudamos a negocios con [menciona 2-3 de las otras soluciones que NO mencionaste arriba: ventas online, atención automatizada con IA, contenido con IA, retención de clientes, operación interna] — checa cuál te hace sentido en stryvstudio.com"
 - CTA: "${CTA}"
 - Firma completa
 
-V2 — PREGUNTA Y CONTEXTO (máximo 80 palabras)
+V2 — PREGUNTA Y CONTEXTO (máximo 90 palabras)
 - Saludo
 - Una pregunta directa que toque el dolor más probable de este negocio específico
 - Una línea de contexto de cómo STRYV resuelve exactamente eso
+- PD corto: "PD: También hacemos [1-2 soluciones diferentes al V1] — más en stryvstudio.com"
 - CTA: "Responde este correo o escríbenos por WhatsApp al +1 (737) 368-3464 — sin compromiso."
 - Firma completa
 
-V3 — OBSERVACIÓN DIRECTA (máximo 40 palabras + firma)
+V3 — OBSERVACIÓN DIRECTA (máximo 50 palabras + firma)
 - Saludo
 - Una sola observación o pregunta que incomode productivamente
-- CTA mínimo: solo la firma
+- Una línea: "Hacemos sistemas de ventas, atención con IA, contenido y operación para negocios — stryvstudio.com"
 - Firma completa
 
 V4 — DM DE INSTAGRAM (máximo 50 palabras, sin firma)
 Esto NO es un email — es un mensaje directo de Instagram. Debe sentirse como un mensaje real que alguien te mandaría, no como prospección.
 - Abre mencionando algo MUY específico que te gustó o llamó la atención de su negocio — como si fueras un seguidor genuino
 - En una oración natural, menciona que haces algo relacionado que les podría servir
-- Cierra casual: "te dejo mi web por si te llama la atención: stryvstudio.com" o similar
+- Cierra casual: "hacemos sistemas de ventas, atención con IA, contenido y operación para negocios — te dejo la web por si te llama la atención: stryvstudio.com"
 - SIN "Soy David fundador de..." — eso es para email, no DM
 - SIN "responde este correo" — es Instagram
 - SIN firma corporativa

@@ -1297,7 +1297,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div><label style={lb}>Fecha programada</label><input value={(ctF.scheduledDate||"").substring(0,10)} onChange={e=>setCtF({...ctF,scheduledDate:e.target.value})} type="date" style={iS}/></div>
   </div>
   <div style={{marginBottom:16}}><label style={lb}>URL</label><input value={ctF.url} onChange={e=>setCtF({...ctF,url:e.target.value})} placeholder="https://..." style={iS}/></div>
-  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={ctF.notes} onChange={e=>setCtF({...ctF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
+  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={ctF.notes} onChange={e=>setCtF({...ctF,notes:e.target.value})} rows={Math.max(4,Math.ceil((ctF.notes||"").length/60))} style={{...iS,resize:"vertical",minHeight:100}}/></div>
   <div className="mob-wrap" style={{display:"flex",gap:8,paddingTop:8}}>
     <button onClick={()=>sv("content",ctF,setCtF,eCt)} style={{background:tl,border:"none",color:bg,padding:"12px 28px",borderRadius:10,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer",fontFamily:dsp,letterSpacing:".04em",boxShadow:"0 4px 12px rgba(11,119,152,.2)"}}>{eid?"Guardar cambios":"Crear pieza"}</button>
     <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:10,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>

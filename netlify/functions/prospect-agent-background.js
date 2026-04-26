@@ -237,10 +237,9 @@ async function sendEmail(to, subject, body, resendKey) {
       Authorization: `Bearer ${resendKey}`,
     },
     body: JSON.stringify({
-      from: "David Espinoza <equipo@stryvstudio.com>",
-      reply_to: "stryv.studio@gmail.com",
+      from: "David Arturo Espinoza Núñez <equipo@stryvstudio.com>",
+      reply_to: "equipo@stryvstudio.com",
       to: [to],
-      bcc: ["stryv.studio@gmail.com"],
       subject: subject,
       text: body,
       html: body.replace(/\n/g, "<br>"),

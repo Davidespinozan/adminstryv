@@ -59,6 +59,13 @@ async function updateProspect(id, data, sbKey) {
 }
 
 async function runFollowups() {
+  // PAUSED: Domain warmup in progress — no followup emails
+  const SENDING_PAUSED = true;
+  if (SENDING_PAUSED) {
+    console.log("Followup sending PAUSED for domain warmup");
+    return { paused: true, v2Sent: 0, v3Sent: 0 };
+  }
+
   const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
   const RESEND_KEY = process.env.RESEND_API_KEY;
 

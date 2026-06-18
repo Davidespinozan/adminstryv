@@ -1,3 +1,8 @@
 node_modules/
 package-lock.json
 package.json
+
+# Database schema dumps
+stryv_schema.sql
+stryv_data.sql
+stryv_load.sql

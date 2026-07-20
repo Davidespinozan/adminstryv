@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { Dashboard } from './screens/Dashboard';
+import { Clientes } from './screens/Clientes';
 
 // ============================================================================
 // Puerta de entrada del panel.
@@ -30,22 +31,44 @@ export default function App() {
   if (!listo) return null;
   if (!sesion) return <Login />;
 
-  return (
-    <>
-      <BarraSesion email={sesion.user.email ?? ''} />
-      <Dashboard />
-    </>
-  );
+  return <Panel email={sesion.user.email ?? ''} />;
 }
 
-function BarraSesion({ email }: { email: string }) {
+/** Las secciones del hub. Se van sumando a medida que se migran del panel
+ *  viejo; el consolidado es la única que no existía antes. */
+const SECCIONES = [
+  { id: 'consolidado', nombre: 'Consolidado' },
+  { id: 'clientes', nombre: 'Clientes' }
+] as const;
+type SeccionId = (typeof SECCIONES)[number]['id'];
+
+function Panel({ email }: { email: string }) {
+  const [seccion, setSeccion] = useState<SeccionId>('consolidado');
+
   return (
-    <div style={est.barra}>
-      <span>{email}</span>
-      <button style={est.link} onClick={() => void supabase.auth.signOut()}>
-        Cerrar sesión
-      </button>
-    </div>
+    <>
+      <nav style={est.barra}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {SECCIONES.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSeccion(s.id)}
+              style={{ ...est.tab, ...(seccion === s.id ? est.tabActiva : null) }}
+            >
+              {s.nombre}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <span>{email}</span>
+          <button style={est.link} onClick={() => void supabase.auth.signOut()}>
+            Cerrar sesión
+          </button>
+        </div>
+      </nav>
+
+      {seccion === 'consolidado' ? <Dashboard /> : <Clientes />}
+    </>
   );
 }
 
@@ -99,7 +122,7 @@ function Login() {
 const est: Record<string, React.CSSProperties> = {
   barra: {
     display: 'flex',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
     padding: '10px 24px',
@@ -109,6 +132,8 @@ const est: Record<string, React.CSSProperties> = {
     fontFamily: 'system-ui, sans-serif'
   },
   link: { background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: 12.5 },
+  tab: { background: 'none', border: 'none', padding: '6px 12px', borderRadius: 7, cursor: 'pointer', fontSize: 13, color: '#6b7280', fontWeight: 600 },
+  tabActiva: { background: '#111827', color: '#fff' },
   login: {
     maxWidth: 320,
     margin: '18vh auto',

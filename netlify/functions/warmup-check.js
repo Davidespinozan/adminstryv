@@ -1,6 +1,6 @@
 const { schedule } = require("@netlify/functions");
 
-const SUPABASE_URL = "https://ltveorvqvvlyivjwxjlc.supabase.co";
+const SUPABASE_URL = "https://lxpgqhghxfqsahwrdmzo.supabase.co";
 
 exports.handler = schedule("0 6 * * *", async () => {
   const warmupEnd = new Date("2026-04-26");

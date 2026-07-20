@@ -1,4 +1,4 @@
-const SUPABASE_URL = "https://ltveorvqvvlyivjwxjlc.supabase.co";
+const SUPABASE_URL = "https://lxpgqhghxfqsahwrdmzo.supabase.co";
 
 const sbHeaders = (key) => ({
   "Content-Type": "application/json",

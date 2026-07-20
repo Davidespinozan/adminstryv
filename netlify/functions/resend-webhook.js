@@ -1,4 +1,4 @@
-const SUPABASE_URL = "https://ltveorvqvvlyivjwxjlc.supabase.co";
+const SUPABASE_URL = "https://lxpgqhghxfqsahwrdmzo.supabase.co";
 
 exports.handler = async function(event) {
   if (event.httpMethod === "OPTIONS") {

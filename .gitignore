@@ -1,6 +1,14 @@
 node_modules/
-package-lock.json
-package.json
+
+# Solo los de la RAÍZ. Con el patrón sin barra (`package.json`), git ignoraba
+# también los de apps/ y dejaba el panel nuevo fuera del repo sin avisar.
+/package.json
+/package-lock.json
+
+# Database schema dumps
+stryv_schema.sql
+stryv_data.sql
+stryv_load.sql
 
 # entornos locales
 .env.local

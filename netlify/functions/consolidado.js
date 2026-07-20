@@ -43,9 +43,15 @@ const json = (statusCode, body) => ({
 // eso era tolerable cuando solo había datos de Stryv. Con las llaves de tres
 // negocios detrás, no lo es.
 //
-// La lista de admins va por variable de entorno (`PANEL_ADMINS`) y no por una
-// columna de la base: no depende de un esquema que puede cambiar, y no hay forma
-// de auto-otorgarse el permiso desde dentro de la app.
+// EL PERMISO LO DECIDE `is_admin()`, la misma función de la que ya cuelga toda
+// la RLS del panel (`profiles.role = 'admin'`). No se reimplementa acá: se la
+// llama. Copiar la regla en JavaScript crearía una segunda fuente de verdad que
+// se separa de la primera en cuanto una de las dos cambie, y el día que eso
+// pase nadie se va a enterar hasta que sea tarde.
+//
+// Se la invoca con el JWT DEL USUARIO, no con la clave de servicio: así
+// `auth.uid()` dentro de la función resuelve a quien realmente está pidiendo.
+// Con la clave de servicio, `auth.uid()` sería nulo y la respuesta siempre no.
 async function autorizar(event) {
   const auth = event.headers.authorization || event.headers.Authorization || '';
   if (!auth.startsWith('Bearer ')) return { ok: false, code: 401, msg: 'Falta el token' };
@@ -61,15 +67,21 @@ async function autorizar(event) {
 
   const user = await res.json();
   const email = (user?.email || '').toLowerCase();
-  const permitidos = env('PANEL_ADMINS')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
 
-  // Sin lista configurada NO se deja pasar a nadie. Una lista vacía que
-  // permitiera todo sería la misma trampa que `isA = true`.
-  if (permitidos.length === 0) return { ok: false, code: 500, msg: 'PANEL_ADMINS sin configurar' };
-  if (!permitidos.includes(email)) return { ok: false, code: 403, msg: 'Sin permiso' };
+  const rpc = await fetch(`${url}/rest/v1/rpc/is_admin`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: auth, 'Content-Type': 'application/json' },
+    body: '{}'
+  });
+
+  // Si la verificación no se puede hacer, NO se deja pasar. Un error de red no
+  // puede convertirse en un permiso concedido.
+  if (!rpc.ok) {
+    return { ok: false, code: 503, msg: 'No se pudo verificar el permiso: ' + (await rpc.text()) };
+  }
+  if ((await rpc.json()) !== true) {
+    return { ok: false, code: 403, msg: `${email} no es admin` };
+  }
 
   return { ok: true, email };
 }

@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  // Se sirve en /nuevo/ mientras convive con el panel viejo. Sin esto, el HTML
+  // compilado pide sus archivos a /assets/... (raíz del sitio, donde vive el
+  // panel viejo) y el nuevo carga en blanco sin ningún error visible.
+  base: '/nuevo/',
   plugins: [react()],
   test: {
     globals: true,

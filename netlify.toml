@@ -1,0 +1,34 @@
+# ============================================================================
+# Despliegue de adminstryv.
+# ----------------------------------------------------------------------------
+# CONVIVEN DOS PANELES a propósito, mientras dura la migración:
+#
+#   /        → el panel viejo (index.html de la raíz). Tiene todos los módulos
+#              que David usa a diario: equipo, stack, proyectos, academia,
+#              inversión, prospección, contenido.
+#   /nuevo   → el panel nuevo (apps/panel). Tiene el consolidado de los cuatro
+#              negocios, clientes y finanzas, con seguridad real.
+#
+# Se cambia el default recién cuando el nuevo tenga todos los módulos. Apagar el
+# viejo hoy significaría quedarse sin las herramientas del día a día para ganar
+# tres pantallas — mal negocio.
+#
+# PARA VOLVER ATRÁS: borrar este archivo. Netlify vuelve a publicar la raíz sin
+# compilar nada, exactamente como antes.
+# ============================================================================
+
+[build]
+  # Se publica la raíz (el panel viejo) y el nuevo se compila DENTRO de ella.
+  publish = "."
+  command = "cd apps/panel && npm install && npm run build && rm -rf ../../nuevo && cp -r dist ../../nuevo"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# El panel nuevo es una SPA: cualquier ruta interna debe servir su index.
+[[redirects]]
+  from = "/nuevo/*"
+  to = "/nuevo/index.html"
+  status = 200
+
+# El viejo queda como está: sin reescrituras, sirviendo index.html de la raíz.

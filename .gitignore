@@ -5,3 +5,6 @@ package.json
 # entornos locales
 .env.local
 .env*.local
+
+# builds
+dist/

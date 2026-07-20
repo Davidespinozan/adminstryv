@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { Dashboard } from './screens/Dashboard';
 import { Clientes } from './screens/Clientes';
+import { Finanzas } from './screens/Finanzas';
 
 // ============================================================================
 // Puerta de entrada del panel.
@@ -38,7 +39,8 @@ export default function App() {
  *  viejo; el consolidado es la única que no existía antes. */
 const SECCIONES = [
   { id: 'consolidado', nombre: 'Consolidado' },
-  { id: 'clientes', nombre: 'Clientes' }
+  { id: 'clientes', nombre: 'Clientes' },
+  { id: 'finanzas', nombre: 'Finanzas' }
 ] as const;
 type SeccionId = (typeof SECCIONES)[number]['id'];
 
@@ -67,7 +69,9 @@ function Panel({ email }: { email: string }) {
         </div>
       </nav>
 
-      {seccion === 'consolidado' ? <Dashboard /> : <Clientes />}
+      {seccion === 'consolidado' && <Dashboard />}
+      {seccion === 'clientes' && <Clientes />}
+      {seccion === 'finanzas' && <Finanzas />}
     </>
   );
 }

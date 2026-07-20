@@ -376,7 +376,7 @@ const dl=async(t,id)=>{if(!confirm("¿Eliminar?"))return;const ok=await dDel(t,i
 const ed=(item,sf,v,s)=>{sf(JSON.parse(JSON.stringify(item)));setEid(item.id);setVw(v);setSub(s)};
 const goN=(v,s,sf,e)=>{setEid(null);setVw(v);setSub(s);sf({...e})};
 const svI=async()=>{const amt=iF.type==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:Number(iF.amount||0);if(!amt){alert("Monto requerido");return}const rec={...iF,amount:amt};if(eid)await dUpd("investments",eid,rec);else await dIns("investments",rec);setIF({...eI});setEid(null);setSub(null);await loadAll()};
-const buildSnap=(mo)=>{const cm=me.costByMo[mo]||{equipo:me.tmCost,tools:me.tlCost,ads:0,total:me.totCost};const cobMo=me.byMo[mo]||0;const invMo=me.iMo[mo]||0;const util=me.tMRR+me.acaMRR-cm.total;return{month:mo,mrrClientes:Math.round(me.tMRR*100)/100,mrrAcademia:Math.round(me.acaMRR*100)/100,costoEquipo:Math.round(cm.equipo*100)/100,costoStack:Math.round(cm.tools*100)/100,costoAds:Math.round(cm.ads*100)/100,costoTotal:Math.round(cm.total*100)/100,utilidad:Math.round(util*100)/100,revenueMes:Math.round(cobMo*100)/100,invertidoMes:Math.round(invMo*100)/100,clientesActivos:me.active,alumnosActivos:me.acaAct,teamActivos:me.aTm,toolsActivos:tls.filter(x=>x.status==="Activo").length,cobradoTotal:Math.round(me.tPaid*100)/100,notes:""}};
+const buildSnap=(mo)=>{const cm=me.costByMo[mo]||{equipo:me.tmCost,tools:me.tlCostPropio,toolsTerceros:me.tlTerceros,ads:0,total:me.totCost};const cobMo=me.byMo[mo]||0;const invMo=me.iMo[mo]||0;const utilRunRate=me.tMRR+me.acaMRR-cm.total;const utilCaja=(me.byMo[mo]||0)-cm.total;return{month:mo,mrrClientes:Math.round(me.tMRR*100)/100,mrrAcademia:Math.round(me.acaMRR*100)/100,costoEquipo:Math.round(cm.equipo*100)/100,costoStack:Math.round(cm.tools*100)/100,stackTerceros:Math.round((cm.toolsTerceros||0)*100)/100,costoAds:Math.round(cm.ads*100)/100,costoTotal:Math.round(cm.total*100)/100,utilidad:Math.round(utilRunRate*100)/100,utilidadCaja:Math.round(utilCaja*100)/100,revenueMes:Math.round(cobMo*100)/100,invertidoMes:Math.round(invMo*100)/100,clientesActivos:me.active,alumnosActivos:me.acaAct,teamActivos:me.aTm,toolsActivos:tls.filter(x=>x.status==="Activo").length,cobradoTotal:Math.round(me.tPaid*100)/100,notes:""}};
 const cerrarMes=async(targetMo)=>{const mo=targetMo||new Date().toISOString().substring(0,7);if(snaps.find(s=>s.month===mo)){if(targetMo)return;if(!confirm(`Ya existe un cierre para ${mo}. ¿Reemplazar?`))return;const ex=snaps.find(s=>s.month===mo);await dDel("snapshots",ex.id)}await dIns("snapshots",buildSnap(mo));await loadAll();if(!targetMo)alert(`✓ Mes ${mo} cerrado`)};
 const autoCloseRef=React.useRef(false);
 useEffect(()=>{if(!isA||!user||ld||cl.length===0||autoCloseRef.current)return;autoCloseRef.current=true;
@@ -468,12 +468,22 @@ const me=useMemo(()=>{
   const tlP={STRYV:0,Inversor:0,Cliente:0};
   const curMo=new Date().toISOString().substring(0,7);
   const tlAct=t=>t.status==="Activo"&&(!t.cancelDate||(t.cancelDate+"").substring(0,7)>=curMo);
+  /* CORRECCION: tlAct mira el estado de HOY, asi que al cancelar una herramienta
+     desaparecia de TODO el historial — incluidos los meses en que si se pago, y
+     los costos pasados bajaban solos. Para los calculos historicos se usa esta,
+     que decide por FECHAS: cuenta desde el alta hasta la cancelacion. */
+  const tlActEn=(t,mo)=>{const alta=t.createdAt?(t.createdAt+"").substring(0,7):mo;if(mo<alta)return false;if(t.cancelDate&&(t.cancelDate+"").substring(0,7)<mo)return false;return true};
   tls.filter(tlAct).forEach(x=>{const c=toUSD(x.cost,x.currency);const mo=x.billing==="Anual"?c/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:c;const pk=x.paidBy||"STRYV";tlP[pk]=(tlP[pk]||0)+mo});
   const tlCost=Object.values(tlP).reduce((s,v)=>s+v,0);
+  /* CORRECCION: tlCost suma TODO el stack, incluido el que pagan clientes e
+     inversores — mostraba como gasto propio dinero que STRYV nunca desembolso.
+     El costo real es solo lo que paga STRYV. */
+  const tlCostPropio=tlP.STRYV||0;
+  const tlTerceros=(tlP.Cliente||0)+(tlP.Inversor||0);
   const tlCov=tlCost?Math.round(((tlP.Cliente+tlP.Inversor)/tlCost)*100):100;
   const adsCost=invs.filter(x=>x.type==="Ads").reduce((s,x)=>{if(!x.date)return s;const m=(x.date+"").substring(0,7);return m===curMo?s+toUSD(x.amount,x.currency):s},0);
-  const totCost=tmCost+tlCost+adsCost;
-  const costByMo=(()=>{const cmo={};const adsByMo={};invs.filter(x=>x.type==="Ads").forEach(x=>{if(!x.date)return;const m=(x.date+"").substring(0,7);adsByMo[m]=(adsByMo[m]||0)+toUSD(x.amount,x.currency)});const toolsByMo={};tls.filter(tlAct).forEach(x=>{const defC=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(defC<=0)return;const ch=x.costHistory||{};const start=x.createdAt?(x.createdAt+"").substring(0,7):curMo;let cur=start;while(cur<=curMo){const c=ch[cur]!==undefined?Number(ch[cur]):defC;toolsByMo[cur]=(toolsByMo[cur]||0)+c;const[y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}});const allMo=new Set([...Object.keys(adsByMo),...Object.keys(toolsByMo)]);allMo.forEach(m=>{cmo[m]={equipo:tmCost,tools:toolsByMo[m]||0,ads:adsByMo[m]||0,total:tmCost+(toolsByMo[m]||0)+(adsByMo[m]||0)}});return cmo})();
+  const totCost=tmCost+tlCostPropio+adsCost;
+  const costByMo=(()=>{const cmo={};const adsByMo={};invs.filter(x=>x.type==="Ads").forEach(x=>{if(!x.date)return;const m=(x.date+"").substring(0,7);adsByMo[m]=(adsByMo[m]||0)+toUSD(x.amount,x.currency)});const toolsByMo={};const toolsTercByMo={};tls.forEach(x=>{const propio=(x.paidBy||"STRYV")==="STRYV";const defC=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(defC<=0)return;const ch=x.costHistory||{};const start=x.createdAt?(x.createdAt+"").substring(0,7):curMo;let cur=start;while(cur<=curMo){if(tlActEn(x,cur)){const c=ch[cur]!==undefined?Number(ch[cur]):defC;if(propio)toolsByMo[cur]=(toolsByMo[cur]||0)+c;else toolsTercByMo[cur]=(toolsTercByMo[cur]||0)+c}const[y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}});const allMo=new Set([...Object.keys(adsByMo),...Object.keys(toolsByMo),...Object.keys(toolsTercByMo)]);allMo.forEach(m=>{cmo[m]={equipo:tmCost,tools:toolsByMo[m]||0,toolsTerceros:toolsTercByMo[m]||0,ads:adsByMo[m]||0,total:tmCost+(toolsByMo[m]||0)+(adsByMo[m]||0)}});return cmo})();
   const acaMRR=sts.filter(x=>x.status==="Activo").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
   const acaRev=sts.reduce((s,x)=>s+toUSD(x.amountPaid,x.currency),0),acaAct=sts.filter(x=>x.status==="Activo").length,acaCnv=sts.filter(x=>x.convertedToClient).length;
   const lR=lsns.filter(x=>x.status==="Listo").length;
@@ -485,10 +495,13 @@ const me=useMemo(()=>{
   const invStTools={};tls.filter(tlAct).filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const inv=x.paidBy==="STRYV"?"STRYV":x.paidByName||"Inversor";const mo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(!invStTools[inv])invStTools[inv]={tools:[],total:0};invStTools[inv].tools.push({name:x.name,cost:mo,billing:x.billing});invStTools[inv].total+=mo;iInv[inv]=(iInv[inv]||0)+mo});
   const tISt=Object.values(invStTools).reduce((s,v)=>s+v.total,0);
   const totalCostAcc=Object.values(costByMo).reduce((s,v)=>s+v.total,0);
-  const toolsAcc=(()=>{let t=0;const cm=curMo;tls.filter(tlAct).filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const defMo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(defMo<=0)return;const ch=x.costHistory||{};const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;let cur=start;while(cur<=cm){t+=ch[cur]!==undefined?Number(ch[cur]):defMo;const[y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}});return t})();
+  const toolsAcc=(()=>{let t=0;const cm=curMo;tls.filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const defMo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(defMo<=0)return;const ch=x.costHistory||{};const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;let cur=start;while(cur<=cm){if(tlActEn(x,cur))t+=ch[cur]!==undefined?Number(ch[cur]):defMo;const[y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}});return t})();
   const nL=leads.filter(l=>!l.converted).length;
   const totalInv=tIA+toolsAcc;
-  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,costByMo,totalCostAcc,totalInv,toolsAcc,cobMes:byMo[curMo]||0,profit:(byMo[curMo]||0)-totCost,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
+  /* CORRECCION: totalInv suma TODOS los tipos, incluidos Ads y Equipo, que son
+     gastos y no inversion. El capital de verdad inyectado es solo tInj. */
+  const capInyectado=tInj;
+  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,costByMo,totalCostAcc,totalInv,toolsAcc,cobMes:byMo[curMo]||0,profit:(byMo[curMo]||0)-totCost,profitRunRate:tMRR+acaMRR-totCost,tlCostPropio,tlTerceros,capInyectado,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
 },[cl,tm,tls,pjs,lsns,sts,invs,leads,tcMXN]);
 
 const alerts=useMemo(()=>{
@@ -498,7 +511,9 @@ const alerts=useMemo(()=>{
       const last=c.updatedAt?new Date(c.updatedAt):null;
       if(last&&(now-last)>ms7)a.push({icon:"⏱",msg:`${c.name} lleva +7 días sin actualización`,type:"clients",item:c});
     }
-    if(Number(c.amount||0)>Number(c.amountPaid||0))a.push({icon:"💰",msg:`${c.name} tiene pago pendiente (${fm(Number(c.amount||0)-Number(c.amountPaid||0))})`,type:"clients",item:c});
+    /* CORRECCION: comparaba y mostraba montos SIN convertir, asi que un cliente en
+     pesos aparecia con un pendiente enorme etiquetado en dolares. */
+    {const pend=toUSD(c.amount,c.currency)-toUSD(c.amountPaid,c.currency);if(pend>0.5)a.push({icon:"💰",msg:`${c.name} tiene pago pendiente (${fm(pend)})`,type:"clients",item:c});}
   });
   tls.forEach(t=>{
     if(t.renewDate){const rd=new Date(t.renewDate+"T00:00:00");const diff=rd-now;if(diff>=0&&diff<=ms7)a.push({icon:"🔄",msg:`${t.name} renueva en ${Math.ceil(diff/86400000)} día(s)`,type:"stack",item:t})}
@@ -606,7 +621,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 {vw==="dashboard"&&!sub&&(<div>
   <div className="g-cards" style={{marginBottom:16}}>
     {[{l:"Ingreso total",v:fm(me.tRev),c:"#34d399"},{l:"Cobrado total",v:fm(me.tPaid),c:"#34d399"},{l:"Cobrado/mes",v:fm(me.cobMes),c:"#34d399"},{l:"Pendiente",v:fm(me.tPend),c:"#f87171"},{l:"MRR",v:fm(me.tMRR),c:"#34d399"},
-      ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#f87171"},{l:"Utilidad/mes",v:fm(me.profit),c:me.profit>=0?"#34d399":"#f87171"},{l:"Inversión total",v:fm(me.totalInv),c:tl}]:[]),
+      ...(isA?[{l:"Costos/mes",v:fm(me.totCost),c:"#f87171"},{l:"Utilidad cobrada",v:fm(me.profit),c:me.profit>=0?"#34d399":"#f87171"},{l:"Utilidad run-rate",v:fm(me.profitRunRate),c:me.profitRunRate>=0?"#34d399":"#f87171"},{l:"Capital inyectado",v:fm(me.capInyectado),c:tl}]:[]),
     ].map((k,i)=><div key={i} className="card-row" style={{background:cd,border:`1px solid ${bd}`,borderRadius:16,padding:"20px 24px"}}>
       <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"rgba(0,0,0,0.40)",marginBottom:10,fontFamily:ibm}}>{k.l}</div>
       <div style={{fontSize:18,fontWeight:700,color:k.c,letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>{k.v}</div>
@@ -1007,7 +1022,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     {isA&&<button onClick={()=>{setIF({...eI});setEid(null);setSub("iF")}} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Movimiento</button>}
   </div>
   <div className="g-inv" style={{marginBottom:16}}>
-    {[{l:"Total invertido",v:fm(me.totalInv),c:"#b392f0"},{l:"Movimientos",v:fm(me.tIA),c:"#b392f0"},{l:"Stack acumulado",v:fm(me.toolsAcc),c:"#ff7b72"}].map((k,i)=>
+    {[{l:"Capital inyectado",v:fm(me.capInyectado),c:"#b392f0"},{l:"Movimientos (todos)",v:fm(me.tIA),c:"#b392f0"},{l:"Stack acumulado",v:fm(me.toolsAcc),c:"#ff7b72"}].map((k,i)=>
       <div key={i} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 12px"}}><div style={{fontSize:8,fontWeight:600,letterSpacing:".12em",textTransform:"uppercase",color:mt,marginBottom:5,fontFamily:"'Geist Mono',monospace"}}>{k.l}</div><div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div></div>)}
   </div>
   {/* Historial completo mes a mes */}
@@ -1459,7 +1474,7 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center",flexWrap:"wrap"}}>
     <div style={{fontSize:15,fontWeight:800}}>Stack <span style={{color:mt,fontWeight:400}}>({tls.length})</span></div>
     <div style={{display:"flex",gap:8,alignItems:"center"}}>
-      {isA&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:8,padding:"7px 12px",fontSize:11}}><span style={{color:mt}}>Costo/mes: </span><span style={{fontWeight:800,color:tx}}>{fm(me.tlCost)}</span></div>}
+      {isA&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:8,padding:"7px 12px",fontSize:11}}><span style={{color:mt}}>Pagás vos: </span><span style={{fontWeight:800,color:tx}}>{fm(me.tlCostPropio)}</span><span style={{color:mt}}> · stack total {fm(me.tlCost)}</span></div>}
       {isA&&<button onClick={()=>goN("stack","tF",setTF,eT)} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Agregar</button>}
     </div>
   </div>

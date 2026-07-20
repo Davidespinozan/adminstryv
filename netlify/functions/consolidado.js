@@ -97,24 +97,26 @@ async function leerSala(desdeISO) {
 
   const huecos = [];
 
-  // GMV: todo lo que los gyms le cobran a sus socios. La comisión de SALA es 0,
-  // así que esto NO es ingreso propio — es el volumen que pasa por la plataforma.
-  const pagos = await q(
+  // EL DINERO DE SALA: lo que los gyms le pagan a SALA por usar la plataforma.
+  //
+  // Antes acá se leía `pagos`, que es lo que los SOCIOS le pagan a los GYMS.
+  // Eso es GMV: volumen que pasa por la plataforma pero no es ingreso propio
+  // (la comisión de SALA es 0). Mostrarlo como ingreso, y peor, sumarlo con la
+  // venta real de otro negocio, daba un total que no significaba nada.
+  const movs = await q(
     url,
     key,
-    `pagos?select=monto_centavos,moneda,concepto,metodo,created_at,tenant_id&created_at=gte.${desdeISO}&order=created_at.desc&limit=5000`
+    `movimientos_dinero?select=ocurrido_en,monto_centavos,moneda,concepto,metodo,tenant_id&negocio=eq.sala&ocurrido_en=gte.${desdeISO}&order=ocurrido_en.desc&limit=5000`
   );
 
-  const movimientos = pagos.map((p) => ({
+  const movimientos = movs.map((m) => ({
     negocio: 'sala',
-    ocurrido_en: p.created_at,
-    monto_centavos: p.monto_centavos,
-    moneda: (p.moneda || 'MXN').toUpperCase(),
-    concepto: p.concepto,
-    metodo: p.metodo,
-    cliente_id: p.tenant_id,
-    // Marca que esto es volumen de la plataforma, no facturación de SALA.
-    es_gmv: true
+    ocurrido_en: m.ocurrido_en,
+    monto_centavos: m.monto_centavos,
+    moneda: (m.moneda || 'MXN').toUpperCase(),
+    concepto: m.concepto,
+    metodo: m.metodo,
+    cliente_id: m.tenant_id
   }));
 
   const eventos = (
@@ -125,9 +127,14 @@ async function leerSala(desdeISO) {
     )
   ).map((e) => ({ ...e, negocio: 'sala' }));
 
-  // Ingreso PROPIO de SALA: todavía no hay ledger del cobro gym→SALA (vive solo
-  // en Stripe). Se declara como hueco en vez de estimarlo.
-  huecos.push('El ingreso propio de SALA (lo que pagan los gyms) aún no se registra en la base: solo existe en Stripe.');
+  // El ledger empieza el día que se instaló el webhook. Las facturas anteriores
+  // siguen viviendo solo en Stripe hasta que se corra el backfill. Se declara
+  // como hueco en vez de dejar que el mes se vea artificialmente bajo.
+  if (movimientos.length === 0) {
+    huecos.push(
+      'Todavía no hay cobros registrados. El libro se llena solo desde que Stripe cobra; las facturas anteriores necesitan el backfill.'
+    );
+  }
 
   return { movimientos, eventos, huecos };
 }

@@ -117,7 +117,6 @@ const LS=["Borrador","En producción","Grabado","Editado","Listo"];
 const LSC={"Borrador":"#8b949e","En producción":"#e5a84b","Grabado":"#4ECDC4","Editado":"#79b8ff","Listo":"#56d4a0"};
 const LT=["Video","Template","Ejercicio","Entregable","Lectura","Live"];
 const SS=["Activo","Completado","Pausado","Abandonó"];
-const _AW=[{n:1,t:"Fundación",s:"¿Qué vas a vender y por qué te van a comprar?"},{n:2,t:"Sistema de Ventas",s:"Listo para cobrar aunque sea poquito"},{n:3,t:"Entrega y Automatización",s:"Que opere sin ti"},{n:4,t:"Medición, Tráfico y Control",s:"Crecer sin colapsar"}];
 const IT=["Inyección de capital","Pago de stack mensual","Equipo","Ads","Otro"];
 
 const fm=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:0})+" USD";
@@ -285,12 +284,17 @@ function NegocioCard({n,d}){
   );
 }
 
-function Consolidado(){
-  const[dat,setDat]=React.useState(null);
+/* Los 4 negocios se piden UNA sola vez y se comparten entre las vistas: si
+   cada botón hiciera su propio fetch, cambiar de negocio volvería a golpear
+   los tres Supabase por gusto. */
+let _cacheGrupo=null;
+function useGrupo(){
+  const[dat,setDat]=React.useState(_cacheGrupo);
   const[err,setErr]=React.useState(null);
-  const[load,setLoad]=React.useState(true);
+  const[load,setLoad]=React.useState(!_cacheGrupo);
 
-  const cargar=React.useCallback(async()=>{
+  const cargar=React.useCallback(async(forzar)=>{
+    if(_cacheGrupo&&!forzar){setDat(_cacheGrupo);setLoad(false);return}
     setLoad(true);setErr(null);
     try{
       const{data:{session}}=await SB.auth.getSession();
@@ -300,19 +304,45 @@ function Consolidado(){
       /* Se muestra el motivo real del servidor (falta configurar, sin permiso,
          sesión vencida) y no un "algo salió mal" que no ayuda a arreglarlo. */
       if(!r.ok)throw new Error(j.error||("Error "+r.status));
-      setDat(j);
+      _cacheGrupo=j;setDat(j);
     }catch(e){setErr(e.message||"No se pudo cargar")}
     finally{setLoad(false)}
   },[]);
-  React.useEffect(()=>{cargar()},[cargar]);
+  React.useEffect(()=>{cargar(false)},[cargar]);
+  return{dat,err,load,recargar:()=>cargar(true)};
+}
 
-  if(load)return <div style={{padding:40,textAlign:"center",color:mt,fontFamily:ibm,fontSize:13}}>Leyendo los cuatro negocios…</div>;
+function EstadoCarga({err,recargar}){
   if(err)return(
     <div style={{background:cd,border:"1px solid "+bd,borderRadius:16,padding:24}}>
       <div style={{color:"#f87171",fontWeight:600,fontFamily:ibm,fontSize:13,marginBottom:10}}>{err}</div>
-      <button onClick={cargar} style={{background:tl,color:"#fff",border:"none",borderRadius:10,padding:"9px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:ibm}}>Reintentar</button>
+      <button onClick={recargar} style={{background:tl,color:"#fff",border:"none",borderRadius:10,padding:"9px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:ibm}}>Reintentar</button>
     </div>
   );
+  return <div style={{padding:40,textAlign:"center",color:mt,fontFamily:ibm,fontSize:13}}>Leyendo…</div>;
+}
+
+/* La vista de UN negocio. Hoy muestra su radiografía; es el lugar donde van a
+   colgar su operación, su marketing y su agente. */
+function NegocioVista({id}){
+  const{dat,err,load,recargar}=useGrupo();
+  const n=NEGOCIOS_GRUPO.find(x=>x.id===id);
+  if(load||err)return <EstadoCarga err={err} recargar={recargar}/>;
+  return(
+    <div>
+      <div style={{...hd,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span>{n.l}</span>
+        <button onClick={recargar} style={{background:"transparent",border:"1px solid "+bd,borderRadius:10,padding:"5px 12px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:ibm,color:s2,letterSpacing:0,textTransform:"none"}}>Actualizar</button>
+      </div>
+      <NegocioCard n={n} d={(dat.negocios||{})[id]||{huecos:["Sin datos"]}}/>
+    </div>
+  );
+}
+
+function Consolidado(){
+  const{dat,err,load,recargar}=useGrupo();
+  if(load||err)return <EstadoCarga err={err} recargar={recargar}/>;
+  const cargar=recargar;
 
   const mes=new Date().toISOString().substring(0,7);
   /* Los totales se agrupan POR MONEDA. Sumar pesos con dólares porque "total"
@@ -393,8 +423,6 @@ const _eC={name:"",company:"",phone:"",email:"",source:"Instagram",solutions:[],
 const _eM={name:"",roles:[],email:"",phone:"",rate:0,rateType:"Mensual",invested:0,status:"Activo",projects:[],notes:"",currency:"USD"};
 const _eT={name:"",category:"Automatización",cost:0,billing:"Mensual",url:"",loginEmail:"",notes:"",status:"Activo",cancelDate:null,renewDate:null,paidBy:"STRYV",paidByName:"",currency:"USD",costHistory:{}};
 const _eP={name:"",type:"Infraestructura",status:"Planeación",priority:"Media",owner:"",budget:0,spent:0,description:"",tasks:[],notes:"",currency:"USD"};
-const _eL={week:1,title:"",description:"",type:"Video",status:"Borrador",version:"v1",assets:[],notes:""};
-const _eSt={name:"",email:"",phone:"",plan:"",amount:0,amountPaid:0,currentWeek:1,status:"Activo",startDate:"",convertedToClient:false,notes:"",currency:"USD"};
 const _eI={type:"Inyección de capital",investor:"",amount:0,date:"",notes:"",currency:"USD"};
 const _ePr={name:"",business:"",city:"",email:"",phone:"",url:"",stage:"Sin contactar",emailV1:"",emailV2:"",emailV3:"",subjectV1:"",subjectV2:"",subjectV3:"",notes:"",source:"",activity:"",howSells:[],whatDelivers:[],operation:[],pain:"",googlePlaceId:"",googleMapsUrl:"",googleRating:null,googleReviews:0,googleCategory:"",googleTypes:"",address:""};
 const PR_SELLS=["WhatsApp o llamada directa","Presencial en local","Web o tienda en línea","Redes sociales","Referidos y boca en boca","Marketplace","Ventas B2B","Membresías o suscripciones"];
@@ -427,12 +455,12 @@ useEffect(()=>{
   return()=>subscription.unsubscribe();
 },[]);
 const login=async()=>{setAErr("");const{error}=await SB.auth.signInWithPassword({email:aEm,password:aPw});if(error)setAErr(error.message);else{setAPw("");setAEm("")}};
-const logout=async()=>{await SB.auth.signOut();setProf(null);setD({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[],snapshots:[],prospects:[],content:[],prospectSearches:[]})};
+const logout=async()=>{await SB.auth.signOut();setProf(null);setD({clients:[],team:[],tools:[],projects:[],investments:[],leads:[],snapshots:[],prospects:[],content:[],prospectSearches:[]})};
 const chPassTimer=React.useRef(null);
 const chPass=async()=>{setPwMsg("");const{error}=await SB.auth.updateUser({password:nPw});if(error)setPwMsg(error.message);else{setPwMsg("✓ Actualizada");setNPw("");clearTimeout(chPassTimer.current);chPassTimer.current=setTimeout(()=>{setChPw(false);setPwMsg("")},2000)}};
 useEffect(()=>()=>clearTimeout(chPassTimer.current),[]);
 
-const[D,setD]=useState({clients:[],team:[],tools:[],projects:[],lessons:[],students:[],investments:[],leads:[],snapshots:[],prospects:[],content:[],prospectSearches:[]});
+const[D,setD]=useState({clients:[],team:[],tools:[],projects:[],investments:[],leads:[],snapshots:[],prospects:[],content:[],prospectSearches:[]});
 const isInv=useMemo(()=>{if(isA)return true;const u=user?.email;if(!u)return false;const mb=D.team.find(m=>m.email&&m.email.toLowerCase()===u.toLowerCase());return mb&&(mb.roles||[]).includes("Inversionista")},[isA,user,D.team]);
 const[tcMXN,setTcMXN]=useState(()=>{try{const v=localStorage.getItem("stryv_tc");return v?Number(v):20.5}catch(e){return 20.5}});
 const[tcAuto,setTcAuto]=useState(false);
@@ -449,9 +477,7 @@ useEffect(()=>{
   fetchTC();
 },[]);
 const toUSD=(val,cur)=>{const n=Number(val||0);return cur==="MXN"?Math.round(n/tcMXN*100)/100:n};
-const[ld,setLd]=useState(false);const[vw,setVw]=useState("dashboard");const[sub,setSub]=useState(null);
-const[AW,setAW]=useState(()=>{try{const v=localStorage.getItem("stryv_aw");return v?JSON.parse(v):_AW}catch(e){return _AW}});
-const saveAW=(idx,field,val)=>{const nw=[...AW];nw[idx]={...nw[idx],[field]:val};setAW(nw);try{localStorage.setItem("stryv_aw",JSON.stringify(nw))}catch(e){}};
+const[ld,setLd]=useState(false);const[vw,setVw]=useState(()=>{try{return localStorage.getItem("stryv_vw_inicial")||"consolidado"}catch(e){return "consolidado"}});const[sub,setSub]=useState(null);
 const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");const[notifOpen,setNotifOpen]=useState(false);const[navGrp,setNavGrp]=useState(null);const[clVw,setClVw]=useState("lista");
 const[dismissedAlerts,setDismissedAlerts]=useState(()=>{try{return JSON.parse(localStorage.getItem("stryv_dismissed")||"[]")}catch{return[]}});
 const dismissAlert=(msg)=>{const nw=[...dismissedAlerts,msg];setDismissedAlerts(nw);try{localStorage.setItem("stryv_dismissed",JSON.stringify(nw))}catch{}};
@@ -462,14 +488,12 @@ const eC={..._eC};
 const eM={..._eM};
 const eT={..._eT};
 const eP={..._eP};
-const eL={..._eL};
-const eSt={..._eSt,startDate:today()};
 const eI={..._eI,date:today()};
 const ePr={..._ePr};
 const eCt={..._eCt};
 
 const[cF,setCF]=useState({...eC});const[mF,setMF]=useState({...eM});const[tF,setTF]=useState({...eT});
-const[pF,setPF]=useState({...eP});const[lF,setLF]=useState({...eL});const[sF,setSF]=useState({...eSt});const[iF,setIF]=useState({...eI});const[prF,setPrF]=useState({...ePr});const[ctF,setCtF]=useState({...eCt});const[prGenLoading,setPrGenLoading]=useState(false);
+const[pF,setPF]=useState({...eP});const[iF,setIF]=useState({...eI});const[prF,setPrF]=useState({...ePr});const[ctF,setCtF]=useState({...eCt});const[prGenLoading,setPrGenLoading]=useState(false);
 const[agentQuery,setAgentQuery]=useState("");const[agentCity,setAgentCity]=useState("");const[agentRunning,setAgentRunning]=useState(false);const[agentResult,setAgentResult]=useState(null);const[agentOpen,setAgentOpen]=useState(false);const[agentTick,setAgentTick]=useState(0);
 // Auto-refresh prospects every 30s when agent panel is open
 useEffect(()=>{if(!agentOpen||!user)return;const iv=setInterval(()=>{loadAll();setAgentTick(t=>t+1)},30000);return()=>clearInterval(iv)},[agentOpen,user]);
@@ -479,15 +503,15 @@ const[ctVw,setCtVw]=useState("lista");const[ctInput,setCtInput]=useState("");con
 const _ctTopics=["AI replacing jobs","why most businesses fail at automation","the real cost of not having systems","digital operating systems","your business depends on you","working IN vs ON your business","AI changing customer service","the freedom economy","content without systems is noise","the WhatsApp trap","inventory in Excel","your clients don't come back","why your team can't scale","geopolitics and small business","building a business that runs without you"];
 const genContent=async(attempt=1)=>{const input=ctInput.trim()||_ctTopics[Math.floor(Math.random()*_ctTopics.length)];setCtGenLoading(true);if(attempt===1)setCtIdeas(null);try{const res=await fetch("/.netlify/functions/generate-content",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({input})});if(!res.ok)throw new Error("HTTP "+res.status);const data=await res.json();if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));const raw=data.content?.find(b=>b.type==="text")?.text||"";if(!raw)throw new Error("Respuesta vacía");const clean=raw.replace(/```json|```/g,"").trim();const parsed=JSON.parse(clean);const ideas=parsed.ideas||[];if(!ideas.length)throw new Error("Sin ideas");setCtIdeas(ideas);for(const idea of ideas){await dIns("content",{title:idea.hook,pillar:idea.pillar||"Mentalidad",format:idea.format==="Reel"||idea.format==="reel"?"Reel":idea.format==="Carrusel"||idea.format==="carrusel"?"Carrusel":"Reel",status:"Idea",platform:"Instagram",notes:`VOZ: ${idea.voice}\n\nCORE: ${idea.core}\n\nCTA: ${idea.cta}\n\nCAPTION:\n${idea.caption||""}\n\nINPUT: ${input}`,source:"manual"})}await loadAll()}catch(err){if(attempt<2){return genContent(2)}alert("Error: "+err.message)}setCtGenLoading(false)};
 
-const cl=D.clients,tm=D.team,tls=D.tools,pjs=D.projects,lsns=D.lessons,sts=D.students,invs=D.investments,leads=D.leads,snaps=D.snapshots||[],pros=D.prospects||[],cts=D.content||[];
+const cl=D.clients,tm=D.team,tls=D.tools,pjs=D.projects,invs=D.investments,leads=D.leads,snaps=D.snapshots||[],pros=D.prospects||[],cts=D.content||[];
 
 const loadAll=useCallback(async()=>{
   if(loadLock.current)return;
   loadLock.current=true;
   setLd(true);
   try{
-    const[clients,team,tools,projects,lessons,students,investments,leads,snapshots,prospects,content,prospectSearches]=await Promise.all([dSel("clients"),dSel("team"),dSel("tools"),dSel("projects"),dSel("lessons"),dSel("students"),dSel("investments"),dSel("leads"),dSel("snapshots"),dSel("prospects"),dSel("content"),dSel("prospect_searches")]);
-    setD({clients,team,tools,projects,lessons,students,investments,leads,snapshots,prospects,content,prospectSearches});
+    const[clients,team,tools,projects,investments,leads,snapshots,prospects,content,prospectSearches]=await Promise.all([dSel("clients"),dSel("team"),dSel("tools"),dSel("projects"),dSel("investments"),dSel("leads"),dSel("snapshots"),dSel("prospects"),dSel("content"),dSel("prospect_searches")]);
+    setD({clients,team,tools,projects,investments,leads,snapshots,prospects,content,prospectSearches});
   }catch(err){console.error("loadAll error",err)}
   setLd(false);
   loadLock.current=false;
@@ -495,7 +519,7 @@ const loadAll=useCallback(async()=>{
 useEffect(()=>{if(user)loadAll()},[user,loadAll]);
 
 const sv=async(t,f,sf,e)=>{
-  if(t==="lessons"||t==="content"){if(!f.title){alert("Título requerido");return}}
+  if(t==="content"){if(!f.title){alert("Título requerido");return}}
   else if(!f.name){alert("Nombre requerido");return}
   const res=eid?await dUpd(t,eid,f):await dIns(t,f);
   if(!res){alert("Error al guardar");return}
@@ -505,7 +529,7 @@ const dl=async(t,id)=>{if(!confirm("¿Eliminar?"))return;const ok=await dDel(t,i
 const ed=(item,sf,v,s)=>{sf(JSON.parse(JSON.stringify(item)));setEid(item.id);setVw(v);setSub(s)};
 const goN=(v,s,sf,e)=>{setEid(null);setVw(v);setSub(s);sf({...e})};
 const svI=async()=>{const amt=iF.type==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:Number(iF.amount||0);if(!amt){alert("Monto requerido");return}const rec={...iF,amount:amt};if(eid)await dUpd("investments",eid,rec);else await dIns("investments",rec);setIF({...eI});setEid(null);setSub(null);await loadAll()};
-const buildSnap=(mo)=>{const cm=me.costByMo[mo]||{equipo:me.tmCost,tools:me.tlCostPropio,toolsTerceros:me.tlTerceros,ads:0,total:me.totCost};const cobMo=me.byMo[mo]||0;const invMo=me.iMo[mo]||0;const utilRunRate=me.tMRR+me.acaMRR-cm.total;const utilCaja=(me.byMo[mo]||0)-cm.total;return{month:mo,mrrClientes:Math.round(me.tMRR*100)/100,mrrAcademia:Math.round(me.acaMRR*100)/100,costoEquipo:Math.round(cm.equipo*100)/100,costoStack:Math.round(cm.tools*100)/100,stackTerceros:Math.round((cm.toolsTerceros||0)*100)/100,costoAds:Math.round(cm.ads*100)/100,costoTotal:Math.round(cm.total*100)/100,utilidad:Math.round(utilRunRate*100)/100,utilidadCaja:Math.round(utilCaja*100)/100,revenueMes:Math.round(cobMo*100)/100,invertidoMes:Math.round(invMo*100)/100,clientesActivos:me.active,alumnosActivos:me.acaAct,teamActivos:me.aTm,toolsActivos:tls.filter(x=>x.status==="Activo").length,cobradoTotal:Math.round(me.tPaid*100)/100,notes:""}};
+const buildSnap=(mo)=>{const cm=me.costByMo[mo]||{equipo:me.tmCost,tools:me.tlCostPropio,toolsTerceros:me.tlTerceros,ads:0,total:me.totCost};const cobMo=me.byMo[mo]||0;const invMo=me.iMo[mo]||0;const utilRunRate=me.tMRR-cm.total;const utilCaja=(me.byMo[mo]||0)-cm.total;return{month:mo,mrrClientes:Math.round(me.tMRR*100)/100,costoEquipo:Math.round(cm.equipo*100)/100,costoStack:Math.round(cm.tools*100)/100,stackTerceros:Math.round((cm.toolsTerceros||0)*100)/100,costoAds:Math.round(cm.ads*100)/100,costoTotal:Math.round(cm.total*100)/100,utilidad:Math.round(utilRunRate*100)/100,utilidadCaja:Math.round(utilCaja*100)/100,revenueMes:Math.round(cobMo*100)/100,invertidoMes:Math.round(invMo*100)/100,clientesActivos:me.active,teamActivos:me.aTm,toolsActivos:tls.filter(x=>x.status==="Activo").length,cobradoTotal:Math.round(me.tPaid*100)/100,notes:""}};
 const cerrarMes=async(targetMo)=>{const mo=targetMo||new Date().toISOString().substring(0,7);if(snaps.find(s=>s.month===mo)){if(targetMo)return;if(!confirm(`Ya existe un cierre para ${mo}. ¿Reemplazar?`))return;const ex=snaps.find(s=>s.month===mo);await dDel("snapshots",ex.id)}await dIns("snapshots",buildSnap(mo));await loadAll();if(!targetMo)alert(`✓ Mes ${mo} cerrado`)};
 const autoCloseRef=React.useRef(false);
 useEffect(()=>{if(!isA||!user||ld||cl.length===0||autoCloseRef.current)return;autoCloseRef.current=true;
@@ -593,6 +617,16 @@ const me=useMemo(()=>{
   const cTasks=[],pTasks=[];
   cl.forEach(c=>{(c.tasks||[]).forEach(t=>{if(!t.done)cTasks.push({...t,cn:c.name,cid:c.id})})});
   pjs.forEach(p=>{(p.tasks||[]).forEach(t=>{if(!t.done)pTasks.push({...t,cn:p.name,cid:p.id})})});
+  /* CORRECCION: costByMo usaba este mismo tmCost —el costo del equipo de HOY—
+     para TODOS los meses historicos. Contratabas a alguien y el P&L de todo el
+     año subia retroactivamente. Ahora el equipo se devenga por fecha de alta,
+     igual que el stack (ver tlActEn).
+     LIMITE CONOCIDO: no hay fecha de BAJA. Si alguien se fue, sigue contando
+     desde su alta hasta hoy. Para arreglarlo del todo haria falta guardar
+     cuando dejo de estar activo, que hoy no se registra en ningun lado. */
+  const tmCostoDe=x=>{const ro=x.roles||[];if(ro.length===1&&ro[0]==="Inversionista")return 0;const r=toUSD(x.rate,x.currency);return x.rateType==="Anual"?r/12:x.rateType==="Por proyecto"||x.rateType==="Por hora"?0:r};
+  const tmActivoEn=(x,mo)=>{const alta=x.createdAt?(x.createdAt+"").substring(0,7):mo;return mo>=alta};
+  const tmCostEn=mo=>tm.filter(x=>x.status==="Activo").filter(x=>tmActivoEn(x,mo)).reduce((s,x)=>s+tmCostoDe(x),0);
   const tmCost=tm.filter(x=>x.status==="Activo").reduce((s,x)=>{const ro=x.roles||[];if(ro.length===1&&ro[0]==="Inversionista")return s;const r=toUSD(x.rate,x.currency);return s+(x.rateType==="Anual"?r/12:x.rateType==="Por proyecto"||x.rateType==="Por hora"?0:r)},0);
   const tlP={STRYV:0,Inversor:0,Cliente:0};
   const curMo=new Date().toISOString().substring(0,7);
@@ -612,10 +646,15 @@ const me=useMemo(()=>{
   const tlCov=tlCost?Math.round(((tlP.Cliente+tlP.Inversor)/tlCost)*100):100;
   const adsCost=invs.filter(x=>x.type==="Ads").reduce((s,x)=>{if(!x.date)return s;const m=(x.date+"").substring(0,7);return m===curMo?s+toUSD(x.amount,x.currency):s},0);
   const totCost=tmCost+tlCostPropio+adsCost;
-  const costByMo=(()=>{const cmo={};const adsByMo={};invs.filter(x=>x.type==="Ads").forEach(x=>{if(!x.date)return;const m=(x.date+"").substring(0,7);adsByMo[m]=(adsByMo[m]||0)+toUSD(x.amount,x.currency)});const toolsByMo={};const toolsTercByMo={};tls.forEach(x=>{const propio=(x.paidBy||"STRYV")==="STRYV";const defC=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(defC<=0)return;const ch=x.costHistory||{};const start=x.createdAt?(x.createdAt+"").substring(0,7):curMo;let cur=start;while(cur<=curMo){if(tlActEn(x,cur)){const c=ch[cur]!==undefined?Number(ch[cur]):defC;if(propio)toolsByMo[cur]=(toolsByMo[cur]||0)+c;else toolsTercByMo[cur]=(toolsTercByMo[cur]||0)+c}const[y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}});const allMo=new Set([...Object.keys(adsByMo),...Object.keys(toolsByMo),...Object.keys(toolsTercByMo)]);allMo.forEach(m=>{cmo[m]={equipo:tmCost,tools:toolsByMo[m]||0,toolsTerceros:toolsTercByMo[m]||0,ads:adsByMo[m]||0,total:tmCost+(toolsByMo[m]||0)+(adsByMo[m]||0)}});return cmo})();
-  const acaMRR=sts.filter(x=>x.status==="Activo").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
-  const acaRev=sts.reduce((s,x)=>s+toUSD(x.amountPaid,x.currency),0),acaAct=sts.filter(x=>x.status==="Activo").length,acaCnv=sts.filter(x=>x.convertedToClient).length;
-  const lR=lsns.filter(x=>x.status==="Listo").length;
+  const costByMo=(()=>{const cmo={};const adsByMo={};invs.filter(x=>x.type==="Ads").forEach(x=>{if(!x.date)return;const m=(x.date+"").substring(0,7);adsByMo[m]=(adsByMo[m]||0)+toUSD(x.amount,x.currency)});const toolsByMo={};const toolsTercByMo={};tls.forEach(x=>{const propio=(x.paidBy||"STRYV")==="STRYV";const defC=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(defC<=0)return;const ch=x.costHistory||{};const start=x.createdAt?(x.createdAt+"").substring(0,7):curMo;let cur=start;while(cur<=curMo){if(tlActEn(x,cur)){const c=ch[cur]!==undefined?Number(ch[cur]):defC;if(propio)toolsByMo[cur]=(toolsByMo[cur]||0)+c;else toolsTercByMo[cur]=(toolsTercByMo[cur]||0)+c}const[y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}});const allMo=new Set([...Object.keys(adsByMo),...Object.keys(toolsByMo),...Object.keys(toolsTercByMo)]);allMo.forEach(m=>{const eq=tmCostEn(m);cmo[m]={equipo:eq,tools:toolsByMo[m]||0,toolsTerceros:toolsTercByMo[m]||0,ads:adsByMo[m]||0,total:eq+(toolsByMo[m]||0)+(adsByMo[m]||0)}});return cmo})();
+  /* PENDIENTE DE DECIDIR — no es un bug de calculo, es una pregunta de negocio:
+     `amount` es el precio TOTAL del programa (4 semanas), y aca se lo trata
+     como si fuera una cuota mensual que se repite. Como el programa dura ~1
+     mes, la cifra del mes en curso sale bien; lo que puede no estar bien es
+     meterla en la utilidad RUN-RATE, que asume que se repite todos los meses.
+     Se repite solo si entran alumnos nuevos al mismo ritmo.
+     No lo cambio por mi cuenta: el numero correcto depende de como funciona la
+     academia de verdad, y eso lo sabe David. */
   const tInj=invs.filter(x=>x.type==="Inyección de capital").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
   const tSP=invs.filter(x=>x.type==="Pago de stack mensual").reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
   const tIA=invs.reduce((s,x)=>s+toUSD(x.amount,x.currency),0);
@@ -630,8 +669,8 @@ const me=useMemo(()=>{
   /* CORRECCION: totalInv suma TODOS los tipos, incluidos Ads y Equipo, que son
      gastos y no inversion. El capital de verdad inyectado es solo tInj. */
   const capInyectado=tInj;
-  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,acaMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,costByMo,totalCostAcc,totalInv,toolsAcc,cobMes:byMo[curMo]||0,profit:(byMo[curMo]||0)-totCost,profitRunRate:tMRR+acaMRR-totCost,tlCostPropio,tlTerceros,capInyectado,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,acaRev,acaAct,acaCnv,lR,lT:lsns.length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
-},[cl,tm,tls,pjs,lsns,sts,invs,leads,tcMXN]);
+  return{tRev,tPaid,tPend:tRev-tPaid,tMRR,active:cl.filter(c=>c.stage==="En desarrollo").length,tot:cl.length,nLeads:cl.filter(c=>c.stage==="Lead").length,byStg,byMo,cTasks,pTasks,tmCost,tlCost,adsCost,totCost,costByMo,totalCostAcc,totalInv,toolsAcc,cobMes:byMo[curMo]||0,profit:(byMo[curMo]||0)-totCost,profitRunRate:tMRR-totCost,tlCostPropio,tlTerceros,capInyectado,aTm:tm.filter(x=>x.status==="Activo").length,pjA:pjs.filter(p=>p.status==="En progreso").length,tInj,tSP,tIA,tISt,iMo,iT,iInv,invStTools,tlP,tlCov,nL};
+},[cl,tm,tls,pjs,invs,leads,tcMXN]);
 
 const alerts=useMemo(()=>{
   const a=[];const now=new Date();const ms7=7*86400000;
@@ -675,12 +714,29 @@ return(<div style={{minHeight:"100vh",background:bg}}>
     <div className={`nav-btns${navOpen?"":" mob-hide"}`}>
       {navGrp!==null&&<div className="mob-hide" style={{position:"fixed",inset:0,zIndex:97}} onClick={()=>setNavGrp(null)}/>}
       {(()=>{const navData=[
-        {g:"dashboard",l:"General",items:[{k:"dashboard",l:"Dashboard"},...(isA?[{k:"consolidado",l:"Consolidado"}]:[])]},
-        {g:"ventas",l:"Ventas",items:[{k:"clients",l:"Clientes"},{k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},...(isA?[{k:"prospeccion",l:"Prospección"}]:[])]},
-        {g:"operacion",l:"Operación",items:[{k:"projects",l:"Proyectos"},{k:"team",l:"Equipo"},{k:"stack",l:"Stack"}]},
-        ...(isA?[{g:"marketing",l:"Marketing",items:[{k:"contenido",l:"Contenido"}]}]:[]),
-        {g:"academia",l:"Academia",items:[{k:"academy",l:"Academia"}]},
-        {g:"finanzas",l:"Finanzas",items:[...(isInv?[{k:"investment",l:"Inversión"}]:[]),...(isA?[{k:"historial",l:"Historial"}]:[])]}
+        /* CUATRO NEGOCIOS, cada uno con su operación propia. Lo que está en
+           "Grupo" es lo que de verdad se comparte: la vista consolidada, el
+           equipo (el mismo para SALA, Stryv y HSC) y el stack de herramientas.
+           Healthy Space es el único con equipo operativo propio, así que ese
+           va adentro de su negocio, no acá. */
+        ...(isA?[{g:"grupo",l:"Grupo",items:[
+          {k:"consolidado",l:"Los 4 negocios"},
+          {k:"team",l:"Equipo"},
+          {k:"stack",l:"Stack"}
+        ]}]:[]),
+        ...(isA?[{g:"sala",l:"SALA",items:[{k:"neg_sala",l:"Resumen"}]}]:[]),
+        {g:"stryv",l:"Stryv",items:[
+          {k:"dashboard",l:"Dashboard"},
+          {k:"clients",l:"Clientes"},
+          {k:"leads",l:`Leads${me.nL?` (${me.nL})`:""}`},
+          ...(isA?[{k:"prospeccion",l:"Prospección"}]:[]),
+          {k:"projects",l:"Proyectos"},
+          ...(isA?[{k:"contenido",l:"Contenido"}]:[]),
+          ...(isInv?[{k:"investment",l:"Inversión"}]:[]),
+          ...(isA?[{k:"historial",l:"Historial"}]:[])
+        ]},
+        ...(isA?[{g:"hsc",l:"HS Club",items:[{k:"neg_hsc",l:"Resumen"}]}]:[]),
+        ...(isA?[{g:"hs",l:"Healthy Space",items:[{k:"neg_healthyspace",l:"Resumen"}]}]:[])
       ].filter(b=>b.items.length>0);
       const navBtn=(n)=>({background:vw===n.k?"rgba(11,119,152,0.25)":"transparent",border:vw===n.k?"1px solid rgba(11,119,152,0.4)":"1px solid transparent",color:vw===n.k?"#4ECDC4":"rgba(255,255,255,0.55)",padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:500,cursor:"pointer",transition:"all .15s ease",fontFamily:ibm});
       const goTo=(k)=>{setVw(k);setSub(null);setEid(null);setSrch("");setNavOpen(false);setNavGrp(null)};
@@ -809,6 +865,9 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 
 {/* CLIENTS LIST + PIPELINE */}
 {vw==="consolidado"&&!sub&&<Consolidado/>}
+{vw==="neg_sala"&&!sub&&<NegocioVista id="sala"/>}
+{vw==="neg_hsc"&&!sub&&<NegocioVista id="hsc"/>}
+{vw==="neg_healthyspace"&&!sub&&<NegocioVista id="healthyspace"/>}
 {vw==="clients"&&!sub&&(<div>
   <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12,marginBottom:16,flexWrap:"wrap"}}>
     <div>
@@ -1015,136 +1074,6 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 </div>)}
 
 {/* ACADEMY */}
-{vw==="academy"&&!sub&&(<div>
-  <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center",flexWrap:"wrap"}}>
-    <div style={{display:"flex",gap:4}}>
-      {[{k:"curriculum",l:"Programa"},{k:"students",l:"Alumnos"}].map(t=><button key={t.k} onClick={()=>setAcT(t.k)} style={{background:acT===t.k?"rgba(78,205,196,.1)":"transparent",border:"none",color:acT===t.k?tl:s2,padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.l}</button>)}
-    </div>
-    <div className="mob-wrap" style={{display:"flex",gap:8}}>
-      {acT==="curriculum"&&isA&&<button onClick={()=>{setLF({...eL});setEid(null);setSub("lF")}} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Lección</button>}
-      {acT==="students"&&isA&&<button onClick={()=>{setSF({...eSt});setEid(null);setSub("sF")}} style={{background:tl,border:"none",color:bg,padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,fontWeight:700,cursor:"pointer"}}>＋ Alumno</button>}
-    </div>
-  </div>
-  {acT==="curriculum"&&(<div>{AW.map((w,wi)=>{const wL=lsns.filter(l=>l.week===w.n);const rdy=wL.filter(l=>l.status==="Listo").length;return <div key={w.n} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginBottom:10}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-      <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:14,fontWeight:800,color:tl}}>Semana {w.n} </span>{isA&&<button onClick={()=>{if(!confirm(`¿Eliminar semana ${w.n}?`))return;const nw=AW.filter((_,i)=>i!==wi);setAW(nw);try{localStorage.setItem("stryv_aw",JSON.stringify(nw))}catch(e){}}} style={{background:"none",border:"none",color:"#f47067",fontSize:10,cursor:"pointer",padding:"2px 4px"}}>✕</button>}
-        {isA?<input value={w.t} onChange={e=>saveAW(wi,"t",e.target.value)} style={{background:"transparent",border:"none",borderBottom:`1px solid ${bd}`,color:tx,fontSize:13,fontWeight:600,outline:"none",padding:"2px 4px",width:"auto",maxWidth:"60%"}}/>:<span style={{fontSize:13,fontWeight:600}}>{w.t}</span>}
-        {isA?<div><input value={w.s} onChange={e=>saveAW(wi,"s",e.target.value)} style={{background:"transparent",border:"none",borderBottom:`1px solid ${bd}`,color:mt,fontSize:10,outline:"none",padding:"2px 4px",marginTop:2,width:"100%"}}/></div>:<div style={{fontSize:10,color:mt,marginTop:2}}>{w.s}</div>}
-      </div>
-      <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:11,color:rdy===wL.length&&wL.length>0?tl:mt}}>{rdy}/{wL.length}</span>{wL.length>0&&<div style={{width:60,background:"rgba(78,205,196,.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",background:tl,borderRadius:20,width:`${(rdy/wL.length)*100}%`}}/></div>}</div>
-    </div>
-    {wL.length===0?<div style={{color:mt,fontSize:11,padding:"8px 0"}}>Sin lecciones</div>:
-      <div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {wL.map(l=>{const assets=(l.assets||[]).map(a=>typeof a==="string"?{name:a,url:"",atype:"Otro"}:a);return <div key={l.id} style={{background:cd2,border:`1px solid ${bd}`,borderRadius:8,padding:"10px 14px",cursor:isA?"pointer":"default"}}>
-          <div onClick={()=>{if(isA){setLF({...l});setEid(l.id);setSub("lF")}}} style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:10,color:mt,fontWeight:600,minWidth:55}}>{l.type}</span><span style={{fontSize:12,fontWeight:600,flex:1}}>{l.title}</span><span style={bg2(LSC[l.status])}>{l.status}</span>{l.version&&<span style={{fontSize:9,color:mt}}>{l.version}</span>}
-          </div>
-          {l.description&&<div style={{fontSize:11,color:s2,marginTop:6,lineHeight:1.5}}>{l.description.substring(0,200)}</div>}
-          {assets.length>0&&<div style={{marginTop:8,display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:8}}>
-            {assets.map((a,ai)=>{const url=a.url||"";const isImg=url.match(/\.(jpg|jpeg|png|gif|webp|svg)/i)||a.atype==="Imagen";const isVid=url.match(/\.(mp4|mov|webm)/i)||a.atype==="Video";const isAud=url.match(/\.(mp3|wav|ogg)/i)||a.atype==="Audio";const isPdf=url.match(/\.pdf/i)||a.atype==="PDF"||a.atype==="Slides";
-            return <div key={ai} style={{background:"rgba(78,205,196,.04)",border:`1px solid ${bd}`,borderRadius:8,overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
-              {url&&isImg&&<img src={url} style={{width:"100%",maxHeight:200,objectFit:"cover",display:"block"}} onError={e=>{e.target.style.display="none"}}/>}
-              {url&&isVid&&<video src={url} controls style={{width:"100%",maxHeight:220,display:"block",background:"#000"}} preload="metadata"/>}
-              {url&&isAud&&<div style={{padding:"10px 12px"}}><audio src={url} controls style={{width:"100%",height:36}}/></div>}
-              {url&&isPdf&&<div style={{position:"relative",paddingTop:"56%",background:"rgba(0,0,0,.3)"}}><iframe src={url} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}/></div>}
-              {url&&!isImg&&!isVid&&!isPdf&&!isAud&&<a href={url} target="_blank" rel="noopener" style={{display:"block",padding:"16px 12px",textAlign:"center",color:tl,fontSize:11,textDecoration:"none"}}>↗ Abrir</a>}
-              {!url&&<div style={{padding:"20px 12px",textAlign:"center",color:mt,fontSize:11}}>⏳ Pendiente</div>}
-              <div style={{padding:"8px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",borderTop:`1px solid ${bd}`}}>
-                <div style={{display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:12}}>{a.atype==="Video"?"🎬":a.atype==="Slides"?"📊":a.atype==="Imagen"?"🖼":a.atype==="PDF"?"📄":a.atype==="Template"?"📋":a.atype==="Audio"?"🎙":"📎"}</span><span style={{fontSize:11,fontWeight:600}}>{a.name||a.atype}</span></div>
-                {url&&<a href={url} target="_blank" rel="noopener" style={{fontSize:9,color:tl,textDecoration:"none",fontWeight:600}}>Abrir ↗</a>}
-              </div>
-            </div>})}
-          </div>}
-        </div>})}
-      </div>}
-  </div>})}
-  {isA&&<button onClick={()=>{const nw=[...AW,{n:AW.length>0?Math.max(...AW.map(w=>w.n))+1:1,t:"",s:""}];setAW(nw);try{localStorage.setItem("stryv_aw",JSON.stringify(nw))}catch(e){}}} style={{background:"rgba(78,205,196,.06)",border:`1px dashed rgba(78,205,196,.3)`,color:tl,padding:"10px",borderRadius:8,fontSize:11,cursor:"pointer",width:"100%",fontWeight:600,marginBottom:10}}>＋ Agregar semana</button>}
-  </div>)}
-  {acT==="students"&&(<div>
-    {sts.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin alumnos</div>:
-      <div className="g-auto">
-        {sts.map(s=><div key={s.id} onClick={()=>{setSF({...s});setEid(s.id);setSub("sF")}} style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,cursor:"pointer"}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-            <div><div style={{fontSize:14,fontWeight:700}}>{s.name}</div>{s.email&&<div style={{fontSize:10,color:s2}}>{s.email}</div>}</div>
-            <div style={{display:"flex",gap:4}}><span style={bg2(s.status==="Activo"?"#22c55e":s.status==="Completado"?"#8b5cf6":"#6b7280")}>{s.status}</span>{s.convertedToClient&&<span style={bg2(tl)}>→ Cliente</span>}</div>
-          </div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div style={{fontSize:11,color:mt}}>Semana {s.currentWeek}/4</div>
-            <div style={{width:60,background:"rgba(78,205,196,.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",background:tl,borderRadius:20,width:`${(s.currentWeek/4)*100}%`}}/></div>
-            {isA&&<span style={{fontSize:13,fontWeight:800,color:tl}}>{fm(s.amountPaid)}</span>}
-          </div>
-        </div>)}
-      </div>}
-    {isA&&sts.length>0&&<div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:16,marginTop:12}}>
-      <div style={hd}>Métricas academia</div>
-      <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
-        <div><span style={{fontSize:10,color:mt}}>Activos</span><div style={{fontSize:18,fontWeight:800,color:tl}}>{me.acaAct}</div></div>
-        <div><span style={{fontSize:10,color:mt}}>Revenue</span><div style={{fontSize:18,fontWeight:800,color:tl}}>{fm(me.acaRev)}</div></div>
-        <div><span style={{fontSize:10,color:mt}}>→ Clientes</span><div style={{fontSize:18,fontWeight:800,color:"#56d4a0"}}>{me.acaCnv}</div></div>
-        <div><span style={{fontSize:10,color:mt}}>Conversión</span><div style={{fontSize:18,fontWeight:800,color:"#e5a84b"}}>{sts.length?Math.round(me.acaCnv/sts.length*100):0}%</div></div>
-      </div>
-    </div>}
-  </div>)}
-</div>)}
-
-{/* LESSON FORM */}
-{vw==="academy"&&sub==="lF"&&(<div style={{maxWidth:600,width:"100%"}}>
-  <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar lección":"Nueva lección"}</div>
-  <div className="g2" style={{marginBottom:16}}>
-    <div><label style={lb}>Título *</label><input value={lF.title} onChange={e=>setLF({...lF,title:e.target.value})} style={iS}/></div>
-    <div><label style={lb}>Semana</label><select value={lF.week} onChange={e=>setLF({...lF,week:Number(e.target.value)})} style={iS}>{AW.map(w=><option key={w.n} value={w.n}>Sem {w.n} — {w.t}</option>)}</select></div>
-  </div>
-  <div className="g3" style={{marginBottom:16}}>
-    <div><label style={lb}>Tipo</label><select value={lF.type} onChange={e=>setLF({...lF,type:e.target.value})} style={iS}>{LT.map(t=><option key={t}>{t}</option>)}</select></div>
-    <div><label style={lb}>Status</label><select value={lF.status} onChange={e=>setLF({...lF,status:e.target.value})} style={iS}>{LS.map(s=><option key={s}>{s}</option>)}</select></div>
-    <div><label style={lb}>Versión</label><input value={lF.version} onChange={e=>setLF({...lF,version:e.target.value})} style={iS}/></div>
-  </div>
-  <div style={{marginBottom:16}}><label style={lb}>Descripción</label><textarea value={lF.description} onChange={e=>setLF({...lF,description:e.target.value})} rows={3} style={{...iS,resize:"vertical"}}/></div>
-  <div style={{marginBottom:16}}><label style={lb}>Recursos (Cloudinary links)</label>
-    {(lF.assets||[]).map((a,i)=>{const asset=typeof a==="string"?{name:a,url:"",atype:"Otro"}:a;return <div key={i} style={{display:"flex",gap:5,marginBottom:5,alignItems:"center"}}>
-      <select value={asset.atype||"Otro"} onChange={e=>{const as=[...lF.assets];as[i]={...asset,atype:e.target.value};setLF({...lF,assets:as})}} style={{...iS,width:90,flexShrink:0,fontSize:10,padding:"8px 6px"}}>{["Video","Slides","Imagen","PDF","Template","Audio","Otro"].map(t=><option key={t}>{t}</option>)}</select>
-      <input value={asset.name||""} onChange={e=>{const as=[...lF.assets];as[i]={...asset,name:e.target.value};setLF({...lF,assets:as})}} placeholder="Nombre" style={{...iS,flex:1}}/>
-      <input value={asset.url||""} onChange={e=>{const as=[...lF.assets];as[i]={...asset,url:e.target.value};setLF({...lF,assets:as})}} placeholder="https://res.cloudinary.com/..." style={{...iS,flex:2,fontSize:11}}/>
-      <button onClick={()=>setLF({...lF,assets:lF.assets.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#ff6b6b",fontSize:14,cursor:"pointer"}}>✕</button>
-    </div>})}
-    <button onClick={()=>setLF({...lF,assets:[...(lF.assets||[]),{name:"",url:"",atype:"Video"}]})} style={{background:"rgba(78,205,196,.06)",border:`1px dashed rgba(78,205,196,.3)`,color:tl,padding:"7px",borderRadius:6,fontSize:10,cursor:"pointer",width:"100%"}}>＋ Recurso</button>
-  </div>
-  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={lF.notes} onChange={e=>setLF({...lF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
-  <div className="mob-wrap" style={{display:"flex",gap:8}}>
-    <button onClick={()=>sv("lessons",lF,setLF,eL)} style={{background:tl,border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Crear"}</button>
-    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
-    {eid&&isA&&<button onClick={()=>dl("lessons",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
-  </div>
-</div>)}
-
-{/* STUDENT FORM */}
-{vw==="academy"&&sub==="sF"&&(<div style={{maxWidth:600,width:"100%"}}>
-  <div style={{fontSize:17,fontWeight:800,marginBottom:20}}>{eid?"Editar alumno":"Nuevo alumno"}</div>
-  <div className="g2" style={{marginBottom:16}}>
-    <div><label style={lb}>Nombre *</label><input value={sF.name} onChange={e=>setSF({...sF,name:e.target.value})} style={iS}/></div>
-    <div><label style={lb}>Email</label><input value={sF.email} onChange={e=>setSF({...sF,email:e.target.value})} style={iS}/></div>
-    <div><label style={lb}>Teléfono</label><input value={sF.phone} onChange={e=>setSF({...sF,phone:e.target.value})} style={iS}/></div>
-    <div><label style={lb}>Plan</label><input value={sF.plan} onChange={e=>setSF({...sF,plan:e.target.value})} style={iS}/></div>
-  </div>
-  <div style={{display:"flex",gap:8,alignItems:"start",marginBottom:16,flexWrap:"wrap"}}><div style={{flex:1,minWidth:0}}><div className="g3">
-    <div><label style={lb}>Monto</label><input value={sF.amount} onChange={e=>setSF({...sF,amount:e.target.value})} type="number" style={iS}/></div>
-    <div><label style={lb}>Pagado</label><input value={sF.amountPaid} onChange={e=>setSF({...sF,amountPaid:e.target.value})} type="number" style={iS}/></div>
-    <div><label style={lb}>Semana</label><select value={sF.currentWeek} onChange={e=>setSF({...sF,currentWeek:Number(e.target.value)})} style={iS}>{[1,2,3,4].map(n=><option key={n} value={n}>{n}</option>)}</select></div>
-  </div></div><div style={{paddingTop:16}}><CurSel val={sF.currency} onChange={v=>setSF({...sF,currency:v})}/></div></div>
-  <div className="g3" style={{marginBottom:16}}>
-    <div><label style={lb}>Status</label><select value={sF.status} onChange={e=>setSF({...sF,status:e.target.value})} style={iS}>{SS.map(s=><option key={s}>{s}</option>)}</select></div>
-    <div><label style={lb}>Inicio</label><input value={(sF.startDate+"").substring(0,10)} onChange={e=>setSF({...sF,startDate:e.target.value})} type="date" style={iS}/></div>
-    <div style={{display:"flex",alignItems:"end",paddingBottom:2}}><label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}><input checked={sF.convertedToClient} onChange={e=>setSF({...sF,convertedToClient:e.target.checked})} type="checkbox" style={{accentColor:tl}}/><span style={{fontSize:11,color:tl,fontWeight:600}}>→ Cliente</span></label></div>
-  </div>
-  <div style={{marginBottom:20}}><label style={lb}>Notas</label><textarea value={sF.notes} onChange={e=>setSF({...sF,notes:e.target.value})} rows={2} style={{...iS,resize:"vertical"}}/></div>
-  <div className="mob-wrap" style={{display:"flex",gap:8}}>
-    <button onClick={()=>sv("students",sF,setSF,eSt)} style={{background:tl,border:"none",color:bg,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,fontWeight:700,cursor:"pointer"}}>{eid?"Guardar":"Registrar"}</button>
-    <button onClick={()=>{setSub(null);setEid(null)}} style={{background:"transparent",border:`1px solid ${bd}`,color:s2,padding:"12px 24px",borderRadius:8,fontSize:13,minHeight:44,cursor:"pointer"}}>Cancelar</button>
-    {eid&&<button onClick={()=>dl("students",eid)} style={{background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",color:"#ff6b6b",padding:"12px 18px",borderRadius:8,fontSize:12,minHeight:44,cursor:"pointer",marginLeft:"auto"}}>Eliminar</button>}
-  </div>
-</div>)}
-
-{/* INVESTMENT */}
 {vw==="investment"&&!sub&&isInv&&(<div>
   <div style={{display:"flex",gap:8,marginBottom:16,justifyContent:"space-between",alignItems:"center"}}>
     <div style={{fontSize:15,fontWeight:800}}>Inversión <span style={{color:mt,fontWeight:400}}>({invs.length})</span></div>

@@ -191,6 +191,68 @@ async function leerSala(desdeISO) {
     huecos.push(`${morosos.length} gym(s) con pago vencido siguen contando como activos: la gracia no les baja el acceso.`);
   }
 
+  // ── SEÑALES ───────────────────────────────────────────────────────────────
+  // Ninguno de los negocios arrancó todavía, así que esto va a estar vacío por
+  // un tiempo y ESO ESTÁ BIEN: son avisos que aparecen solos cuando empiece a
+  // haber operación. No hay que volver a tocar nada para que se enciendan.
+  // Para SALA: una prueba por vencer sin tarjeta, o un gym que entró y no dio
+  // de alta ni un socio. Se ven ANTES de perderlos, que es cuando sirve.
+  const socios = await qSafe(url, key,
+    `usuarios?select=tenant_id,rol,created_at&rol=eq.miembro&limit=20000`, huecos, 'los socios de los gyms');
+  const cobros = await qSafe(url, key,
+    `pagos?select=tenant_id,created_at&created_at=gte.${new Date(Date.now() - 30 * 86400000).toISOString()}&limit=20000`,
+    huecos, 'la actividad de cobro de los gyms');
+
+  const sociosDe = {};
+  for (const u of socios) sociosDe[u.tenant_id] = (sociosDe[u.tenant_id] || 0) + 1;
+  const cobrosDe = {};
+  for (const c of cobros) cobrosDe[c.tenant_id] = (cobrosDe[c.tenant_id] || 0) + 1;
+
+  const nombreTenant = Object.fromEntries(tenants.map((t) => [t.id, t.slug]));
+  const DIA = 86400000;
+  const senales = [];
+
+  // Pruebas por vencer, ordenadas por urgencia. Sin tarjeta = no convierte solo.
+  const porVencer = trials
+    .map((s) => ({
+      slug: nombreTenant[s.tenant_id] || '(sin nombre)',
+      dias: s.trial_termina ? Math.ceil((new Date(s.trial_termina) - Date.now()) / DIA) : null,
+      tarjeta: !!s.stripe_subscription_id && !String(s.stripe_subscription_id).startsWith('mock_'),
+      socios: sociosDe[s.tenant_id] || 0
+    }))
+    .filter((x) => x.dias !== null && x.dias <= 14)
+    .sort((a, b) => a.dias - b.dias);
+
+  for (const g of porVencer.filter((x) => !x.tarjeta)) {
+    senales.push({
+      nivel: g.dias <= 3 ? 'alta' : 'media',
+      que: `${g.slug} — prueba vence en ${g.dias} día(s), SIN tarjeta`,
+      porque: g.socios === 0
+        ? 'Además no dio de alta ni un socio: no está usando el producto.'
+        : `Tiene ${g.socios} socio(s) cargados, así que hay con qué convencerlo.`
+    });
+  }
+
+  // Gyms que entraron y nunca arrancaron. Se ven muertos antes de vencer.
+  const dormidos = subsReales
+    .filter((s) => (sociosDe[s.tenant_id] || 0) === 0 && !cobrosDe[s.tenant_id])
+    .map((s) => nombreTenant[s.tenant_id] || '(sin nombre)');
+  if (dormidos.length > 0) {
+    senales.push({
+      nivel: 'media',
+      que: `${dormidos.length} gym(s) sin un solo socio ni cobro`,
+      porque: `Nunca arrancaron: ${dormidos.slice(0, 5).join(', ')}${dormidos.length > 5 ? '…' : ''}. Si no se activan, no convierten.`
+    });
+  }
+
+  for (const m of morosos) {
+    senales.push({
+      nivel: 'alta',
+      que: `${nombreTenant[m.tenant_id] || '(sin nombre)'} — el cobro falló`,
+      porque: 'Sigue con acceso por la gracia, pero no está pagando.'
+    });
+  }
+
   return {
     moneda,
     ingresoPorMes,
@@ -212,6 +274,7 @@ async function leerSala(desdeISO) {
       },
       { t: 'Altas de gym por mes', filas: mesesRecientes(porMes(tenants.filter((t) => !demo.has(t.id)), 'created_at', () => 1)) }
     ],
+    senales,
     huecos
   };
 }
@@ -272,6 +335,48 @@ async function leerHealthy(desdeISO) {
     .sort((a, b) => b.v - a.v)
     .slice(0, 5);
 
+  // ── SEÑALES ───────────────────────────────────────────────────────────────
+  // Healthy es el único con dinero real entrando, así que su pregunta no es
+  // "cuánto vendí" sino "cuánto me queda". Lo que se lleva el margen sin que se
+  // note: insumos agotados que frenan la venta, y caja que no cuadra.
+  const senales = [];
+
+  const inventario = await qSafe(url, key,
+    `truck_existencias?select=*&limit=2000`, huecos, 'las existencias');
+  const bajos = inventario.filter((i) => i && (i.agotado || i.bajo_minimo || Number(i.cantidad) < 0));
+  if (bajos.length > 0) {
+    const negativos = bajos.filter((i) => Number(i.cantidad) < 0);
+    senales.push({
+      nivel: negativos.length > 0 ? 'alta' : 'media',
+      que: `${bajos.length} insumo(s) agotados o bajo el mínimo`,
+      porque: negativos.length > 0
+        ? `${negativos.length} están en NEGATIVO, o sea que se vendió más de lo que había cargado: el inventario no refleja la realidad.`
+        : 'Si se acaban en pleno servicio, se deja de vender.'
+    });
+  }
+
+  const arqueos = await qSafe(url, key,
+    `truck_cash_closings?select=branch,diferencia,created_at&order=created_at.desc&limit=60`,
+    huecos, 'los arqueos de caja');
+  const descuadres = arqueos.filter((a) => Math.abs(Number(a.diferencia) || 0) > 50);
+  if (descuadres.length > 0) {
+    const total = descuadres.reduce((t, a) => t + Number(a.diferencia), 0);
+    senales.push({
+      nivel: 'media',
+      que: `${descuadres.length} turno(s) con la caja descuadrada`,
+      porque: `Suman ${total.toFixed(0)} de diferencia entre lo esperado y lo contado.`
+    });
+  }
+
+  const sinPagar = compras.filter((c) => !c.pagada);
+  if (sinPagar.length > 0) {
+    senales.push({
+      nivel: 'media',
+      que: `${sinPagar.length} compra(s) sin pagar`,
+      porque: `Debés ${sinPagar.reduce((t, c) => t + Number(c.total || 0), 0).toFixed(0)} a proveedores.`
+    });
+  }
+
   if (enCurso.length > 0) {
     huecos.push(`${enCurso.length} pedido(s) abiertos no cuentan como venta todavía: se cuentan al entregarse.`);
   }
@@ -293,10 +398,11 @@ async function leerHealthy(desdeISO) {
       { t: 'Horas con más pedidos', filas: horasPico },
       { t: 'Gastos por categoría', filas: agrupaMonto(gastos, 'categoria', (g) => Math.round(Number(g.monto || 0) * 100)) },
       { t: 'Compras sin pagar', filas: [
-        { l: 'pendientes', v: compras.filter((c) => !c.pagada).length,
-          monto: Math.round(compras.filter((c) => !c.pagada).reduce((t, c) => t + Number(c.total || 0), 0) * 100) }
+        { l: 'pendientes', v: sinPagar.length,
+          monto: Math.round(sinPagar.reduce((t, c) => t + Number(c.total || 0), 0) * 100) }
       ] }
     ],
+    senales,
     huecos
   };
 }
@@ -333,6 +439,40 @@ async function leerHsc() {
   const socios = new Set(movs.map((m) => m.cliente_id).filter(Boolean));
   const totalCobrado = movs.reduce((t, m) => t + (Number(m.monto_centavos) || 0), 0);
 
+  // ── SEÑALES ───────────────────────────────────────────────────────────────
+  // Un socio no avisa que va a cancelar: deja de entrenar semanas antes. Esa es
+  // la señal que sirve, y llega a tiempo para hacer algo. El cobro fallido ya
+  // es tarde.
+  const senales = [];
+  const DIA = 86400000;
+
+  for (const p of perfiles.filter((x) => x.payment_past_due)) {
+    senales.push({ nivel: 'alta', que: 'Un socio tiene el cobro vencido', porque: 'Sigue con acceso por la gracia, pero no está pagando.' });
+  }
+
+  const entrenos = await qSafe(url, key,
+    `workout_log?select=user_id,date_local&order=date_local.desc&limit=5000`, huecos, 'los entrenamientos');
+  const ultimoDe = {};
+  for (const w of entrenos) {
+    if (!ultimoDe[w.user_id] || w.date_local > ultimoDe[w.user_id]) ultimoDe[w.user_id] = w.date_local;
+  }
+
+  const dormidos = suscritos.filter((p) => {
+    const u = ultimoDe[p.user_id];
+    if (!u) return true; // suscripto y nunca entrenó: el peor caso
+    return (Date.now() - new Date(u).getTime()) / DIA > 14;
+  });
+  if (dormidos.length > 0) {
+    const nunca = dormidos.filter((p) => !ultimoDe[p.user_id]).length;
+    senales.push({
+      nivel: 'alta',
+      que: `${dormidos.length} de ${suscritos.length} suscriptor(es) llevan +14 días sin entrenar`,
+      porque: nunca > 0
+        ? `${nunca} nunca entrenó desde que se suscribió. Un socio que no usa la app cancela en cuanto ve el cargo.`
+        : 'Dejar de entrenar precede a la cancelación: todavía se puede recuperar.'
+    });
+  }
+
   huecos.push('Sin historial de estados: al cancelar se sobrescribe y se pierde que antes estuvo activo. No hay churn ni cohortes.');
 
   return {
@@ -349,6 +489,7 @@ async function leerHsc() {
       { t: 'Por ciclo de cobro', filas: contarPor(perfiles.filter((p) => p.subscription_status === 'pro'), 'billing_cycle') },
       { t: 'Altas por mes', filas: mesesRecientes(porMes(perfiles, 'created_at', () => 1)) }
     ],
+    senales,
     huecos
   };
 }
@@ -405,6 +546,36 @@ async function leerStryv() {
     .sort((a, b) => b.monto - a.monto)
     .slice(0, 8);
 
+  // ── SEÑALES ───────────────────────────────────────────────────────────────
+  // Acá las ventas se cargan a mano, así que el riesgo no es el sistema: es que
+  // algo quede sin cobrar o un cliente se enfríe sin que nadie lo note.
+  const senales = [];
+  const DIA = 86400000;
+
+  const deudores = vivos
+    .map((c) => ({ n: c.company || c.name, pend: (Number(c.amount) || 0) - (Number(c.amount_paid) || 0), mon: (c.currency || 'MXN').toUpperCase() }))
+    .filter((c) => c.pend > 0)
+    .sort((a, b) => b.pend - a.pend);
+  for (const d of deudores.slice(0, 5)) {
+    senales.push({
+      nivel: d.pend > 10000 ? 'alta' : 'media',
+      que: `${d.n} debe ${d.pend.toLocaleString('es-MX')} ${d.mon}`,
+      porque: 'Trabajo entregado sin cobrar del todo.'
+    });
+  }
+
+  const frios = await qSafe(url, key,
+    `clients?select=name,company,stage,updated_at&deleted_at=is.null&limit=2000`, huecos, 'la actividad de clientes');
+  const enMovimiento = frios.filter((c) => ['Diagnóstico', 'Propuesta', 'En desarrollo'].includes(c.stage));
+  const quietos = enMovimiento.filter((c) => c.updated_at && (Date.now() - new Date(c.updated_at).getTime()) / DIA > 21);
+  if (quietos.length > 0) {
+    senales.push({
+      nivel: 'media',
+      que: `${quietos.length} cliente(s) en curso sin moverse hace +3 semanas`,
+      porque: `${quietos.slice(0, 4).map((c) => c.company || c.name).join(', ')}. Un trato que se enfría no vuelve solo.`
+    });
+  }
+
   huecos.push('La etapa es una columna mutable: el recorrido Lead→Mantenimiento no deja historia, así que no hay conversión ni ciclo de venta.');
 
   return {
@@ -421,6 +592,7 @@ async function leerStryv() {
       { t: 'Quién paga más', filas: topClientes },
       { t: 'Cobros por mes', filas: mesesRecientes(ingresoPorMes, true) }
     ],
+    senales,
     huecos
   };
 }

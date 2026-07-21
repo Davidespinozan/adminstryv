@@ -334,6 +334,36 @@ async function leerSala(desdeISO) {
       { t: 'Altas de gym por mes', filas: mesesRecientes(porMes(tenants.filter((t) => !demo.has(t.id)), 'created_at', () => 1)) }
     ],
     senales,
+    // ── TABLAS: las entidades, no los totales. Un panel administrativo es
+    // sobre todo esto: la lista de lo que administrás, con lo necesario para
+    // decidir sin tener que abrir cada una.
+    tablas: {
+      gyms: {
+        titulo: 'Los gyms',
+        columnas: ['Gym', 'Plan', 'Estado', 'Socios', 'Prueba vence', 'Tarjeta'],
+        filas: subsReales.map((sub) => {
+          const tope = LIMITE[sub.tier];
+          const usa = sociosDe[sub.tenant_id] || 0;
+          const dias = sub.trial_termina
+            ? Math.ceil((new Date(sub.trial_termina) - Date.now()) / DIA)
+            : null;
+          const tarjeta = !!sub.stripe_subscription_id && !String(sub.stripe_subscription_id).startsWith('mock_');
+          return {
+            celdas: [
+              nombreTenant[sub.tenant_id] || '(sin nombre)',
+              sub.tier,
+              sub.payment_past_due ? 'pago vencido' : sub.estado,
+              tope ? `${usa} / ${tope}` : String(usa),
+              sub.estado === 'trial' ? (dias != null ? `${dias} día(s)` : '—') : '—',
+              tarjeta ? 'sí' : 'no'
+            ],
+            // El color de la fila comunica antes que el texto.
+            alerta: sub.payment_past_due || (sub.estado === 'trial' && !tarjeta),
+            aviso: tope ? usa >= tope * 0.9 : false
+          };
+        })
+      }
+    },
     huecos
   };
 }
@@ -548,6 +578,63 @@ async function leerHealthy(desdeISO) {
       ] }
     ],
     senales,
+    tablas: {
+      menu: {
+        titulo: 'Cada bowl: qué cuesta y qué deja',
+        columnas: ['Bowl', 'Precio', 'Food cost', '%', 'Margen', 'Vendidos', 'Aporta'],
+        filas: matriz.map((x) => {
+          const precio = Number((bowls.find((b) => b.name === x.l) || {}).price || 0);
+          return {
+            celdas: [
+              x.l,
+              precio ? `$${precio.toFixed(0)}` : '—',
+              `$${(precio - x.margen).toFixed(0)}`,
+              `${x.fcPct.toFixed(1)}%`,
+              `$${x.margen.toFixed(0)}`,
+              String(x.unidades),
+              `$${(x.aporta / 100).toFixed(0)}`
+            ],
+            // Rojo arriba de 42%: ese bowl se está comiendo la utilidad.
+            alerta: x.fcPct > 42,
+            aviso: x.fcPct > 35 && x.fcPct <= 42
+          };
+        })
+      },
+      remolques: {
+        titulo: 'Cómo va cada remolque',
+        columnas: ['Remolque', 'Pedidos', 'Vendido', 'Ticket'],
+        filas: (() => {
+          const porSede = {};
+          for (const p of vendidos) {
+            const b = p.branch || '(sin remolque)';
+            if (!porSede[b]) porSede[b] = { n: 0, cent: 0 };
+            porSede[b].n++;
+            porSede[b].cent += centavosDe(p);
+          }
+          return Object.entries(porSede)
+            .sort((a, b) => b[1].cent - a[1].cent)
+            .map(([b, d]) => ({
+              celdas: [b, String(d.n), `$${(d.cent / 100).toFixed(0)}`, `$${(d.cent / 100 / Math.max(d.n, 1)).toFixed(0)}`]
+            }));
+        })()
+      },
+      inventario: {
+        titulo: 'Qué hay y qué falta',
+        columnas: ['Insumo', 'Cantidad', 'Estado'],
+        filas: (inventario || []).map((i) => {
+          const cant = Number(i.cantidad ?? 0);
+          return {
+            celdas: [
+              i.nombre || i.insumo || '(sin nombre)',
+              `${cant.toFixed(2)} ${i.unidad || ''}`.trim(),
+              cant < 0 ? 'en negativo' : i.agotado ? 'agotado' : i.bajo_minimo ? 'bajo el mínimo' : 'ok'
+            ],
+            alerta: cant < 0 || !!i.agotado,
+            aviso: !!i.bajo_minimo
+          };
+        })
+      }
+    },
     huecos
   };
 }
@@ -670,6 +757,47 @@ async function leerHsc() {
       { t: 'Altas por mes', filas: mesesRecientes(porMes(perfiles, 'created_at', () => 1)) }
     ],
     senales,
+    tablas: {
+      socios: {
+        titulo: 'Los socios',
+        columnas: ['Estado', 'Ciclo', 'Cobro', 'Último entreno'],
+        filas: perfiles
+          .slice()
+          .sort((a, b) => (a.subscription_status === 'pro' ? -1 : 1))
+          .map((p) => {
+            const u = ultimoDe[p.user_id];
+            const dias = u ? Math.floor((Date.now() - new Date(u).getTime()) / DIA) : null;
+            return {
+              celdas: [
+                p.subscription_status || 'none',
+                p.billing_cycle || '—',
+                p.payment_past_due ? 'vencido' : 'al día',
+                dias == null ? 'nunca' : dias === 0 ? 'hoy' : `hace ${dias} d`
+              ],
+              // Un socio suscripto que no entrena hace dos semanas está por irse.
+              alerta: !!p.payment_past_due || (p.subscription_status === 'pro' && (dias == null || dias > 14)),
+              aviso: p.subscription_status === 'pro' && dias != null && dias > 7 && dias <= 14
+            };
+          })
+      },
+      adherencia: {
+        titulo: 'Quién entrena y quién no',
+        columnas: ['Socio', 'Último entreno', 'Estado'],
+        filas: suscritos.map((p) => {
+          const u = ultimoDe[p.user_id];
+          const dias = u ? Math.floor((Date.now() - new Date(u).getTime()) / DIA) : null;
+          return {
+            celdas: [
+              String(p.user_id || '').substring(0, 8),
+              dias == null ? 'nunca entrenó' : dias === 0 ? 'hoy' : `hace ${dias} d`,
+              dias == null ? 'en riesgo' : dias > 14 ? 'en riesgo' : dias > 7 ? 'enfriándose' : 'activo'
+            ],
+            alerta: dias == null || dias > 14,
+            aviso: dias != null && dias > 7 && dias <= 14
+          };
+        })
+      }
+    },
     huecos
   };
 }
@@ -831,6 +959,46 @@ async function leerStryv() {
       { t: 'Cobros por mes', filas: mesesRecientes(ingresoPorMes, true) }
     ],
     senales,
+    tablas: {
+      clientes: {
+        titulo: 'Los clientes',
+        columnas: ['Cliente', 'Etapa', 'Contratado', 'Pagado', 'Pendiente', 'Retainer'],
+        filas: vivos
+          .slice()
+          .sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))
+          .map((c) => {
+            const total = Number(c.amount) || 0;
+            const pagado = Number(c.amount_paid) || 0;
+            const mon = (c.currency || 'MXN').toUpperCase();
+            return {
+              celdas: [
+                c.company || c.name || '(sin nombre)',
+                c.stage || '—',
+                `${total.toLocaleString('es-MX')} ${mon}`,
+                pagado.toLocaleString('es-MX'),
+                (total - pagado) > 0 ? (total - pagado).toLocaleString('es-MX') : '—',
+                Number(c.mrr) > 0 ? `${Number(c.mrr).toLocaleString('es-MX')}/mes` : '—'
+              ],
+              alerta: total - pagado > 10000,
+              aviso: total - pagado > 0
+            };
+          })
+      },
+      pipeline: {
+        titulo: 'El pipeline, en pesos',
+        columnas: ['Etapa', 'Clientes', 'Valor'],
+        filas: ORDEN.filter((e) => pipeline[e]).map((e) => ({
+          celdas: [e, String(pipeline[e].n), `${(pipeline[e].centavos / 100).toLocaleString('es-MX')} ${moneda}`]
+        }))
+      },
+      prospeccion: {
+        titulo: 'El embudo de prospección',
+        columnas: ['Etapa', 'Prospectos'],
+        filas: ['Sin contactar', 'Contactado', 'Respondió', 'Cerrado', 'Descartado'].map((e) => ({
+          celdas: [e, String(pros.filter((p) => p.stage === e).length)]
+        }))
+      }
+    },
     huecos
   };
 }

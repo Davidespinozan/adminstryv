@@ -36,12 +36,28 @@ export interface Fila {
   monto?: number | null;
 }
 
+export interface FilaTabla {
+  celdas: string[];
+  /** Rojo: hay que atender. Ámbar: conviene mirar. Lo decide el servidor,
+   *  junto al dato — si la regla viviera también en la pantalla, las dos
+   *  versiones se separarían sin que nadie lo note. */
+  alerta?: boolean;
+  aviso?: boolean;
+}
+
+export interface TablaNegocio {
+  titulo: string;
+  columnas: string[];
+  filas: FilaTabla[];
+}
+
 export interface DatosNegocio {
   moneda?: string;
   ingresoPorMes?: Record<string, number>;
   metricas?: Metrica[];
   desgloses?: { t: string; filas: Fila[] }[];
   senales?: Senal[];
+  tablas?: Record<string, TablaNegocio>;
   huecos?: string[];
 }
 
@@ -121,6 +137,7 @@ export function useNegocio(id: string) {
       metricas: d.metricas ?? [],
       desgloses: d.desgloses ?? [],
       senales: d.senales ?? [],
+      tablas: d.tablas ?? {},
       huecos: d.huecos ?? []
     },
     error,

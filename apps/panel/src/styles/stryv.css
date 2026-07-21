@@ -1,0 +1,160 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   SISTEMA DE DISEÑO — STRYV
+   ──────────────────────────────────────────────────────────────────────────
+   Los colores NO son nuevos: son exactamente los del panel de siempre
+   (index.html), sacados de variables sueltas de JavaScript y puestos como
+   tokens. La razón es la misma por la que SALA tiene sala.css — cuando el
+   color vive escrito a mano en cada componente, cambiar un tono significa
+   buscar y reemplazar en cientos de lugares, y siempre queda uno afuera.
+
+   Mismo criterio de nombres que sala.css (--ek-*), para que moverse entre los
+   dos proyectos no obligue a reaprender nada.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Superficies ──────────────────────────────────────────────────────── */
+  --st-bg: #e8ecf2;            /* fondo de la app */
+  --st-surface: #ffffff;       /* tarjetas */
+  --st-surface-soft: #f3f5f8;  /* dentro de una tarjeta */
+  --st-nav: #071620;           /* la barra de arriba, oscura */
+
+  /* ── Tinta ────────────────────────────────────────────────────────────── */
+  --st-ink: #1a202c;
+  --st-ink-muted: rgba(0, 0, 0, 0.5);
+  --st-ink-faint: rgba(0, 0, 0, 0.4);
+  --st-line: rgba(0, 0, 0, 0.12);
+
+  /* ── Marca ────────────────────────────────────────────────────────────── */
+  --st-brand: #0b7798;
+  --st-brand-soft: rgba(11, 119, 152, 0.08);
+  --st-brand-line: rgba(11, 119, 152, 0.3);
+
+  /* ── Estado ───────────────────────────────────────────────────────────── */
+  /* Verde = entró dinero. Rojo = hay que atender. Ámbar = mirar pronto.
+     Tres, no más: un panel con siete colores de estado no comunica nada. */
+  --st-ok: #34d399;
+  --st-ok-soft: rgba(52, 211, 153, 0.1);
+  --st-danger: #dc4e4e;
+  --st-danger-soft: rgba(248, 113, 113, 0.08);
+  --st-warn: #b07d21;
+  --st-warn-soft: rgba(229, 168, 75, 0.08);
+
+  /* ── Tipografía ───────────────────────────────────────────────────────── */
+  --st-font-display: 'Space Grotesk', 'IBM Plex Sans', system-ui, sans-serif;
+  --st-font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --st-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* ── Ritmo ────────────────────────────────────────────────────────────── */
+  --st-radius: 12px;
+  --st-radius-lg: 18px;
+  --st-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--st-bg);
+  color: var(--st-ink);
+  font-family: var(--st-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Piezas que se repiten ─────────────────────────────────────────────── */
+
+.st-card {
+  background: var(--st-surface);
+  border: 1px solid var(--st-line);
+  border-radius: var(--st-radius-lg);
+  padding: 22px 26px;
+}
+
+/* Encabezado de sección: la barrita vertical de la izquierda es la firma
+   visual del panel de siempre. */
+.st-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding-left: 12px;
+  border-left: 3px solid var(--st-brand);
+  font-family: var(--st-font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--st-ink);
+}
+
+.st-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--st-ink-faint);
+}
+
+.st-cifra {
+  font-family: var(--st-font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* Cuando un dato no se puede medir se muestra "—", nunca 0. Un cero se lee
+   como "vendiste nada"; el guion se lee como "no lo sabemos". */
+.st-sindato { color: var(--st-ink-faint); }
+
+.st-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+/* ── Lo que hay que atender ────────────────────────────────────────────── */
+/* Va arriba de los números, y SIEMPRE es un enlace: un pendiente que no te
+   lleva a donde se resuelve es una notificación, no una herramienta. */
+.st-pendiente {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: var(--st-radius);
+  border: 1px solid var(--st-line);
+  background: var(--st-surface);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.st-pendiente:hover { border-color: var(--st-brand-line); transform: translateX(2px); }
+.st-pendiente--alta { background: var(--st-danger-soft); border-color: rgba(248, 113, 113, 0.25); }
+.st-pendiente--media { background: var(--st-warn-soft); border-color: rgba(229, 168, 75, 0.25); }
+
+.st-pendiente__n {
+  font-family: var(--st-font-display);
+  font-size: 20px;
+  font-weight: 800;
+  min-width: 34px;
+  text-align: center;
+}
+
+.st-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+.st-tabla th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--st-ink-faint);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--st-line);
+}
+.st-tabla td { padding: 11px 10px; border-bottom: 1px solid var(--st-line); }
+.st-tabla tr:last-child td { border-bottom: none; }
+.st-tabla tbody tr:hover { background: var(--st-surface-soft); }
+
+@media (max-width: 720px) {
+  .st-card { padding: 18px; }
+  .st-cifra { font-size: 22px; }
+}

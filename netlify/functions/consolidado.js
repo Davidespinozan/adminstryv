@@ -181,7 +181,7 @@ async function leerSala(desdeISO) {
     huecos, 'las suscripciones');
 
   const tenants = await qSafe(url, key,
-    `tenants?select=id,slug,created_at,status&limit=2000`, huecos, 'los tenants');
+    `tenants?select=id,slug,created_at,status,vertical,dominio_app&limit=2000`, huecos, 'los tenants');
 
   // El demo contamina todo: tiene suscripción falsa y socios sembrados.
   const demo = new Set(tenants.filter((t) => t.slug === 'healthyspace').map((t) => t.id));
@@ -361,10 +361,16 @@ async function leerSala(desdeISO) {
             : null;
           const tarjeta = !!sub.stripe_subscription_id && !String(sub.stripe_subscription_id).startsWith('mock_');
           const t = tenants.find((x) => x.id === sub.tenant_id) || {};
+          // Cada gym opera en {slug}.salastudio.app/admin, o en su dominio
+          // propio si tiene plan Pro. El panel del grupo NO reimplementa esa
+          // operación: lleva ahí. Duplicarla sería trabajo tirado y una segunda
+          // forma de romper los mismos datos.
+          const casa = t.dominio_app || (t.slug ? `${t.slug}.salastudio.app` : null);
           return {
             id: sub.tenant_id,
             detalle: {
               titulo: nombreTenant[sub.tenant_id] || '(sin nombre)',
+              abrirEn: casa ? { url: `https://${casa}/admin`, texto: 'Abrir el panel de este gym' } : null,
               campos: [
                 { l: 'Plan', v: sub.tier },
                 { l: 'Estado', v: sub.payment_past_due ? `${sub.estado} · pago vencido` : sub.estado },

@@ -42,7 +42,17 @@ export default function Ficha() {
   return (
     <div>
       <Link to={volver} style={est.volver}>‹ {tabla?.titulo}</Link>
-      <Head>{ficha.titulo}</Head>
+      <Head
+        accion={
+          ficha.abrirEn ? (
+            <a href={ficha.abrirEn.url} target="_blank" rel="noopener noreferrer" style={est.abrir}>
+              {ficha.abrirEn.texto} ↗
+            </a>
+          ) : undefined
+        }
+      >
+        {ficha.titulo}
+      </Head>
 
       <div className="st-card st-grid" style={{ marginBottom: 16, gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))' }}>
         {ficha.campos.map((c, i) => (
@@ -77,6 +87,16 @@ export default function Ficha() {
 }
 
 const est: Record<string, React.CSSProperties> = {
+  abrir: {
+    background: 'var(--st-brand)',
+    color: '#fff',
+    borderRadius: 10,
+    padding: '8px 14px',
+    fontSize: 12,
+    fontWeight: 600,
+    textDecoration: 'none',
+    whiteSpace: 'nowrap'
+  },
   volver: {
     display: 'inline-block',
     marginBottom: 12,

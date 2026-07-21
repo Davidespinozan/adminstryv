@@ -44,6 +44,9 @@ export interface ListaFicha {
 
 export interface Ficha {
   titulo: string;
+  /** Dónde se opera esta cosa de verdad. El panel del grupo mira; la operación
+   *  vive en el sistema de cada negocio, que ya existe y está probado. */
+  abrirEn?: { url: string; texto: string } | null;
   campos: { l: string; v: string }[];
   listas?: ListaFicha[];
 }

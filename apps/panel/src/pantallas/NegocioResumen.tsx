@@ -26,7 +26,18 @@ export default function NegocioResumen() {
 
   return (
     <div>
-      <Head accion={<button onClick={recargar} style={est.actualizar}>Actualizar</button>}>
+      <Head
+        accion={
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {n.opera && (
+              <a href={n.opera.url} target={n.opera.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer" style={est.abrir}>
+                {n.opera.texto} ↗
+              </a>
+            )}
+            <button onClick={recargar} style={est.actualizar}>Actualizar</button>
+          </div>
+        }
+      >
         {n.nombre} · {n.modelo}
       </Head>
 
@@ -73,6 +84,16 @@ export default function NegocioResumen() {
 }
 
 const est: Record<string, React.CSSProperties> = {
+  abrir: {
+    background: 'var(--st-brand)',
+    color: '#fff',
+    borderRadius: 10,
+    padding: '7px 13px',
+    fontSize: 11.5,
+    fontWeight: 600,
+    textDecoration: 'none',
+    whiteSpace: 'nowrap'
+  },
   actualizar: {
     background: 'transparent',
     border: '1px solid var(--st-line)',

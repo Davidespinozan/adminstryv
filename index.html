@@ -144,7 +144,143 @@ const bg2=c=>{const b=c?c+"15":"rgba(0,0,0,.04)";const br=c?c+"30":"rgba(0,0,0,.
    puede medir algo, se muestra "—" y se explica abajo. Un cero se lee como
    "vendiste nada"; el guion se lee como "no lo sabemos".
    ══════════════════════════════════════════════════════════════════════════ */
-const NEGOCIOS_GRUPO=[{id:"sala",l:"SALA Studio"},{id:"hsc",l:"Healthy Space Club"},{id:"healthyspace",l:"Healthy Space"},{id:"stryv",l:"Stryv (clientes)"}];
+/* ══════════════════════════════════════════════════════════════════════════
+   CONSOLIDADO — la radiografía de los 4 negocios del grupo.
+   ──────────────────────────────────────────────────────────────────────────
+   Los datos NO se leen desde acá: los trae la función `consolidado` del lado
+   del servidor, que es la única con las claves de servicio de cada negocio.
+   Si esas claves vivieran en este archivo, cualquiera que abra el panel se
+   llevaría las llaves maestras de los tres proyectos.
+
+   REGLA DE ESTA VISTA: nunca inventar un número, y nunca sumar dos cosas que
+   no son la misma. Si un negocio no puede medir algo, se muestra "—" y se
+   explica abajo. Un cero se lee como "vendiste nada"; el guion se lee como
+   "no lo sabemos". Y los totales NO se suman entre monedas distintas.
+   ══════════════════════════════════════════════════════════════════════════ */
+const NEGOCIOS_GRUPO=[
+  {id:"sala",l:"SALA Studio",d:"SaaS · le cobrás a los gyms"},
+  {id:"stryv",l:"Stryv",d:"Implementación · retainers"},
+  {id:"hsc",l:"Healthy Space Club",d:"Suscripción · socios"},
+  {id:"healthyspace",l:"Healthy Space",d:"Food trucks · venta directa"}
+];
+
+/* Dinero en centavos → texto legible, con su moneda al lado. Nunca se asume
+   dólares: cada negocio cobra en lo suyo. */
+const fmc=(centavos,moneda)=>{
+  const n=(Number(centavos)||0)/100;
+  return n.toLocaleString("es-MX",{style:"currency",currency:moneda||"MXN",maximumFractionDigits:0});
+};
+
+/* Barras de los últimos 6 meses. Es la forma más honesta de mostrar tendencia
+   sin librerías: la altura es relativa al mes más alto del propio negocio, no
+   comparable entre negocios (y por eso cada una lleva su cifra escrita). */
+function BarrasMes({datos,moneda}){
+  const meses=Object.keys(datos||{}).sort().slice(-6);
+  if(meses.length===0)return null;
+  const max=Math.max(...meses.map(m=>datos[m]),1);
+  return(
+    <div style={{display:"flex",alignItems:"flex-end",gap:6,height:64,marginTop:14}}>
+      {meses.map(m=>(
+        <div key={m} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+          <div style={{fontSize:9,color:mt,fontFamily:ibm,whiteSpace:"nowrap"}}>{fmc(datos[m],moneda)}</div>
+          <div title={`${m}: ${fmc(datos[m],moneda)}`}
+               style={{width:"100%",height:Math.max(3,Math.round((datos[m]/max)*34)),background:tl,opacity:.75,borderRadius:3}}/>
+          <div style={{fontSize:9,color:mt,fontFamily:ibm}}>{m.substring(5)}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Desglose({d,moneda}){
+  const filas=(d.filas||[]).filter(f=>f&&(f.v!==0||f.monto));
+  if(filas.length===0)return null;
+  return(
+    <div style={{marginTop:14}}>
+      <div style={{fontSize:9.5,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:mt,marginBottom:7,fontFamily:ibm}}>{d.t}</div>
+      <div style={{display:"grid",gap:5}}>
+        {filas.map((f,i)=>(
+          <div key={i} style={{display:"flex",justifyContent:"space-between",gap:10,fontSize:12,fontFamily:ibm,color:s2}}>
+            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.l}</span>
+            <b style={{color:tx,whiteSpace:"nowrap"}}>
+              {f.monto!=null&&f.monto!==0?fmc(f.monto,moneda):""}
+              {f.monto!=null&&f.monto!==0&&f.v!=null?" · ":""}
+              {f.v!=null?f.v:""}
+            </b>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NegocioCard({n,d}){
+  const[abierto,setAbierto]=React.useState(false);
+  const huecos=d.huecos||[];
+  const ing=d.ingresoPorMes||{};
+  const mes=new Date().toISOString().substring(0,7);
+  /* null (no la tabla vacía) = este negocio no puede medir su ingreso. */
+  const delMes=Object.keys(ing).length?(ing[mes]||0):null;
+  const previo=(()=>{const ms=Object.keys(ing).sort();const i=ms.indexOf(mes);return i>0?ing[ms[i-1]]:null})();
+  const varia=(delMes!=null&&previo)?Math.round(((delMes-previo)/previo)*100):null;
+
+  return(
+    <div style={{background:cd,border:"1px solid "+bd,borderRadius:16,padding:"20px 24px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:10}}>
+        <div>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:".2em",textTransform:"uppercase",color:mt,fontFamily:ibm}}>{n.l}</div>
+          <div style={{fontSize:11,color:mt,fontFamily:ibm,marginTop:3}}>{n.d}</div>
+        </div>
+        {varia!=null&&(
+          <span style={{fontSize:11,fontWeight:700,fontFamily:ibm,color:varia>=0?"#34d399":"#f87171"}}>
+            {varia>=0?"▲":"▼"} {Math.abs(varia)}%
+          </span>
+        )}
+      </div>
+
+      <div style={{fontSize:24,fontWeight:700,color:delMes==null?mt:"#34d399",letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1.1,marginTop:12}}>
+        {delMes==null?"—":fmc(delMes,d.moneda)}
+      </div>
+      <div style={{fontSize:10.5,color:mt,fontFamily:ibm,marginTop:3}}>cobrado este mes</div>
+
+      <BarrasMes datos={ing} moneda={d.moneda}/>
+
+      {(d.metricas||[]).length>0&&(
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:16,paddingTop:14,borderTop:"1px solid "+bd}}>
+          {d.metricas.map((m,i)=>(
+            <div key={i}>
+              <div style={{fontSize:10,color:mt,fontFamily:ibm}}>{m.l}</div>
+              <div style={{fontSize:15,fontWeight:800,fontFamily:dsp,color:m.alerta?"#f87171":tx,marginTop:2}}>
+                {m.tipo==="dinero"?fmc(m.v,d.moneda):m.v}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {abierto&&(d.desgloses||[]).map((g,i)=><Desglose key={i} d={g} moneda={d.moneda}/>)}
+
+      <div style={{display:"flex",gap:14,marginTop:16,paddingTop:12,borderTop:"1px solid "+bd,flexWrap:"wrap"}}>
+        {(d.desgloses||[]).length>0&&(
+          <button onClick={()=>setAbierto(!abierto)}
+                  style={{background:"none",border:"none",padding:0,fontSize:11,fontWeight:700,color:tl,cursor:"pointer",fontFamily:ibm}}>
+            {abierto?"− Menos detalle":"+ Ver el detalle"}
+          </button>
+        )}
+        {huecos.length>0&&(
+          <details style={{flex:"1 1 100%"}}>
+            <summary style={{cursor:"pointer",fontSize:11,fontWeight:600,color:mt,fontFamily:ibm}}>
+              {huecos.length} {huecos.length===1?"cosa que todavía no se puede medir":"cosas que todavía no se pueden medir"}
+            </summary>
+            <ul style={{margin:"8px 0 0",paddingLeft:16,fontSize:11.5,color:s2,fontFamily:ibm,lineHeight:1.55}}>
+              {huecos.map((h,i)=><li key={i} style={{marginBottom:5}}>{h}</li>)}
+            </ul>
+          </details>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function Consolidado(){
   const[dat,setDat]=React.useState(null);
@@ -167,7 +303,7 @@ function Consolidado(){
   },[]);
   React.useEffect(()=>{cargar()},[cargar]);
 
-  if(load)return <div style={{padding:40,textAlign:"center",color:mt,fontFamily:ibm,fontSize:13}}>Cargando los negocios…</div>;
+  if(load)return <div style={{padding:40,textAlign:"center",color:mt,fontFamily:ibm,fontSize:13}}>Leyendo los cuatro negocios…</div>;
   if(err)return(
     <div style={{background:cd,border:"1px solid "+bd,borderRadius:16,padding:24}}>
       <div style={{color:"#f87171",fontWeight:600,fontFamily:ibm,fontSize:13,marginBottom:10}}>{err}</div>
@@ -176,55 +312,38 @@ function Consolidado(){
   );
 
   const mes=new Date().toISOString().substring(0,7);
-  const filas=NEGOCIOS_GRUPO.map(n=>{
-    const d=(dat.negocios||{})[n.id]||{movimientos:[],eventos:[],huecos:["Sin datos"]};
-    const movs=d.movimientos||[];
-    const delMes=movs.filter(m=>(m.ocurrido_en||"").substring(0,7)===mes);
-    /* null = ese negocio no registra montos todavía. Distinto de 0. */
-    const ing=movs.length?delMes.reduce((s,m)=>s+(m.monto_centavos||0),0)/100:null;
-    return{...n,ing,huecos:d.huecos||[],snap:d.snapshot||null};
-  });
-  const total=filas.reduce((s,f)=>s+(f.ing||0),0);
-  const medibles=filas.filter(f=>f.ing!==null).length;
+  /* Los totales se agrupan POR MONEDA. Sumar pesos con dólares porque "total"
+     suena bien es exactamente cómo se fabrica un número que nadie puede usar. */
+  const totales={};
+  let medibles=0;
+  for(const n of NEGOCIOS_GRUPO){
+    const d=(dat.negocios||{})[n.id]||{};
+    const ing=d.ingresoPorMes||{};
+    if(Object.keys(ing).length===0)continue;
+    medibles++;
+    const mo=d.moneda||"MXN";
+    totales[mo]=(totales[mo]||0)+(ing[mes]||0);
+  }
 
   return(
     <div>
-      <div style={{...hd,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span>Los 4 negocios · {fm(total)} este mes</span>
+      <div style={{...hd,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+        <span>
+          {Object.keys(totales).length===0
+            ? "Los 4 negocios"
+            : Object.entries(totales).map(([m,c])=>fmc(c,m)).join("  ·  ")+" este mes"}
+        </span>
         <button onClick={cargar} style={{background:"transparent",border:"1px solid "+bd,borderRadius:10,padding:"5px 12px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:ibm,color:s2,letterSpacing:0,textTransform:"none"}}>Actualizar</button>
       </div>
 
-      <div style={{fontSize:12,color:mt,fontFamily:ibm,marginBottom:16,marginLeft:12}}>
-        Suma de {medibles} de {filas.length} negocios · el resto todavía no puede medir sus ingresos
+      <div style={{fontSize:12,color:mt,fontFamily:ibm,marginBottom:18,marginLeft:12}}>
+        {medibles} de {NEGOCIOS_GRUPO.length} negocios registran su dinero
+        {Object.keys(totales).length>1?" · los totales van separados por moneda, no se suman entre sí":""}
       </div>
 
       <div className="g-cards" style={{marginBottom:16}}>
-        {filas.map(f=>(
-          <div key={f.id} className="card-row" style={{background:cd,border:"1px solid "+bd,borderRadius:16,padding:"20px 24px"}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:mt,marginBottom:10,fontFamily:ibm}}>{f.l}</div>
-            <div style={{fontSize:18,fontWeight:700,color:f.ing===null?mt:"#34d399",letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>
-              {f.ing===null?"—":fm(f.ing)}
-            </div>
-            {f.snap&&(
-              <div style={{marginTop:12,paddingTop:10,borderTop:"1px solid "+bd,display:"grid",gap:4}}>
-                {Object.entries(f.snap).filter(e=>typeof e[1]==="number").map(e=>(
-                  <div key={e[0]} style={{display:"flex",justifyContent:"space-between",fontSize:11.5,fontFamily:ibm,color:s2}}>
-                    <span>{e[0].replace(/_/g," ")}</span><b style={{color:tx}}>{e[1]}</b>
-                  </div>
-                ))}
-              </div>
-            )}
-            {f.huecos.length>0&&(
-              <details style={{marginTop:12}}>
-                <summary style={{cursor:"pointer",fontSize:11,fontWeight:600,color:tl,fontFamily:ibm}}>
-                  {f.huecos.length} {f.huecos.length===1?"hueco":"huecos"} de medición
-                </summary>
-                <ul style={{margin:"8px 0 0",paddingLeft:16,fontSize:11.5,color:s2,fontFamily:ibm,lineHeight:1.5}}>
-                  {f.huecos.map((h,i)=><li key={i} style={{marginBottom:4}}>{h}</li>)}
-                </ul>
-              </details>
-            )}
-          </div>
+        {NEGOCIOS_GRUPO.map(n=>(
+          <NegocioCard key={n.id} n={n} d={(dat.negocios||{})[n.id]||{huecos:["Sin datos"]}}/>
         ))}
       </div>
 

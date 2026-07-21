@@ -1,4 +1,4 @@
-import { useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useNegocio } from '../data/hooks/useGrupo';
 import { negocioPorId } from '../negocios';
 import { Cargando, Error_, Head } from '../componentes/Piezas';
@@ -24,6 +24,7 @@ export default function Tabla() {
   const loc = useLocation();
   const clave = loc.pathname.split('/')[2] ?? '';
   const n = negocioPorId(id);
+  const ir = useNavigate();
   const { d, error, cargando, recargar } = useNegocio(id);
 
   if (!n) return <div className="st-card">Ese negocio no existe.</div>;
@@ -69,14 +70,16 @@ export default function Tabla() {
         <div className="st-card" style={{ padding: 0, overflowX: 'auto' }}>
           <table className="st-tabla">
             <thead>
-              <tr>{tabla.columnas.map((c, i) => <th key={i}>{c}</th>)}</tr>
+              <tr>{tabla.columnas.map((c, i) => <th key={i}>{c}</th>)}<th /></tr>
             </thead>
             <tbody>
               {tabla.filas.map((f, i) => (
                 <tr
                   key={i}
+                  onClick={f.id ? () => ir(`/${id}/${clave}/${encodeURIComponent(f.id!)}`) : undefined}
                   style={{
-                    background: f.alerta ? 'var(--st-danger-soft)' : f.aviso ? 'var(--st-warn-soft)' : undefined
+                    background: f.alerta ? 'var(--st-danger-soft)' : f.aviso ? 'var(--st-warn-soft)' : undefined,
+                    cursor: f.id ? 'pointer' : undefined
                   }}
                 >
                   {f.celdas.map((c, k) => (
@@ -84,6 +87,9 @@ export default function Tabla() {
                       {c}
                     </td>
                   ))}
+                  {/* La flecha solo aparece si la fila se puede abrir: así no se
+                      invita a hacer clic donde no hay nada. */}
+                  <td style={{ color: 'var(--st-ink-faint)', width: 20 }}>{f.id ? '›' : ''}</td>
                 </tr>
               ))}
             </tbody>

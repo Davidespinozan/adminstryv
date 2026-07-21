@@ -360,7 +360,27 @@ async function leerSala(desdeISO) {
             ? Math.ceil((new Date(sub.trial_termina) - Date.now()) / DIA)
             : null;
           const tarjeta = !!sub.stripe_subscription_id && !String(sub.stripe_subscription_id).startsWith('mock_');
+          const t = tenants.find((x) => x.id === sub.tenant_id) || {};
           return {
+            id: sub.tenant_id,
+            detalle: {
+              titulo: nombreTenant[sub.tenant_id] || '(sin nombre)',
+              campos: [
+                { l: 'Plan', v: sub.tier },
+                { l: 'Estado', v: sub.payment_past_due ? `${sub.estado} · pago vencido` : sub.estado },
+                { l: 'Precio pactado', v: `${((Number(sub.precio_centavos) || 0) / 100).toLocaleString('es-MX')} ${String(sub.moneda || 'mxn').toUpperCase()}` },
+                { l: 'Ciclo', v: sub.ciclo || 'mensual' },
+                { l: 'Socios dados de alta', v: tope ? `${usa} de ${tope}` : String(usa) },
+                { l: 'Cobros de sus socios (30 días)', v: String(cobrosDe[sub.tenant_id] || 0) },
+                { l: 'Prueba termina', v: sub.trial_termina ? String(sub.trial_termina).substring(0, 10) : '—' },
+                { l: 'Tarjeta registrada', v: tarjeta ? 'sí' : 'no' },
+                { l: 'Alta', v: t.created_at ? String(t.created_at).substring(0, 10) : '—' },
+                { l: 'Vertical', v: t.vertical || '—' },
+                // Sin esto no hay forma de encontrarlo en Stripe cuando hay
+                // que revisar un cobro.
+                { l: 'Cliente en Stripe', v: sub.stripe_customer_id || '—' }
+              ]
+            },
             celdas: [
               nombreTenant[sub.tenant_id] || '(sin nombre)',
               sub.tier,
@@ -457,11 +477,13 @@ async function leerHealthy(desdeISO) {
   const nombresBowl = new Set(bowls.map((b) => String(b.name || '').toLowerCase()));
 
   const costoDe = {};
+  const ingredientesDe = {};
   for (const d of detalle) {
     const k = d.producto;
-    if (!costoDe[k]) costoDe[k] = { comida: 0, empaque: 0 };
+    if (!costoDe[k]) { costoDe[k] = { comida: 0, empaque: 0 }; ingredientesDe[k] = []; }
     if (d.categoria === 'empaque') costoDe[k].empaque += Number(d.costo) || 0;
     else costoDe[k].comida += Number(d.costo) || 0;
+    ingredientesDe[k].push(d);
   }
 
   // MATRIZ DE MENÚ: margen × volumen. Es lo que distingue el plato ESTRELLA
@@ -625,7 +647,39 @@ async function leerHealthy(desdeISO) {
         titulo: 'Cada bowl: qué cuesta y qué deja',
         columnas: ['Bowl', 'Precio', 'Food cost', '%', 'Margen', 'Vendidos', 'Aporta'],
         filas: matriz.map((x) => {
+          const ing = (ingredientesDe[x.l] || []).slice().sort((a, b) => Number(b.costo) - Number(a.costo));
           return {
+            id: x.l,
+            // La ficha responde la pregunta que sigue al food cost alto:
+            // ¿QUÉ lo encarece? Sin esto, el número solo alarma.
+            detalle: {
+              titulo: x.l,
+              campos: [
+                { l: 'Precio de venta', v: `$${x.precio.toFixed(2)}` },
+                { l: 'Costo de comida', v: `$${x.comida.toFixed(2)}` },
+                { l: 'Costo de empaque', v: `$${x.empaque.toFixed(2)}` },
+                { l: 'Costo total', v: `$${x.costo.toFixed(2)}` },
+                { l: 'Margen por bowl', v: `$${x.margen.toFixed(2)}` },
+                { l: 'Food cost', v: `${x.fcPct.toFixed(1)}%` },
+                { l: 'Vendidos (90 días)', v: String(x.unidades) },
+                { l: 'Utilidad que aportó', v: `$${(x.aporta / 100).toFixed(2)}` }
+              ],
+              listas: [{
+                t: 'De qué se compone el costo',
+                columnas: ['Ingrediente', 'Servido', 'Rinde', 'Sale del inventario', 'Costo'],
+                filas: ing.map((d) => ({
+                  celdas: [
+                    d.insumo_nombre || d.insumo,
+                    `${Number(d.servido).toFixed(3)} ${d.unidad || ''}`.trim(),
+                    `${(Number(d.rendimiento) * 100).toFixed(0)}%`,
+                    `${Number(d.bruto).toFixed(3)} ${d.unidad || ''}`.trim(),
+                    `$${Number(d.costo).toFixed(2)}`
+                  ],
+                  // El ingrediente que más pesa es donde está la palanca.
+                  aviso: Number(d.costo) > x.costo * 0.3
+                }))
+              }]
+            },
             celdas: [
               x.l,
               `$${x.precio.toFixed(0)}`,
@@ -1025,7 +1079,35 @@ async function leerStryv() {
             const total = Number(c.amount) || 0;
             const pagado = Number(c.amount_paid) || 0;
             const mon = (c.currency || 'MXN').toUpperCase();
+            const suyos = movs.filter((m) => m.cliente_id === c.id);
             return {
+              id: c.id,
+              detalle: {
+                titulo: c.company || c.name || '(sin nombre)',
+                campos: [
+                  { l: 'Contacto', v: c.name || '—' },
+                  { l: 'Etapa', v: c.stage || '—' },
+                  { l: 'Contratado', v: `${total.toLocaleString('es-MX')} ${mon}` },
+                  { l: 'Pagado', v: pagado.toLocaleString('es-MX') },
+                  { l: 'Pendiente', v: (total - pagado) > 0 ? (total - pagado).toLocaleString('es-MX') : 'nada' },
+                  { l: 'Retainer mensual', v: Number(c.mrr) > 0 ? Number(c.mrr).toLocaleString('es-MX') : '—' },
+                  { l: 'Cobros registrados', v: String(suyos.length) }
+                ],
+                listas: suyos.length > 0 ? [{
+                  t: 'Sus pagos',
+                  columnas: ['Fecha', 'Monto', 'Concepto'],
+                  filas: suyos
+                    .slice()
+                    .sort((a, b) => String(b.ocurrido_en).localeCompare(String(a.ocurrido_en)))
+                    .map((m) => ({
+                      celdas: [
+                        String(m.ocurrido_en).substring(0, 10),
+                        `${((Number(m.monto_centavos) || 0) / 100).toLocaleString('es-MX')} ${m.moneda}`,
+                        m.concepto || '—'
+                      ]
+                    }))
+                }] : []
+              },
               celdas: [
                 c.company || c.name || '(sin nombre)',
                 c.stage || '—',

@@ -6,6 +6,7 @@ import Layout from './Layout';
 import Grupo from './pantallas/Grupo';
 import NegocioResumen from './pantallas/NegocioResumen';
 import Tabla from './pantallas/Tabla';
+import Ficha from './pantallas/Ficha';
 import { NEGOCIOS } from './negocios';
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -39,7 +40,10 @@ export default function App() {
             <Route key={n.id} path={n.id}>
               <Route index element={<NegocioResumen />} />
               {n.pantallas.filter((p) => p.ruta).map((p) => (
-                <Route key={p.ruta} path={p.ruta} element={<Tabla />} />
+                <Route key={p.ruta} path={p.ruta}>
+                  <Route index element={<Tabla />} />
+                  <Route path=":fila" element={<Ficha />} />
+                </Route>
               ))}
             </Route>
           ))}

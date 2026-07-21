@@ -36,8 +36,23 @@ export interface Fila {
   monto?: number | null;
 }
 
+export interface ListaFicha {
+  t: string;
+  columnas: string[];
+  filas: FilaTabla[];
+}
+
+export interface Ficha {
+  titulo: string;
+  campos: { l: string; v: string }[];
+  listas?: ListaFicha[];
+}
+
 export interface FilaTabla {
   celdas: string[];
+  /** Presente = la fila se puede abrir. Ausente = es solo un dato. */
+  id?: string;
+  detalle?: Ficha;
   /** Rojo: hay que atender. Ámbar: conviene mirar. Lo decide el servidor,
    *  junto al dato — si la regla viviera también en la pantalla, las dos
    *  versiones se separarían sin que nadie lo note. */

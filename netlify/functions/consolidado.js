@@ -100,6 +100,24 @@ async function qSafe(url, key, path, huecos, queEs) {
   }
 }
 
+/** Llama una función de Postgres. El costeo del truck vive en funciones, no en
+ *  tablas: replicar esa lógica acá crearía una segunda fuente de verdad que se
+ *  separa de la real en cuanto cambie una receta. */
+async function rpc(baseUrl, key, fn, args, huecos, queEs) {
+  try {
+    const res = await fetch(`${baseUrl}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(args || {})
+    });
+    if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+    return await res.json();
+  } catch (e) {
+    huecos.push(`No se pudo calcular ${queEs}: ${e instanceof Error ? e.message : 'error'}`);
+    return null;
+  }
+}
+
 const mesDe = (iso) => String(iso || '').substring(0, 7);
 
 /** Agrupa importes por mes. Devuelve { '2026-07': centavos, ... } */
@@ -335,11 +353,92 @@ async function leerHealthy(desdeISO) {
     .sort((a, b) => b.v - a.v)
     .slice(0, 5);
 
+  // ── FOOD COST: el número que decide si este negocio existe ────────────────
+  // En un restaurante el food cost manda sobre todo lo demás. Sano es <35%;
+  // arriba de 42% el plato se está comiendo la utilidad aunque venda mucho.
+  // El costeo vive en `costeo_platillos()` porque ahí está la parte difícil: lo
+  // que sale del inventario NO es lo que se sirve, es servido ÷ rendimiento
+  // (el chamberete pierde 38% al limpiarlo). Calcularlo acá daría otro número.
+  const costeo = await rpc(url, key, 'costeo_platillos', {}, huecos, 'el food cost por bowl');
+
+  // Unidades vendidas por producto, para cruzar con el margen.
+  const bowls = await qSafe(url, key, `truck_bowls?select=name,price,active&limit=500`, huecos, 'el menú');
+  const nombresBowl = new Set(bowls.map((b) => String(b.name || '').toLowerCase()));
+
+  // MATRIZ DE MENÚ: margen × volumen. Es lo que distingue el plato ESTRELLA
+  // (vende y deja) del CABALLO DE BATALLA (vende y no deja). Un bowl puede ser
+  // el más vendido y el que peor te trata, y sin cruzar las dos cosas no se ve.
+  const matriz = (costeo || [])
+    .map((c) => {
+      const nom = c.platillo || c.name || c.bowl || '';
+      const d = porProducto[nom] || { unidades: 0, centavos: 0 };
+      const fcPct = Number(c.food_cost_pct ?? c.foodCostPct ?? 0);
+      const margen = Number(c.margen ?? c.margin ?? 0);
+      return { l: nom, unidades: d.unidades, fcPct, margen, aporta: Math.round(margen * d.unidades * 100) };
+    })
+    .filter((x) => x.l)
+    .sort((a, b) => b.aporta - a.aporta);
+
+  const enRojo = matriz.filter((x) => x.fcPct > 42);
+  const fcPromedio = matriz.length
+    ? matriz.reduce((t, x) => t + x.fcPct * (x.unidades || 1), 0) / matriz.reduce((t, x) => t + (x.unidades || 1), 0)
+    : null;
+
+  // ATTACH DE BEBIDA: la palanca más barata que existe. Una agua de $45 es casi
+  // todo margen; subir el ticket no cuesta un peso de estructura.
+  let conBebida = 0;
+  for (const p of vendidos) {
+    const items = Array.isArray(p.items) ? p.items : [];
+    if (items.some((it) => !nombresBowl.has(String(it?.name || '').toLowerCase()))) conBebida++;
+  }
+  const attach = vendidos.length ? Math.round((conBebida / vendidos.length) * 100) : null;
+
+  // COMISIONES DE AGREGADORES: no se registran en ningún lado. El P&L suma el
+  // ticket completo de un pedido de Rappi, pero de esos $169 llegan ~$120. Se
+  // estima acá para que el agujero se vea, marcado como estimación.
+  const AGREGADORES = { rappi: 0.28, uber: 0.28, didi: 0.25 };
+  let ventaAgregadores = 0;
+  let comisionEstimada = 0;
+  for (const p of vendidos) {
+    const m = String(p.payment_method || '').toLowerCase();
+    const tasa = Object.entries(AGREGADORES).find(([k]) => m.includes(k))?.[1];
+    if (tasa) {
+      const t = Number(p.total || 0);
+      ventaAgregadores += t;
+      comisionEstimada += t * tasa;
+    }
+  }
+
   // ── SEÑALES ───────────────────────────────────────────────────────────────
   // Healthy es el único con dinero real entrando, así que su pregunta no es
   // "cuánto vendí" sino "cuánto me queda". Lo que se lleva el margen sin que se
   // note: insumos agotados que frenan la venta, y caja que no cuadra.
   const senales = [];
+
+  if (enRojo.length > 0) {
+    const peor = enRojo.reduce((a, b) => (b.fcPct > a.fcPct ? b : a));
+    senales.push({
+      nivel: peor.fcPct > 50 ? 'alta' : 'media',
+      que: `${enRojo.length} bowl(s) con food cost arriba de 42%`,
+      porque: `El peor es ${peor.l} con ${peor.fcPct.toFixed(1)}%. Sano es menos de 35%: cada uno que vendés deja menos de lo que parece.`
+    });
+  }
+
+  if (comisionEstimada > 0) {
+    senales.push({
+      nivel: 'alta',
+      que: `~${Math.round(comisionEstimada).toLocaleString('es-MX')} de comisión de agregadores que el P&L no resta`,
+      porque: `Sobre ${Math.round(ventaAgregadores).toLocaleString('es-MX')} vendidos por Rappi/Uber/Didi. El P&L suma el ticket completo, pero de cada pedido llega ~72%. Con el food cost actual, un bowl de chamberete por agregador puede estar perdiendo dinero.`
+    });
+  }
+
+  if (attach !== null && attach < 30 && vendidos.length > 20) {
+    senales.push({
+      nivel: 'media',
+      que: `Solo ${attach}% de los pedidos llevan bebida o extra`,
+      porque: 'Un agua de $45 es casi todo margen. Subir el ticket no cuesta un peso de estructura: es la palanca más barata que tenés.'
+    });
+  }
 
   const inventario = await qSafe(url, key,
     `truck_existencias?select=*&limit=2000`, huecos, 'las existencias');
@@ -387,11 +486,16 @@ async function leerHealthy(desdeISO) {
     ingresoPorMes,
     metricas: [
       { l: 'Vendido (90 días)', v: totalVendido, tipo: 'dinero' },
-      { l: 'Pedidos entregados', v: vendidos.length, tipo: 'num' },
+      { l: 'Food cost', v: fcPromedio != null ? `${fcPromedio.toFixed(1)}%` : '—', tipo: 'texto', alerta: fcPromedio != null && fcPromedio > 42 },
       { l: 'Ticket promedio', v: ticket, tipo: 'dinero' },
-      { l: 'Gastos cargados', v: Math.round(gastos.reduce((t, g) => t + Number(g.monto || 0), 0) * 100), tipo: 'dinero' }
+      { l: 'Llevan bebida', v: attach != null ? `${attach}%` : '—', tipo: 'texto' },
+      { l: 'Pedidos entregados', v: vendidos.length, tipo: 'num' },
+      { l: 'Comisión agregadores (est.)', v: Math.round(comisionEstimada * 100), tipo: 'dinero', alerta: comisionEstimada > 0 }
     ],
     desgloses: [
+      // El orden importa: primero lo que decide la utilidad, después el volumen.
+      { t: 'Food cost por bowl (sano < 35%)', filas: matriz.map((x) => ({ l: x.l, v: `${x.fcPct.toFixed(1)}%` })) },
+      { t: 'Cuánta utilidad aporta cada bowl', filas: matriz.map((x) => ({ l: `${x.l} · ${x.unidades} u.`, v: null, monto: x.aporta })) },
       { t: 'Productos más vendidos', filas: topProductos },
       { t: 'Por remolque', filas: contarPor(vendidos, 'branch') },
       { t: 'Por forma de pago', filas: contarPor(vendidos, 'payment_method') },

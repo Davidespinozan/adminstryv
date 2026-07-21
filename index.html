@@ -247,6 +247,22 @@ function NegocioCard({n,d}){
         </div>
       </div>
 
+      {/* Lo que hay que atender va ARRIBA de los números. Un panel que entierra
+          el problema abajo de tres gráficas no sirve para decidir nada. */}
+      {(d.senales||[]).length>0&&(
+        <div style={{marginTop:16,display:"grid",gap:8}}>
+          {d.senales.map((sg,i)=>{
+            const alta=sg.nivel==="alta";
+            return(
+              <div key={i} style={{background:alta?"rgba(248,113,113,.07)":"rgba(229,168,75,.07)",border:"1px solid "+(alta?"rgba(248,113,113,.25)":"rgba(229,168,75,.25)"),borderRadius:10,padding:"10px 14px"}}>
+                <div style={{fontSize:12.5,fontWeight:700,color:alta?"#dc4e4e":"#b07d21",fontFamily:ibm}}>{sg.que}</div>
+                <div style={{fontSize:11.5,color:s2,fontFamily:ibm,marginTop:3,lineHeight:1.5}}>{sg.porque}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <BarrasMes datos={ing} moneda={d.moneda}/>
 
       {(d.metricas||[]).length>0&&(

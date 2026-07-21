@@ -158,10 +158,10 @@ const bg2=c=>{const b=c?c+"15":"rgba(0,0,0,.04)";const br=c?c+"30":"rgba(0,0,0,.
    "no lo sabemos". Y los totales NO se suman entre monedas distintas.
    ══════════════════════════════════════════════════════════════════════════ */
 const NEGOCIOS_GRUPO=[
-  {id:"sala",l:"SALA Studio",d:"SaaS · le cobrás a los gyms"},
-  {id:"stryv",l:"Stryv",d:"Implementación · retainers"},
-  {id:"hsc",l:"Healthy Space Club",d:"Suscripción · socios"},
-  {id:"healthyspace",l:"Healthy Space",d:"Food trucks · venta directa"}
+  {id:"sala",l:"SALA Studio",d:"SaaS · le cobrás a los gyms",logo:"/logos/sala.png"},
+  {id:"stryv",l:"Stryv",d:"Implementación · retainers",logo:"/logos/stryv.png"},
+  {id:"hsc",l:"Healthy Space Club",d:"Suscripción · socios",logo:"/logos/hsc.png"},
+  {id:"healthyspace",l:"Healthy Space",d:"Food trucks · venta directa",logo:"/logos/healthyspace.webp"}
 ];
 
 /* Dinero en centavos → texto legible, con su moneda al lado. Nunca se asume
@@ -215,7 +215,6 @@ function Desglose({d,moneda}){
 }
 
 function NegocioCard({n,d}){
-  const[abierto,setAbierto]=React.useState(false);
   const huecos=d.huecos||[];
   const ing=d.ingresoPorMes||{};
   const mes=new Date().toISOString().substring(0,7);
@@ -223,34 +222,40 @@ function NegocioCard({n,d}){
   const delMes=Object.keys(ing).length?(ing[mes]||0):null;
   const previo=(()=>{const ms=Object.keys(ing).sort();const i=ms.indexOf(mes);return i>0?ing[ms[i-1]]:null})();
   const varia=(delMes!=null&&previo)?Math.round(((delMes-previo)/previo)*100):null;
+  const desgloses=(d.desgloses||[]).filter(g=>(g.filas||[]).some(f=>f&&(f.v||f.monto)));
 
   return(
-    <div style={{background:cd,border:"1px solid "+bd,borderRadius:16,padding:"20px 24px"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:10}}>
-        <div>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:".2em",textTransform:"uppercase",color:mt,fontFamily:ibm}}>{n.l}</div>
-          <div style={{fontSize:11,color:mt,fontFamily:ibm,marginTop:3}}>{n.d}</div>
-        </div>
-        {varia!=null&&(
-          <span style={{fontSize:11,fontWeight:700,fontFamily:ibm,color:varia>=0?"#34d399":"#f87171"}}>
-            {varia>=0?"▲":"▼"} {Math.abs(varia)}%
-          </span>
-        )}
-      </div>
+    <div style={{background:cd,border:"1px solid "+bd,borderRadius:18,padding:"24px 28px",marginBottom:18}}>
 
-      <div style={{fontSize:24,fontWeight:700,color:delMes==null?mt:"#34d399",letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1.1,marginTop:12}}>
-        {delMes==null?"—":fmc(delMes,d.moneda)}
+      {/* Marca + cifra del mes, en una sola línea de lectura */}
+      <div style={{display:"flex",gap:18,alignItems:"center",flexWrap:"wrap"}}>
+        <img src={n.logo} alt="" width="52" height="52" loading="lazy"
+             style={{width:52,height:52,borderRadius:12,objectFit:"contain",background:cd2,flexShrink:0}}/>
+        <div style={{flex:"1 1 200px",minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:800,color:tx,fontFamily:dsp,letterSpacing:"-.01em"}}>{n.l}</div>
+          <div style={{fontSize:11.5,color:mt,fontFamily:ibm,marginTop:2}}>{n.d}</div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontSize:26,fontWeight:800,color:delMes==null?mt:"#34d399",letterSpacing:"-.02em",fontFamily:dsp,lineHeight:1}}>
+            {delMes==null?"—":fmc(delMes,d.moneda)}
+            {varia!=null&&(
+              <span style={{fontSize:12,fontWeight:700,fontFamily:ibm,marginLeft:8,color:varia>=0?"#34d399":"#f87171"}}>
+                {varia>=0?"▲":"▼"}{Math.abs(varia)}%
+              </span>
+            )}
+          </div>
+          <div style={{fontSize:10.5,color:mt,fontFamily:ibm,marginTop:3}}>cobrado este mes</div>
+        </div>
       </div>
-      <div style={{fontSize:10.5,color:mt,fontFamily:ibm,marginTop:3}}>cobrado este mes</div>
 
       <BarrasMes datos={ing} moneda={d.moneda}/>
 
       {(d.metricas||[]).length>0&&(
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:16,paddingTop:14,borderTop:"1px solid "+bd}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:14,marginTop:18,paddingTop:16,borderTop:"1px solid "+bd}}>
           {d.metricas.map((m,i)=>(
             <div key={i}>
               <div style={{fontSize:10,color:mt,fontFamily:ibm}}>{m.l}</div>
-              <div style={{fontSize:15,fontWeight:800,fontFamily:dsp,color:m.alerta?"#f87171":tx,marginTop:2}}>
+              <div style={{fontSize:16,fontWeight:800,fontFamily:dsp,color:m.alerta?"#f87171":tx,marginTop:3}}>
                 {m.tipo==="dinero"?fmc(m.v,d.moneda):m.v}
               </div>
             </div>
@@ -258,26 +263,24 @@ function NegocioCard({n,d}){
         </div>
       )}
 
-      {abierto&&(d.desgloses||[]).map((g,i)=><Desglose key={i} d={g} moneda={d.moneda}/>)}
+      {/* Todo a la vista: es tu panel, no deberías tener que hacer clic para
+          ver tus propios números. */}
+      {desgloses.length>0&&(
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:"4px 28px",marginTop:6}}>
+          {desgloses.map((g,i)=><Desglose key={i} d={g} moneda={d.moneda}/>)}
+        </div>
+      )}
 
-      <div style={{display:"flex",gap:14,marginTop:16,paddingTop:12,borderTop:"1px solid "+bd,flexWrap:"wrap"}}>
-        {(d.desgloses||[]).length>0&&(
-          <button onClick={()=>setAbierto(!abierto)}
-                  style={{background:"none",border:"none",padding:0,fontSize:11,fontWeight:700,color:tl,cursor:"pointer",fontFamily:ibm}}>
-            {abierto?"− Menos detalle":"+ Ver el detalle"}
-          </button>
-        )}
-        {huecos.length>0&&(
-          <details style={{flex:"1 1 100%"}}>
-            <summary style={{cursor:"pointer",fontSize:11,fontWeight:600,color:mt,fontFamily:ibm}}>
-              {huecos.length} {huecos.length===1?"cosa que todavía no se puede medir":"cosas que todavía no se pueden medir"}
-            </summary>
-            <ul style={{margin:"8px 0 0",paddingLeft:16,fontSize:11.5,color:s2,fontFamily:ibm,lineHeight:1.55}}>
-              {huecos.map((h,i)=><li key={i} style={{marginBottom:5}}>{h}</li>)}
-            </ul>
-          </details>
-        )}
-      </div>
+      {huecos.length>0&&(
+        <details style={{marginTop:18,paddingTop:14,borderTop:"1px solid "+bd}}>
+          <summary style={{cursor:"pointer",fontSize:11,fontWeight:600,color:mt,fontFamily:ibm}}>
+            {huecos.length} {huecos.length===1?"cosa que todavía no se puede medir":"cosas que todavía no se pueden medir"}
+          </summary>
+          <ul style={{margin:"8px 0 0",paddingLeft:16,fontSize:11.5,color:s2,fontFamily:ibm,lineHeight:1.55}}>
+            {huecos.map((h,i)=><li key={i} style={{marginBottom:5}}>{h}</li>)}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }
@@ -341,7 +344,7 @@ function Consolidado(){
         {Object.keys(totales).length>1?" · los totales van separados por moneda, no se suman entre sí":""}
       </div>
 
-      <div className="g-cards" style={{marginBottom:16}}>
+      <div style={{marginBottom:16}}>
         {NEGOCIOS_GRUPO.map(n=>(
           <NegocioCard key={n.id} n={n} d={(dat.negocios||{})[n.id]||{huecos:["Sin datos"]}}/>
         ))}

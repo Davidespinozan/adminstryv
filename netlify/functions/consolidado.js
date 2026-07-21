@@ -185,7 +185,19 @@ async function leerSala(desdeISO) {
 
   // El demo contamina todo: tiene suscripción falsa y socios sembrados.
   const demo = new Set(tenants.filter((t) => t.slug === 'healthyspace').map((t) => t.id));
-  const subsReales = subs.filter((s) => !demo.has(s.tenant_id));
+
+  // Las altas ABANDONADAS tampoco son gyms. SALA renombra el slug agregándole
+  // "-abandonado-<hash>" cuando alguien se registra, no paga y se le libera el
+  // subdominio (migración 20260718120000). Contarlas como clientes en prueba
+  // infla el negocio con gente que ya se fue.
+  const abandonados = new Set(
+    tenants.filter((t) => String(t.slug || '').includes('-abandonado-')).map((t) => t.id)
+  );
+  const fuera = new Set([...demo, ...abandonados]);
+  const subsReales = subs.filter((s) => !fuera.has(s.tenant_id));
+  if (abandonados.size > 0) {
+    huecos.push(`${abandonados.size} alta(s) abandonadas quedan fuera del conteo: se registraron, no pagaron y se les liberó el subdominio.`);
+  }
 
   const moneda = monedaDominante(movs, huecos, 'Los cobros');
   const ingresoPorMes = porMes(movs.filter((m) => (m.moneda || 'MXN').toUpperCase() === moneda),
@@ -331,7 +343,7 @@ async function leerSala(desdeISO) {
         ]
       },
       { t: 'Cerca o pasados del límite de su plan', filas: usoDePlan.map((g) => ({ l: `${g.slug} (${g.tier})`, v: `${g.usa}/${g.tope}` })) },
-      { t: 'Altas de gym por mes', filas: mesesRecientes(porMes(tenants.filter((t) => !demo.has(t.id)), 'created_at', () => 1)) }
+      { t: 'Altas de gym por mes', filas: mesesRecientes(porMes(tenants.filter((t) => !fuera.has(t.id)), 'created_at', () => 1)) }
     ],
     senales,
     // ── TABLAS: las entidades, no los totales. Un panel administrativo es
@@ -430,25 +442,49 @@ async function leerHealthy(desdeISO) {
   // El costeo vive en `costeo_platillos()` porque ahí está la parte difícil: lo
   // que sale del inventario NO es lo que se sirve, es servido ÷ rendimiento
   // (el chamberete pierde 38% al limpiarlo). Calcularlo acá daría otro número.
-  const costeo = await rpc(url, key, 'costeo_platillos', {}, huecos, 'el food cost por bowl');
+  // Se arma desde la vista `truck_costo_detalle` y NO desde `costeo_platillos()`:
+  // esa función exige es_admin() y rechaza incluso a la clave de servicio, con
+  // razón (es información de administración del truck). La vista da el costo
+  // por ingrediente y acá se agrega por bowl.
+  //
+  // La parte difícil ya está resuelta adentro de la vista: lo que sale del
+  // inventario NO es lo que se sirve, es servido / rendimiento — el chamberete
+  // pierde 38% al limpiarlo. Por eso se lee `costo` y no se recalcula.
+  const detalle = await qSafe(url, key,
+    `truck_costo_detalle?select=producto,categoria,costo&limit=5000`, huecos, 'el costeo por bowl');
 
-  // Unidades vendidas por producto, para cruzar con el margen.
   const bowls = await qSafe(url, key, `truck_bowls?select=name,price,active&limit=500`, huecos, 'el menú');
   const nombresBowl = new Set(bowls.map((b) => String(b.name || '').toLowerCase()));
+
+  const costoDe = {};
+  for (const d of detalle) {
+    const k = d.producto;
+    if (!costoDe[k]) costoDe[k] = { comida: 0, empaque: 0 };
+    if (d.categoria === 'empaque') costoDe[k].empaque += Number(d.costo) || 0;
+    else costoDe[k].comida += Number(d.costo) || 0;
+  }
 
   // MATRIZ DE MENÚ: margen × volumen. Es lo que distingue el plato ESTRELLA
   // (vende y deja) del CABALLO DE BATALLA (vende y no deja). Un bowl puede ser
   // el más vendido y el que peor te trata, y sin cruzar las dos cosas no se ve.
-  const matriz = (costeo || [])
-    .map((c) => {
-      const nom = c.platillo || c.name || c.bowl || '';
-      const d = porProducto[nom] || { unidades: 0, centavos: 0 };
-      const fcPct = Number(c.food_cost_pct ?? c.foodCostPct ?? 0);
-      const margen = Number(c.margen ?? c.margin ?? 0);
-      return { l: nom, unidades: d.unidades, fcPct, margen, aporta: Math.round(margen * d.unidades * 100) };
+  const matriz = bowls
+    .map((b) => {
+      const nom = b.name || '';
+      const c = costoDe[nom] || costoDe[String(nom).toLowerCase()] || { comida: 0, empaque: 0 };
+      const precio = Number(b.price) || 0;
+      const costo = c.comida + c.empaque;
+      const vendido = porProducto[nom] || { unidades: 0, centavos: 0 };
+      // El food cost incluye el empaque: es lo que cuesta poner ese bowl en la
+      // mano del cliente. Sacarlo hace ver el margen mejor de lo que es.
+      const fcPct = precio > 0 ? (costo / precio) * 100 : 0;
+      return {
+        l: nom, precio, costo, comida: c.comida, empaque: c.empaque, fcPct,
+        margen: precio - costo, unidades: vendido.unidades,
+        aporta: Math.round((precio - costo) * vendido.unidades * 100)
+      };
     })
-    .filter((x) => x.l)
-    .sort((a, b) => b.aporta - a.aporta);
+    .filter((x) => x.l && x.precio > 0 && x.costo > 0)
+    .sort((a, b) => b.fcPct - a.fcPct);
 
   const enRojo = matriz.filter((x) => x.fcPct > 42);
   const fcPromedio = matriz.length
@@ -513,6 +549,12 @@ async function leerHealthy(desdeISO) {
 
   const inventario = await qSafe(url, key,
     `truck_existencias?select=*&limit=2000`, huecos, 'las existencias');
+  const insumos = await qSafe(url, key,
+    `truck_insumos?select=id,nombre,unidad,costo_unitario,min_alerta,activo&activo=eq.true&order=nombre&limit=500`,
+    huecos, 'el catálogo de insumos');
+  if ((inventario || []).length === 0 && insumos.length > 0) {
+    huecos.push('No hay movimientos de inventario cargados todavía, así que no se puede saber qué existencias hay. El catálogo de insumos con sus costos sí está.');
+  }
   const bajos = inventario.filter((i) => i && (i.agotado || i.bajo_minimo || Number(i.cantidad) < 0));
   if (bajos.length > 0) {
     const negativos = bajos.filter((i) => Number(i.cantidad) < 0);
@@ -583,12 +625,11 @@ async function leerHealthy(desdeISO) {
         titulo: 'Cada bowl: qué cuesta y qué deja',
         columnas: ['Bowl', 'Precio', 'Food cost', '%', 'Margen', 'Vendidos', 'Aporta'],
         filas: matriz.map((x) => {
-          const precio = Number((bowls.find((b) => b.name === x.l) || {}).price || 0);
           return {
             celdas: [
               x.l,
-              precio ? `$${precio.toFixed(0)}` : '—',
-              `$${(precio - x.margen).toFixed(0)}`,
+              `$${x.precio.toFixed(0)}`,
+              `$${x.comida.toFixed(0)} + $${x.empaque.toFixed(0)} emp.`,
               `${x.fcPct.toFixed(1)}%`,
               `$${x.margen.toFixed(0)}`,
               String(x.unidades),
@@ -619,9 +660,23 @@ async function leerHealthy(desdeISO) {
         })()
       },
       inventario: {
-        titulo: 'Qué hay y qué falta',
-        columnas: ['Insumo', 'Cantidad', 'Estado'],
-        filas: (inventario || []).map((i) => {
+        // Si no hay movimientos cargados, `truck_existencias` viene vacía —es
+        // una vista derivada, no una tabla. En ese caso se muestra el catálogo
+        // de insumos con su costo, que sí sirve, en vez de una pantalla en
+        // blanco que se lee como si algo estuviera roto.
+        titulo: (inventario || []).length > 0 ? 'Qué hay y qué falta' : 'Los insumos (todavía sin existencias cargadas)',
+        columnas: (inventario || []).length > 0
+          ? ['Insumo', 'Cantidad', 'Estado']
+          : ['Insumo', 'Costo', 'Alerta bajo'],
+        filas: (inventario || []).length === 0
+          ? insumos.map((i) => ({
+              celdas: [
+                i.nombre || i.id,
+                `$${Number(i.costo_unitario || 0).toFixed(2)} / ${i.unidad || ''}`.trim(),
+                i.min_alerta != null ? `${i.min_alerta} ${i.unidad || ''}`.trim() : '—'
+              ]
+            }))
+          : (inventario || []).map((i) => {
           const cant = Number(i.cantidad ?? 0);
           return {
             celdas: [
@@ -1058,3 +1113,8 @@ exports.handler = async function (event) {
 
   return json(200, { desde: desdeISO, generado_en: new Date().toISOString(), negocios });
 };
+
+// Se exportan para poder probarlos contra las bases reales (scripts/probar-consolidado.mjs).
+// Sin esto, la unica forma de ejercitarlos seria desplegando y mirando la
+// pantalla, que es como se cuelan los nombres de columna equivocados.
+exports._adaptadores = { leerSala, leerHealthy, leerHsc, leerStryv };

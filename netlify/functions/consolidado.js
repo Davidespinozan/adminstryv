@@ -227,6 +227,43 @@ async function leerSala(desdeISO) {
   for (const c of cobros) cobrosDe[c.tenant_id] = (cobrosDe[c.tenant_id] || 0) + 1;
 
   const nombreTenant = Object.fromEntries(tenants.map((t) => [t.id, t.slug]));
+
+  // ── PIPELINE DE UPGRADE ───────────────────────────────────────────────────
+  // El límite de socios por plan es el medidor de valor: Starter 200, Pro 600,
+  // Business ilimitado. Un gym que crece de 180 a 220 socios DEBERÍA pasar de
+  // $1,900 a $3,900 — 2x de ingreso sin vender nada nuevo. Hoy el límite no se
+  // bloquea, solo se avisa, así que un gym puede estar en 900/600 pagando
+  // Starter indefinidamente. Cada gym de esta lista es una llamada.
+  const senalesUpgrade = [];
+  const LIMITE = { starter: 200, pro: 600, business: null };
+  const usoDePlan = subsReales
+    .map((sub) => {
+      const tope = LIMITE[sub.tier];
+      const usa = sociosDe[sub.tenant_id] || 0;
+      return { slug: nombreTenant[sub.tenant_id] || '(sin nombre)', tier: sub.tier, usa, tope,
+               pct: tope ? Math.round((usa / tope) * 100) : null };
+    })
+    .filter((x) => x.pct !== null && x.pct >= 70)
+    .sort((a, b) => b.pct - a.pct);
+
+  for (const g of usoDePlan.filter((x) => x.pct >= 100)) {
+    senalesUpgrade.push({
+      nivel: 'media',
+      que: `${g.slug} pasó el límite de su plan (${g.usa}/${g.tope})`,
+      porque: `Está en ${g.tier} y le corresponde el plan de arriba. El límite no bloquea nada, así que puede seguir así para siempre si nadie lo llama.`
+    });
+  }
+
+  // ── CONCENTRACIÓN ─────────────────────────────────────────────────────────
+  // Con un solo cliente real la concentración es 100%. Ese número tiene que
+  // estar a la vista hasta que baje de 30%: si ese gym se va, el MRR es cero.
+  const porTenant = {};
+  for (const m of movs) {
+    if (m.tenant_id) porTenant[m.tenant_id] = (porTenant[m.tenant_id] || 0) + (Number(m.monto_centavos) || 0);
+  }
+  const cobrados = Object.values(porTenant).sort((a, b) => b - a);
+  const totalCobrado = cobrados.reduce((t, v) => t + v, 0);
+  const concentracion = totalCobrado > 0 ? Math.round((cobrados[0] / totalCobrado) * 100) : null;
   const DIA = 86400000;
   const senales = [];
 
@@ -263,6 +300,8 @@ async function leerSala(desdeISO) {
     });
   }
 
+  senales.push(...senalesUpgrade);
+
   for (const m of morosos) {
     senales.push({
       nivel: 'alta',
@@ -278,7 +317,8 @@ async function leerSala(desdeISO) {
       { l: 'MRR comprometido', v: mrrCentavos, tipo: 'dinero' },
       { l: 'Gyms pagando', v: activas.length, tipo: 'num' },
       { l: 'En prueba', v: trials.length, tipo: 'num' },
-      { l: 'Con pago vencido', v: morosos.length, tipo: 'num', alerta: morosos.length > 0 }
+      { l: 'Con pago vencido', v: morosos.length, tipo: 'num', alerta: morosos.length > 0 },
+      { l: 'Concentración', v: concentracion != null ? `${concentracion}%` : '—', tipo: 'texto', alerta: concentracion != null && concentracion > 30 }
     ],
     desgloses: [
       { t: 'Por plan', filas: contarPor(subsReales, 'tier') },
@@ -290,6 +330,7 @@ async function leerSala(desdeISO) {
           { l: 'sin tarjeta', v: sinTarjeta.length }
         ]
       },
+      { t: 'Cerca o pasados del límite de su plan', filas: usoDePlan.map((g) => ({ l: `${g.slug} (${g.tier})`, v: `${g.usa}/${g.tope}` })) },
       { t: 'Altas de gym por mes', filas: mesesRecientes(porMes(tenants.filter((t) => !demo.has(t.id)), 'created_at', () => 1)) }
     ],
     senales,
@@ -554,6 +595,11 @@ async function leerHsc() {
     senales.push({ nivel: 'alta', que: 'Un socio tiene el cobro vencido', porque: 'Sigue con acceso por la gracia, pero no está pagando.' });
   }
 
+  // ── ADHERENCIA: la métrica que el producto PROMETE ────────────────────────
+  // "La IA crea tu plan. El club te hace cumplirlo." Si eso es cierto, se tiene
+  // que ver acá. En una app de hábito, la proporción de usuarios que vuelven a
+  // diario predice el churn mejor que cualquier otra cosa: abajo de 20% el
+  // producto no se volvió costumbre y la cancelación es cuestión de tiempo.
   const entrenos = await qSafe(url, key,
     `workout_log?select=user_id,date_local&order=date_local.desc&limit=5000`, huecos, 'los entrenamientos');
   const ultimoDe = {};
@@ -577,6 +623,32 @@ async function leerHsc() {
     });
   }
 
+  // DAU/MAU sobre los últimos 30 días.
+  const hoy = new Date().toISOString().substring(0, 10);
+  const hace30 = new Date(Date.now() - 30 * DIA).toISOString().substring(0, 10);
+  const activos30 = new Set(entrenos.filter((w) => w.date_local >= hace30).map((w) => w.user_id));
+  const activosHoy = new Set(entrenos.filter((w) => w.date_local === hoy).map((w) => w.user_id));
+  const stickiness = activos30.size ? Math.round((activosHoy.size / activos30.size) * 100) : null;
+
+  // ── COSTO DE IA: el COGS de este negocio ──────────────────────────────────
+  // Es un producto AI-native: márgenes de software con costo variable por uso.
+  // Si el costo de IA pasa ~15% del ingreso, el margen se erosiona sin que
+  // nadie lo note. El caché compartido es lo que lo mantiene bajo: cada acierto
+  // es una llamada que no se pagó.
+  const usoIA = await qSafe(url, key,
+    `ai_usage_log?select=user_id,tokens_in,tokens_out,success,created_at&created_at=gte.${new Date(Date.now() - 30 * DIA).toISOString()}&limit=20000`,
+    huecos, 'el uso de IA');
+  const cache = await qSafe(url, key, `workout_cache?select=hits&limit=5000`, huecos, 'el caché de rutinas');
+  const hits = cache.reduce((t, c) => t + (Number(c.hits) || 0), 0);
+  const hitRate = hits + cache.length > 0 ? Math.round((hits / (hits + cache.length)) * 100) : null;
+
+  const conTokens = usoIA.filter((u) => u.tokens_in != null || u.tokens_out != null);
+  if (usoIA.length > 0 && conTokens.length < usoIA.length * 0.5) {
+    huecos.push(
+      `${usoIA.length - conTokens.length} de ${usoIA.length} llamadas a IA no registraron tokens (pasa en las respuestas por streaming). Sin eso no se puede calcular el margen, que en un producto de IA es el riesgo principal.`
+    );
+  }
+
   huecos.push('Sin historial de estados: al cancelar se sobrescribe y se pierde que antes estuvo activo. No hay churn ni cohortes.');
 
   return {
@@ -586,7 +658,11 @@ async function leerHsc() {
       { l: 'Suscriptores', v: suscritos.length, tipo: 'num' },
       { l: 'Pagando al día', v: pagando, tipo: 'num' },
       { l: 'Con pago vencido', v: morosos.length, tipo: 'num', alerta: morosos.length > 0 },
-      { l: 'Cobrado por socio', v: socios.size ? Math.round(totalCobrado / socios.size) : 0, tipo: 'dinero' }
+      { l: 'Cobrado por socio', v: socios.size ? Math.round(totalCobrado / socios.size) : 0, tipo: 'dinero' },
+      { l: 'Entrenan a diario', v: stickiness != null ? `${stickiness}%` : '—', tipo: 'texto', alerta: stickiness != null && stickiness < 20 },
+      { l: 'Activos (30 días)', v: activos30.size, tipo: 'num' },
+      { l: 'Caché de rutinas', v: hitRate != null ? `${hitRate}%` : '—', tipo: 'texto' },
+      { l: 'Llamadas a IA (30d)', v: usoIA.length, tipo: 'num' }
     ],
     desgloses: [
       { t: 'Por estado', filas: contarPor(perfiles, 'subscription_status', (x) => x || 'none') },
@@ -680,6 +756,55 @@ async function leerStryv() {
     });
   }
 
+  // ── PIPELINE EN PESOS ─────────────────────────────────────────────────────
+  // Saber que hay 4 propuestas no sirve; saber que valen $180,000 sí. La línea
+  // de facturación empieza en "En desarrollo": antes de eso es promesa.
+  const pipeline = {};
+  for (const c of vivos) {
+    const et = c.stage || '(sin etapa)';
+    if (!pipeline[et]) pipeline[et] = { n: 0, centavos: 0 };
+    pipeline[et].n++;
+    if ((c.currency || 'MXN').toUpperCase() === moneda) {
+      pipeline[et].centavos += Math.round((Number(c.amount) || 0) * 100);
+    }
+  }
+  const ORDEN = ['Lead', 'Diagnóstico', 'Propuesta', 'En desarrollo', 'Entregado', 'Mantenimiento'];
+  const pipelineFilas = ORDEN.filter((e) => pipeline[e]).map((e) => ({
+    l: `${e} · ${pipeline[e].n}`, v: null, monto: pipeline[e].centavos
+  }));
+
+  // Concentración: con pocos clientes, que uno solo sea la mitad del ingreso no
+  // es un negocio, es un empleo con un solo jefe.
+  const montos = Object.values(porCliente).sort((a, b) => b - a);
+  const totalStryv = montos.reduce((t, v) => t + v, 0);
+  const concentracion = totalStryv > 0 ? Math.round((montos[0] / totalStryv) * 100) : null;
+  if (concentracion != null && concentracion > 40) {
+    senales.push({
+      nivel: concentracion > 60 ? 'alta' : 'media',
+      que: `El cliente más grande es el ${concentracion}% de lo cobrado`,
+      porque: 'Si se va, se va esa parte del negocio de un día para el otro.'
+    });
+  }
+
+  // ── EL MOTOR DE ADQUISICIÓN ───────────────────────────────────────────────
+  // La prospección es el único canal outbound. Si el rebote sube, el dominio se
+  // quema y se deja de poder mandar correo — por eso está pausada.
+  const pros = await qSafe(url, key,
+    `prospects?select=stage,emails_sent,email_opened,notes&limit=10000`, huecos, 'los prospectos');
+  const contactados = pros.filter((p) => Number(p.emails_sent) > 0);
+  const rebotados = pros.filter((p) => String(p.notes || '').toLowerCase().includes('bounce'));
+  const rebote = contactados.length ? (rebotados.length / contactados.length) * 100 : null;
+  const abiertos = pros.filter((p) => p.email_opened);
+  const respondieron = pros.filter((p) => p.stage === 'Respondió');
+
+  if (rebote != null && rebote > 2) {
+    senales.push({
+      nivel: 'alta',
+      que: `Rebote de prospección en ${rebote.toFixed(1)}%`,
+      porque: 'Arriba de 2% se quema la reputación del dominio y se deja de poder mandar correo. Por eso el agente está pausado: hay que limpiar la lista antes de reactivarlo.'
+    });
+  }
+
   huecos.push('La etapa es una columna mutable: el recorrido Lead→Mantenimiento no deja historia, así que no hay conversión ni ciclo de venta.');
 
   return {
@@ -689,10 +814,19 @@ async function leerStryv() {
       { l: 'MRR', v: mrr, tipo: 'dinero' },
       { l: 'Clientes facturando', v: facturando.length, tipo: 'num' },
       { l: 'Pendiente de cobro', v: pendiente, tipo: 'dinero', alerta: pendiente > 0 },
-      { l: 'Cobrado (histórico)', v: movs.reduce((t, m) => t + (Number(m.monto_centavos) || 0), 0), tipo: 'dinero' }
+      { l: 'Cobrado (histórico)', v: movs.reduce((t, m) => t + (Number(m.monto_centavos) || 0), 0), tipo: 'dinero' },
+      { l: 'Concentración', v: concentracion != null ? `${concentracion}%` : '—', tipo: 'texto', alerta: concentracion != null && concentracion > 40 },
+      { l: 'Prospectos contactados', v: contactados.length, tipo: 'num' },
+      { l: 'Rebote', v: rebote != null ? `${rebote.toFixed(1)}%` : '—', tipo: 'texto', alerta: rebote != null && rebote > 2 }
     ],
     desgloses: [
-      { t: 'Pipeline por etapa', filas: contarPor(vivos, 'stage') },
+      { t: 'Pipeline en pesos por etapa', filas: pipelineFilas },
+      { t: 'Embudo de prospección', filas: [
+        { l: 'contactados', v: contactados.length },
+        { l: 'abrieron el correo', v: abiertos.length },
+        { l: 'respondieron', v: respondieron.length },
+        { l: 'rebotaron', v: rebotados.length }
+      ] },
       { t: 'Quién paga más', filas: topClientes },
       { t: 'Cobros por mes', filas: mesesRecientes(ingresoPorMes, true) }
     ],

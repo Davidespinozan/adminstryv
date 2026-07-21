@@ -288,7 +288,14 @@ const[user,setUser]=useState(null);const[prof,setProf]=useState(null);const[aL,s
 const[aErr,setAErr]=useState("");const[aEm,setAEm]=useState("");const[aPw,setAPw]=useState("");
 const[chPw,setChPw]=useState(false);const[nPw,setNPw]=useState("");const[pwMsg,setPwMsg]=useState("");
 const[navOpen,setNavOpen]=useState(false);
-const isA=true;
+/* El permiso sale del perfil, no de una constante. Es la misma regla que aplica
+   is_admin() del lado de la base, asi que lo que ves y lo que podes escribir no
+   se pueden contradecir: si la RLS te va a rechazar el guardado, el boton ni
+   siquiera aparece.
+   Ojo: esto NO es seguridad — cualquiera puede cambiarlo desde las herramientas
+   del navegador. La seguridad real es la RLS. Esto es para que la interfaz no
+   te ofrezca cosas que la base te va a negar. */
+const isA=prof?.role==="admin";
 
 const lProf=async u=>{const{data}=await SB.from("profiles").select("*").eq("id",u).single();setProf(data?toCa(data):null);setAL(false)};
 

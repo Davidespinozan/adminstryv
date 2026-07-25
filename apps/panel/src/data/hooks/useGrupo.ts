@@ -65,6 +65,9 @@ export interface FilaTabla {
 
 export interface TablaNegocio {
   titulo: string;
+  /** Números que van ARRIBA de la tabla. Para dinero, ver el total de un
+   *  vistazo importa más que la fila por fila. */
+  resumen?: { l: string; v: string }[];
   columnas: string[];
   filas: FilaTabla[];
 }

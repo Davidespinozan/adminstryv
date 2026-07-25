@@ -90,6 +90,17 @@ export default function Tabla() {
         {tabla.titulo}
       </Head>
 
+      {tabla.resumen && tabla.resumen.length > 0 && (
+        <div className="st-card st-grid" style={{ marginBottom: 14, gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))' }}>
+          {tabla.resumen.map((r, i) => (
+            <div key={i}>
+              <div className="st-label">{r.l}</div>
+              <div className="st-cifra" style={{ fontSize: 20, marginTop: 4, color: 'var(--st-ok)' }}>{r.v}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {tabla.filas.length > 0 && (
         <div style={est.controles}>
           <input

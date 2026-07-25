@@ -350,6 +350,69 @@ async function leerSala(desdeISO) {
     // sobre todo esto: la lista de lo que administrás, con lo necesario para
     // decidir sin tener que abrir cada una.
     tablas: {
+      cobros: (() => {
+        // El libro de lo que SALA REALMENTE cobró, y —cuando todavía no cobró
+        // nada— lo que está comprometido a entrar. Un negocio en preventa no
+        // tiene ingresos, pero sí tiene promesas de pago que valen mirar.
+        const reales = movs
+          .slice()
+          .sort((a, b) => String(b.ocurrido_en).localeCompare(String(a.ocurrido_en)))
+          .map((m) => ({
+            celdas: [
+              String(m.ocurrido_en).substring(0, 10),
+              nombreTenant[m.tenant_id] || '(sin nombre)',
+              `${((Number(m.monto_centavos) || 0) / 100).toLocaleString('es-MX')} ${m.moneda}`,
+              m.concepto || 'suscripción'
+            ],
+            // Un reembolso (monto negativo) se marca: es plata que salió.
+            aviso: (Number(m.monto_centavos) || 0) < 0
+          }));
+
+        if (reales.length > 0) {
+          return { titulo: 'Lo que SALA cobró', columnas: ['Fecha', 'Gym', 'Monto', 'Concepto'], filas: reales };
+        }
+
+        // Todavía sin cobros: se muestra lo comprometido, que es lo accionable
+        // hoy. El precio mensual de cada suscripción, con su estado, para saber
+        // quién falta que empiece a pagar.
+        // Total comprometido por moneda (no se suman entre sí).
+        const compPorMon = {};
+        for (const sub of subsReales) {
+          const mensual = sub.ciclo === 'anual'
+            ? Math.round((Number(sub.precio_centavos) || 0) / 12)
+            : Number(sub.precio_centavos) || 0;
+          const mo = String(sub.moneda || 'mxn').toUpperCase();
+          compPorMon[mo] = (compPorMon[mo] || 0) + mensual;
+        }
+        return {
+          titulo: 'Todavía sin cobros — esto es lo comprometido',
+          resumen: Object.entries(compPorMon).map(([mo, c]) =>
+            ({ l: `Comprometido / mes (${mo})`, v: `${(c / 100).toLocaleString('es-MX')} ${mo}` })),
+          columnas: ['Gym', 'Plan', 'Estado', 'Mensual comprometido', 'Empieza a pagar'],
+          filas: subsReales
+            .slice()
+            .sort((a, b) => (Number(b.precio_centavos) || 0) - (Number(a.precio_centavos) || 0))
+            .map((sub) => {
+              const mensual = sub.ciclo === 'anual'
+                ? Math.round((Number(sub.precio_centavos) || 0) / 12)
+                : Number(sub.precio_centavos) || 0;
+              const cuando = sub.estado === 'activa' ? 'ya activo'
+                : sub.estado === 'trial' && sub.trial_termina ? `al terminar la prueba (${String(sub.trial_termina).substring(0, 10)})`
+                : sub.estado;
+              return {
+                celdas: [
+                  nombreTenant[sub.tenant_id] || '(sin nombre)',
+                  sub.tier,
+                  sub.payment_past_due ? 'pago vencido' : sub.estado,
+                  `${(mensual / 100).toLocaleString('es-MX')} ${String(sub.moneda || 'mxn').toUpperCase()}`,
+                  cuando
+                ],
+                alerta: sub.payment_past_due,
+                aviso: sub.estado === 'trial'
+              };
+            })
+        };
+      })(),
       gyms: {
         titulo: 'Los gyms',
         columnas: ['Gym', 'Plan', 'Estado', 'Socios', 'Prueba vence', 'Tarjeta'],

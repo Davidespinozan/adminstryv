@@ -1,6 +1,13 @@
 const { schedule } = require("@netlify/functions");
 
 exports.handler = schedule("0 */8 * * *", async () => {
+  // PAUSED: agent disabled
+  const AGENT_PAUSED = true;
+  if (AGENT_PAUSED) {
+    console.log("Prospect cron PAUSED");
+    return { statusCode: 200, body: "Paused" };
+  }
+
   const siteUrl = process.env.URL || "https://adminstryv.netlify.app";
   try {
     const res = await fetch(`${siteUrl}/.netlify/functions/prospect-agent-background`, {

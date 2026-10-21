@@ -86,6 +86,13 @@ async function saveIdea(idea, topic, sbKey) {
 
 // Runs every 12 hours — generates ~15 ideas per run (5 topics × 3 ideas)
 exports.handler = schedule("0 */12 * * *", async () => {
+  // PAUSED: agent disabled
+  const AGENT_PAUSED = true;
+  if (AGENT_PAUSED) {
+    console.log("Content agent PAUSED");
+    return { statusCode: 200, body: "Paused" };
+  }
+
   const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
   const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 

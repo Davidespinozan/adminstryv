@@ -440,6 +440,18 @@ async function manualHandler(event) {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" }, body: "" };
   }
+
+  // PAUSED: agent disabled (domain warmup recovery)
+  const AGENT_PAUSED = true;
+  if (AGENT_PAUSED) {
+    console.log("Prospect agent PAUSED");
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ paused: true, message: "Agent paused (domain warmup recovery)" }),
+    };
+  }
+
   const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
   try {
     const locked = await acquireLock(SB_KEY);

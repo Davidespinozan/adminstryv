@@ -3,6 +3,13 @@ const { schedule } = require("@netlify/functions");
 const SUPABASE_URL = "https://lxpgqhghxfqsahwrdmzo.supabase.co";
 
 exports.handler = schedule("0 6 * * *", async () => {
+  // PAUSED: agent disabled
+  const AGENT_PAUSED = true;
+  if (AGENT_PAUSED) {
+    console.log("Warmup check PAUSED");
+    return { statusCode: 200, body: "Paused" };
+  }
+
   const warmupEnd = new Date("2026-04-26");
   const now = new Date();
 

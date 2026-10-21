@@ -31,20 +31,36 @@ Tono: Directo. Natural. Con peso. Sin emojis de relleno. Sin "aquí te dejo 5 ti
 RESPONDE SOLO EN JSON sin markdown:
 {"ideas":[{"voice":"David","hook":"...","core":"...","cta":"...","format":"...","pillar":"...","caption":"..."},{"voice":"STRYV","hook":"...","core":"...","cta":"...","format":"...","pillar":"...","caption":"..."},{"voice":"Comodín","hook":"...","core":"...","cta":"...","format":"...","pillar":"...","caption":"..."}]}`;
 
-exports.handler = async function(event) {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' }, body: '' };
-  }
-  try {
-    const body = JSON.parse(event.body);
-    const input = body.input || '';
-    if (!input) return { statusCode: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'Input requerido' }) };
+const { gate, json, fail, fetchWithTimeout, parseJsonBody } = require('./_lib/auth');
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+const ANTHROPIC_TIMEOUT_MS = 25000;
+const MAX_INPUT_CHARS = 2000;
+
+exports.handler = async function(event) {
+  // SEC-2: método → interruptor → preflight → JWT + is_admin, antes de todo costo.
+  const g = await gate(event);
+  if (g.response) return g.response;
+
+  const parsed = parseJsonBody(event);
+  if (!parsed.ok) return fail(400, parsed.message, event);
+  const body = parsed.body;
+
+  const input = typeof body.input === 'string' ? body.input.trim() : '';
+  if (!input) return fail(400, 'Input requerido', event);
+  if (input.length > MAX_INPUT_CHARS) return fail(400, `El input supera ${MAX_INPUT_CHARS} caracteres`, event);
+
+  // Prueba sin costo: solo después de autenticar y autorizar.
+  if (body.dryRun === true) return json(200, { authorized: true }, event);
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return fail(503, 'Generador no configurado', event);
+
+  try {
+    const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
@@ -52,18 +68,20 @@ exports.handler = async function(event) {
         max_tokens: 4000,
         messages: [{ role: 'user', content: CONTENT_PROMPT(input) }]
       })
-    });
+    }, ANTHROPIC_TIMEOUT_MS);
+
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      console.error('generate-content: Anthropic respondió', res.status, detail.slice(0, 300));
+      return fail(res.status === 429 ? 429 : 502, 'El generador no está disponible. Intenta de nuevo.', event);
+    }
+    // Contrato preservado: el panel lee data.content[].text y data.error.message.
     const data = await res.json();
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify(data)
-    };
+    console.log('generate-content: ok', JSON.stringify({ uid: g.auth.uid, usage: data.usage || null }));
+    return json(200, data, event);
   } catch (err) {
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: err.message })
-    };
+    const timeout = err && err.name === 'AbortError';
+    console.error('generate-content: fallo', timeout ? 'timeout' : (err && err.name));
+    return fail(timeout ? 504 : 500, timeout ? 'El generador tardó demasiado. Intenta de nuevo.' : 'Error interno del generador', event);
   }
 };

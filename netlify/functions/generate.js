@@ -229,28 +229,39 @@ RESPONDE SOLO EN JSON sin markdown:
 {"emails":[{"subject":"...","body":"..."},{"subject":"...","body":"..."},{"subject":"...","body":"..."}],"analysis":"..."}`;
 }
 
+const { gate, json, fail, fetchWithTimeout, parseJsonBody, validateDataObject } = require('./_lib/auth');
+
+const ANTHROPIC_TIMEOUT_MS = 25000;
+const MODES = new Set(['agent', 'manual']);
+
 exports.handler = async function(event) {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' }, body: '' };
-  }
+  // SEC-2: método → interruptor → preflight → JWT + is_admin, antes de todo costo.
+  const g = await gate(event);
+  if (g.response) return g.response;
+
+  const parsed = parseJsonBody(event);
+  if (!parsed.ok) return fail(400, parsed.message, event);
+  const body = parsed.body;
+
+  if (!MODES.has(body.mode)) return fail(400, 'mode debe ser "agent" o "manual"', event);
+  const data = validateDataObject(body.data);
+  if (!data.ok) return fail(400, data.message, event);
+
+  // Prueba sin costo: solo después de autenticar y autorizar.
+  if (body.dryRun === true) return json(200, { authorized: true }, event);
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return fail(503, 'Generador no configurado', event);
+
+  const prompt = body.mode === 'agent' ? AGENT_PROMPT(data.value) : buildManualPrompt(data.value);
+  const model = body.mode === 'agent' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514';
+
   try {
-    const body = JSON.parse(event.body);
-
-    let prompt;
-    if (body.mode === 'agent') {
-      prompt = AGENT_PROMPT(body.data || {});
-    } else if (body.mode === 'manual') {
-      prompt = buildManualPrompt(body.data || {});
-    } else {
-      prompt = body.prompt;
-    }
-
-    const model = body.mode === 'agent' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514';
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
@@ -258,18 +269,21 @@ exports.handler = async function(event) {
         max_tokens: 3000,
         messages: [{ role: 'user', content: prompt }]
       })
-    });
-    const data = await res.json();
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify(data)
-    };
+    }, ANTHROPIC_TIMEOUT_MS);
+
+    if (!res.ok) {
+      // El detalle del proveedor va al log, nunca al navegador.
+      const detail = await res.text().catch(() => '');
+      console.error('generate: Anthropic respondió', res.status, detail.slice(0, 300));
+      return fail(res.status === 429 ? 429 : 502, 'El generador no está disponible. Intenta de nuevo.', event);
+    }
+    // Contrato preservado: el panel lee data.content[].text y data.error.message.
+    const data_ = await res.json();
+    console.log('generate: ok', JSON.stringify({ uid: g.auth.uid, mode: body.mode, model, usage: data_.usage || null }));
+    return json(200, data_, event);
   } catch (err) {
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: err.message })
-    };
+    const timeout = err && err.name === 'AbortError';
+    console.error('generate: fallo', timeout ? 'timeout' : (err && err.name));
+    return fail(timeout ? 504 : 500, timeout ? 'El generador tardó demasiado. Intenta de nuevo.' : 'Error interno del generador', event);
   }
 };

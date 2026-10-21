@@ -1,4 +1,5 @@
 const SUPABASE_URL = "https://lxpgqhghxfqsahwrdmzo.supabase.co";
+const { gate, json, fail, parseJsonBody } = require("./_lib/auth");
 
 const sbHeaders = (key) => ({
   "Content-Type": "application/json",
@@ -437,31 +438,44 @@ async function releaseLock(sbKey) {
 
 // ─── Manual trigger handler ───
 async function manualHandler(event) {
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" }, body: "" };
-  }
+  // SEC-2: método → interruptor → preflight → (X-Internal-Token del cron | JWT + is_admin).
+  // La autorización va ANTES del estado de pausa: un anónimo no sabe si hay agente.
+  const g = await gate(event, { internal: true });
+  if (g.response) return g.response;
+
+  const parsed = parseJsonBody({ ...event, body: event.body || "{}" });
+  if (!parsed.ok) return fail(400, parsed.message, event);
+  const body = parsed.body;
+
+  // Prueba sin costo, solo tras autenticar y autorizar. No salta la pausa.
+  if (body.dryRun === true) return json(200, { authorized: true, paused: true }, event);
 
   // PAUSED: agent disabled (domain warmup recovery)
   const AGENT_PAUSED = true;
   if (AGENT_PAUSED) {
     console.log("Prospect agent PAUSED");
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ paused: true, message: "Agent paused (domain warmup recovery)" }),
-    };
+    return json(200, { paused: true, message: "Agent paused (domain warmup recovery)" }, event);
+  }
+
+  // Validación de entrada antes de cualquier acción externa.
+  if (body.useDb !== undefined && typeof body.useDb !== "boolean") return fail(400, "useDb debe ser booleano", event);
+  if (body.limit !== undefined && !(Number.isInteger(body.limit) && body.limit >= 1 && body.limit <= 30)) return fail(400, "limit debe ser un entero entre 1 y 30", event);
+  if (body.searches !== undefined) {
+    const ok = Array.isArray(body.searches) && body.searches.length <= 30 && body.searches.every((x) =>
+      x && typeof x === "object" && typeof x.query === "string" && x.query.length <= 120 && typeof x.city === "string" && x.city.length <= 120);
+    if (!ok) return fail(400, "searches inválido", event);
   }
 
   const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
+  if (!SB_KEY) return fail(503, "Agente no configurado", event);
   try {
     const locked = await acquireLock(SB_KEY);
     if (!locked) {
       console.log("Agent already running, skipping");
-      return { statusCode: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "El agente ya está ejecutándose. Espera a que termine." }) };
+      return json(200, { error: "El agente ya está ejecutándose. Espera a que termine." }, event);
     }
 
-    const body = JSON.parse(event.body || "{}");
-    console.log("Manual trigger received:", JSON.stringify(body));
+    console.log("Manual trigger received by", g.auth.uid, JSON.stringify({ useDb: body.useDb, limit: body.limit, searches: (body.searches || []).length }));
 
     let searches;
     if (body.useDb) {
@@ -471,23 +485,16 @@ async function manualHandler(event) {
       searches = body.searches;
     } else {
       await releaseLock(SB_KEY);
-      return { statusCode: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "No searches provided" }) };
+      return fail(400, "No searches provided", event);
     }
 
     const results = await runAgent(searches);
     await releaseLock(SB_KEY);
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify(results),
-    };
+    return json(200, results, event);
   } catch (err) {
     await releaseLock(SB_KEY);
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ error: err.message }),
-    };
+    console.error("prospect-agent: fallo", err && err.name, (err && err.message || "").slice(0, 200));
+    return fail(500, "Error interno del agente", event);
   }
 }
 

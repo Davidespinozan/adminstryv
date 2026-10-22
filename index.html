@@ -588,31 +588,20 @@ const togPT=async(pid,tid)=>{
   const res=await dUpd("projects",pid,{tasks:newTasks});
   if(!res){setD(prev=>({...prev,projects:prev.projects.map(x=>x.id===pid?{...x,tasks:oldTasks}:x)}));alert("Error al actualizar tarea")}
 };
+// PS-5B.1 · conversión y cambio de estado atómicos: cada operación es UNA
+// función SQL (security invoker, RLS intacta) que actualiza el lead, crea el
+// cliente si aplica y registra el evento en eventos_estado en la misma
+// transacción. Un reintento de conversión devuelve el cliente ya creado.
 const convLead=async l=>{
-  try{
-    const res=await dIns("clients",{name:(l.name||"").trim(),email:l.email||"",phone:l.phone||"",company:l.company||"",source:l.source||"Web",stage:"Lead",amount:0,amountPaid:0,mrr:0,solutions:[],tasks:[],payments:[],currency:"USD"});
-    if(!res)return;
-    const de=leadEstado(l);
-    let{error:e2}=await SB.from("leads").update({converted:true,converted_client_id:res.id,status:"Convertido",status_changed_at:new Date().toISOString()}).eq("id",l.id);
-    if(e2&&(e2.code==="42703"||/status/.test(e2.message||""))){({error:e2}=await SB.from("leads").update({converted:true,converted_client_id:res.id}).eq("id",l.id))}
-    if(e2)alert("Cliente creado pero error al marcar lead: "+e2.message);
-    else await regLeadEvento(l,de,"Convertido",{client_id:res.id});
-    await loadAll();
-  }catch(err){alert("Error: "+err.message)}};
-
-// PS-5B · cambio de estado con auditoría. El evento va a eventos_estado con el
-// JWT del admin (política eventos_admin_registra). Sin datos personales en metadata
-// salvo el correo del propio lead, que ya está en la fila.
-const regLeadEvento=async(l,de,a,extra)=>{
-  if(de===a)return;
-  const{error}=await SB.from("eventos_estado").insert({negocio:"stryv",entidad:"lead",entidad_id:l.id,de_estado:de,a_estado:a,motivo:"panel",actor:user?.id||null,metadata:{email:l.email||null,...(extra||{})}});
-  if(error)console.error("eventos_estado:",error.message);
+  const{data:clientId,error}=await SB.rpc("convertir_lead",{p_lead:l.id});
+  if(error){alert("No se pudo convertir el lead: "+error.message);return}
+  await loadAll();
+  return clientId;
 };
 const setLeadEstado=async(l,nuevo)=>{
-  const de=leadEstado(l);if(de===nuevo)return;
-  const{error}=await SB.from("leads").update({status:nuevo,status_changed_at:new Date().toISOString()}).eq("id",l.id);
-  if(error){alert(error.code==="42703"||/status/.test(error.message||"")?"Falta aplicar la migración de estados (supabase/20261022_leads_estado.sql). Hasta entonces solo funciona → Cliente.":"No se pudo cambiar el estado: "+error.message);return}
-  await regLeadEvento(l,de,nuevo);
+  if(leadEstado(l)===nuevo)return;
+  const{error}=await SB.rpc("cambiar_estado_lead",{p_lead:l.id,p_estado:nuevo});
+  if(error){alert("No se pudo cambiar el estado: "+error.message);return}
   await loadAll();
 };
 

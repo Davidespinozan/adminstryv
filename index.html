@@ -97,6 +97,13 @@ const SB=window.supabase.createClient("https://lxpgqhghxfqsahwrdmzo.supabase.co"
 
 const SOLUTIONS=["Sol 01 — Ventas y Entrega","Sol 02 — Atención con IA","Sol 03 — Conversión Local","Sol 04 — Operación Interna","Sol 05 — Contenido con IA","Mantenimiento mensual"];
 const STAGES=["Lead","Diagnóstico","Propuesta","En desarrollo","Entregado","Mantenimiento"];
+// PS-5B · ciclo mínimo del lead. Si la columna `status` aún no existe (migración
+// supabase/20261022_leads_estado.sql), se deriva de `converted`.
+const LEAD_ESTADOS=["Nuevo","Visto","Contactado","Descartado","Convertido"];
+const LEAD_COLOR={Nuevo:"#0b7798",Visto:"#6b7280",Contactado:"#b45309",Descartado:"#9ca3af",Convertido:"#15803d"};
+const leadEstado=l=>l.status||(l.converted?"Convertido":"Nuevo");
+const leadUtm=l=>[l.utmSource,l.utmMedium,l.utmCampaign,l.utmContent,l.utmTerm].filter(Boolean).join(" / ");
+const leadHost=u=>{try{return new URL(u).host}catch(e){return ""}};
 // FIX-01 · meses anteriores al actual sin cierre registrado. Solo informa: los
 // cierres retroactivos NO se generan automáticamente porque buildSnap usa las
 // cifras de hoy y un snapshot de un mes pasado con datos actuales es falso.
@@ -497,7 +504,7 @@ useEffect(()=>{
   fetchTC();
 },[]);
 const toUSD=(val,cur)=>{const n=Number(val||0);return cur==="MXN"?Math.round(n/tcMXN*100)/100:n};
-const[cerrando,setCerrando]=useState(false);const cerrandoRef=React.useRef(false);const[ld,setLd]=useState(false);const[vw,setVw]=useState(()=>{try{return localStorage.getItem("stryv_vw_inicial")||"consolidado"}catch(e){return "consolidado"}});const[sub,setSub]=useState(null);
+const[ldF,setLdF]=useState("Activos");const[cerrando,setCerrando]=useState(false);const cerrandoRef=React.useRef(false);const[ld,setLd]=useState(false);const[vw,setVw]=useState(()=>{try{return localStorage.getItem("stryv_vw_inicial")||"consolidado"}catch(e){return "consolidado"}});const[sub,setSub]=useState(null);
 const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");const[notifOpen,setNotifOpen]=useState(false);const[navGrp,setNavGrp]=useState(null);const[clVw,setClVw]=useState("lista");
 const[dismissedAlerts,setDismissedAlerts]=useState(()=>{try{return JSON.parse(localStorage.getItem("stryv_dismissed")||"[]")}catch{return[]}});
 const dismissAlert=(msg)=>{const nw=[...dismissedAlerts,msg];setDismissedAlerts(nw);try{localStorage.setItem("stryv_dismissed",JSON.stringify(nw))}catch{}};
@@ -596,14 +603,22 @@ const togPT=async(pid,tid)=>{
   const res=await dUpd("projects",pid,{tasks:newTasks});
   if(!res){setD(prev=>({...prev,projects:prev.projects.map(x=>x.id===pid?{...x,tasks:oldTasks}:x)}));alert("Error al actualizar tarea")}
 };
+// PS-5B.1 · conversión y cambio de estado atómicos: cada operación es UNA
+// función SQL (security invoker, RLS intacta) que actualiza el lead, crea el
+// cliente si aplica y registra el evento en eventos_estado en la misma
+// transacción. Un reintento de conversión devuelve el cliente ya creado.
 const convLead=async l=>{
-  try{
-    const res=await dIns("clients",{name:(l.name||"").trim(),email:l.email||"",phone:l.phone||"",company:l.company||"",source:l.source||"Web",stage:"Lead",amount:0,amountPaid:0,mrr:0,solutions:[],tasks:[],payments:[],currency:"USD"});
-    if(!res)return;
-    const{error:e2}=await SB.from("leads").update({converted:true,converted_client_id:res.id}).eq("id",l.id);
-    if(e2)alert("Cliente creado pero error al marcar lead: "+e2.message);
-    await loadAll();
-  }catch(err){alert("Error: "+err.message)}};
+  const{data:clientId,error}=await SB.rpc("convertir_lead",{p_lead:l.id});
+  if(error){alert("No se pudo convertir el lead: "+error.message);return}
+  await loadAll();
+  return clientId;
+};
+const setLeadEstado=async(l,nuevo)=>{
+  if(leadEstado(l)===nuevo)return;
+  const{error}=await SB.rpc("cambiar_estado_lead",{p_lead:l.id,p_estado:nuevo});
+  if(error){alert("No se pudo cambiar el estado: "+error.message);return}
+  await loadAll();
+};
 
 const mvPrSt=async(id,s)=>{
   const prev=pros.find(x=>x.id===id)?.stage;
@@ -698,7 +713,7 @@ const me=useMemo(()=>{
   const tISt=Object.values(invStTools).reduce((s,v)=>s+v.total,0);
   const totalCostAcc=Object.values(costByMo).reduce((s,v)=>s+v.total,0);
   const toolsAcc=(()=>{let t=0;const cm=curMo;tls.filter(x=>x.paidBy==="Inversor"||x.paidBy==="STRYV").forEach(x=>{const defMo=x.billing==="Anual"?toUSD(x.cost,x.currency)/12:x.billing==="Lifetime"||x.billing==="Gratis"?0:toUSD(x.cost,x.currency);if(defMo<=0)return;const ch=x.costHistory||{};const start=x.createdAt?(x.createdAt+"").substring(0,7):cm;let cur=start;while(cur<=cm){if(tlActEn(x,cur))t+=ch[cur]!==undefined?Number(ch[cur]):defMo;const[y,m2]=cur.split("-").map(Number);const ny=m2===12?y+1:y;const nm=m2===12?1:m2+1;cur=ny+"-"+String(nm).padStart(2,"0")}});return t})();
-  const nL=leads.filter(l=>!l.converted).length;
+  const nL=leads.filter(l=>leadEstado(l)==="Nuevo").length;
   const totalInv=tIA+toolsAcc;
   /* CORRECCION: totalInv suma TODOS los tipos, incluidos Ads y Equipo, que son
      gastos y no inversion. El capital de verdad inyectado es solo tInj. */
@@ -1034,23 +1049,42 @@ return(<div style={{minHeight:"100vh",background:bg}}>
 {vw==="leads"&&(<div>
   <div style={{marginBottom:18}}>
     <div style={{fontSize:9,fontWeight:700,letterSpacing:".18em",textTransform:"uppercase",color:mt,fontFamily:"'Geist Mono',monospace",marginBottom:5}}>Captación</div>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-      <div style={{fontSize:20,fontWeight:700,fontFamily:dsp,letterSpacing:"-.02em"}}>Leads desde la web</div>
-      <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{leads.length}</span>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+      <div style={{fontSize:20,fontWeight:700,fontFamily:dsp,letterSpacing:"-.02em"}}>Leads desde la web {me.nL>0&&<span style={{...bg2(tl),marginLeft:8,fontSize:11}}>{me.nL} nuevo{me.nL===1?"":"s"}</span>}</div>
+      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+        <span style={{fontSize:10,color:mt,background:cd2,border:`1px solid ${bd}`,borderRadius:20,padding:"3px 10px",fontFamily:"'Geist Mono',monospace"}}>{leads.length}</span>
+        <button onClick={()=>loadAll()} disabled={ld} style={{background:"transparent",border:`1px solid ${bd}`,color:tx,padding:"6px 12px",borderRadius:8,fontSize:11,cursor:"pointer"}}>{ld?"…":"Actualizar"}</button>
+      </div>
+    </div>
+    <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
+      {["Activos",...LEAD_ESTADOS,"Todos"].map(f=>{const n=f==="Activos"?leads.filter(l=>["Nuevo","Visto","Contactado"].includes(leadEstado(l))).length:f==="Todos"?leads.length:leads.filter(l=>leadEstado(l)===f).length;return <button key={f} onClick={()=>setLdF(f)} style={{...bg2(ldF===f?tl:null),cursor:"pointer",border:`1px solid ${ldF===f?tl+"60":bd}`}}>{f} <span style={{opacity:.7}}>{n}</span></button>})}
     </div>
   </div>
-  {leads.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin leads — conecta la landing</div>:
-    leads.filter(l=>!l.converted).map(l=><div key={l.id} className="mob-wrap" style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-      <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700}}>{l.name||"Sin nombre"} {l.company&&<span style={{fontWeight:400,color:s2}}>· {l.company}</span>}</div><div style={{fontSize:10,color:mt}}>{l.email} · {l.phone} · {l.source}</div>{l.message&&<div style={{fontSize:11,color:s2,marginTop:4}}>{l.message}</div>}</div>
-      <div style={{fontSize:10,color:mt}}>{l.createdAt?(l.createdAt+"").substring(0,10):""}</div>
-      {isA&&<button onClick={()=>convLead(l)} style={{background:tl,border:"none",color:bg,padding:"8px 14px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>→ Cliente</button>}
-    </div>)}
-  {leads.filter(l=>l.converted).length>0&&<div style={{marginTop:16}}>
-    <div style={{fontSize:12,color:mt,fontWeight:700,marginBottom:8}}>✓ CONVERTIDOS</div>
-    {leads.filter(l=>l.converted).map(l=><div key={l.id} style={{background:cd2,border:`1px solid ${bd}`,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:4,opacity:.6}}>
-      <span style={{fontSize:12,textDecoration:"line-through"}}>{l.name||"—"}</span><span style={{fontSize:10,color:s2}}>→ Cliente</span>
-    </div>)}
-  </div>}
+  {leads.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin leads — conecta la landing</div>:(()=>{
+    const vis=leads.filter(l=>{const e=leadEstado(l);return ldF==="Todos"||(ldF==="Activos"?["Nuevo","Visto","Contactado"].includes(e):e===ldF)});
+    if(!vis.length)return <div style={{textAlign:"center",padding:40,color:mt}}>Nada en «{ldF}»</div>;
+    return vis.map(l=>{const e=leadEstado(l);const utm=leadUtm(l);const host=leadHost(l.pageUrl);const fin=e==="Convertido"||e==="Descartado";
+      return <div key={l.id} className="mob-wrap" style={{background:fin?cd2:cd,border:`1px solid ${e==="Nuevo"?tl+"60":bd}`,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"flex-start",gap:12,marginBottom:8,opacity:fin?.75:1}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+            <span style={{fontSize:13,fontWeight:700}}>{l.name||"Sin nombre"}</span>
+            {l.company&&<span style={{fontSize:12,color:s2}}>· {l.company}</span>}
+            <span style={{...bg2(LEAD_COLOR[e]),fontSize:10,padding:"2px 9px"}}>{e}</span>
+          </div>
+          <div style={{fontSize:11,color:s2,marginTop:4}}>
+            {l.email&&<a href={`mailto:${l.email}`} style={{color:tl,textDecoration:"none"}}>{l.email}</a>}
+            {l.phone&&<> · <a href={`https://wa.me/${String(l.phone).replace(/\D/g,"")}`} target="_blank" rel="noopener" style={{color:tl,textDecoration:"none"}}>{l.phone}</a></>}
+          </div>
+          {l.message&&<div style={{fontSize:12,color:tx,marginTop:6,whiteSpace:"pre-wrap"}}>{l.message}</div>}
+          <div style={{fontSize:10,color:mt,marginTop:6,fontFamily:"'Geist Mono',monospace"}}>
+            {l.createdAt?new Date(l.createdAt).toLocaleString("es-MX",{dateStyle:"medium",timeStyle:"short"}):""} · {l.source||"Web"}{utm&&<> · UTM {utm}</>}{host&&<> · {host}</>}{l.statusChangedAt&&<> · {e} desde {new Date(l.statusChangedAt).toLocaleDateString("es-MX")}</>}
+          </div>
+        </div>
+        {isA&&<div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+          {e!=="Convertido"&&<button onClick={()=>convLead(l)} style={{background:tl,border:"none",color:"#fff",padding:"7px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>→ Cliente</button>}
+          {["Visto","Contactado","Descartado"].filter(x=>x!==e&&e!=="Convertido").map(x=><button key={x} onClick={()=>setLeadEstado(l,x)} style={{background:"transparent",border:`1px solid ${bd}`,color:tx,padding:"5px 10px",borderRadius:8,fontSize:10,cursor:"pointer"}}>{x}</button>)}
+        </div>}
+      </div>})})()}
 </div>)}
 
 {/* PROJECTS */}

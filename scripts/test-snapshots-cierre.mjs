@@ -35,8 +35,20 @@ ok('cerrarMes solo se invoca desde el botón "Cerrar <mes actual>"');
 // 4. cerrarMes rechaza meses pasados y comprueba el resultado del insert.
 const cerrar = src.slice(src.indexOf('const cerrarMes=async(targetMo)=>{'), src.indexOf('const mesesPendientes='));
 assert.ok(/targetMo&&targetMo!==mo/.test(cerrar) && /retroactivamente/.test(cerrar), 'no rechaza meses pasados');
-assert.ok(/const res=await dIns\("snapshots",buildSnap\(mo\)\)/.test(cerrar) && /if\(!res\)return false/.test(cerrar), 'no verifica el insert');
+assert.ok(/const\{error\}=await SB\.from\("snapshots"\)\.insert/.test(cerrar) && /if\(error\)\{/.test(cerrar), 'no verifica el insert');
 ok('cerrarMes rechaza cierres retroactivos y no anuncia éxito si el insert falla');
+
+// 4b. FIX-01B · sin reemplazo, sin doble envío, conflicto de unicidad amistoso.
+assert.ok(!/dDel\("snapshots"/.test(cerrar), 'cerrarMes sigue borrando snapshots');
+assert.ok(!/dIns\("snapshots"/.test(cerrar) && /SB\.from\("snapshots"\)\.insert\(toSn\(buildSnap\(mo\)\)\)/.test(cerrar), 'el insert no es directo');
+assert.ok(/snaps\.some\(s=>s\.month===mo\)/.test(cerrar) && /ya está cerrado\. Un cierre no se reemplaza/.test(cerrar), 'no rechaza un mes ya cerrado');
+assert.ok(/if\(cerrandoRef\.current\)return false/.test(cerrar) && /finally\{cerrandoRef\.current=false/.test(cerrar), 'sin guarda de doble clic');
+assert.ok(/error\.code==="23505"/.test(cerrar) && /ya estaba cerrado/.test(cerrar), 'no maneja la violación de unicidad');
+assert.ok(!/Error DB/.test(cerrar), 'muestra errores técnicos');
+ok('cerrarMes: nunca reemplaza, una operación en vuelo, 23505 con mensaje amistoso');
+assert.ok(/snaps\.some\(s=>s\.month===mesActual\)\s*\?<span[^>]*>✓ \{mesActual\} cerrado<\/span>/.test(src), 'el botón no refleja el mes cerrado');
+assert.ok(/disabled=\{cerrando\}/.test(src), 'el botón no se deshabilita mientras cierra');
+ok('Historial: muestra "cerrado" si el mes existe y deshabilita el botón durante el cierre');
 
 // 5. mesesSinCierre: helper puro.
 const mesesSinCierre = eval(grab('mesesSinCierre'));

@@ -97,6 +97,10 @@ const SB=window.supabase.createClient("https://lxpgqhghxfqsahwrdmzo.supabase.co"
 
 const SOLUTIONS=["Sol 01 — Ventas y Entrega","Sol 02 — Atención con IA","Sol 03 — Conversión Local","Sol 04 — Operación Interna","Sol 05 — Contenido con IA","Mantenimiento mensual"];
 const STAGES=["Lead","Diagnóstico","Propuesta","En desarrollo","Entregado","Mantenimiento"];
+// FIX-01 · meses anteriores al actual sin cierre registrado. Solo informa: los
+// cierres retroactivos NO se generan automáticamente porque buildSnap usa las
+// cifras de hoy y un snapshot de un mes pasado con datos actuales es falso.
+const mesesSinCierre=(firstMo,curMo,snaps)=>{const out=[];if(!firstMo||!curMo)return out;let cur=firstMo;let guard=0;while(cur<curMo&&guard++<600){if(!(snaps||[]).some(s=>s.month===cur))out.push(cur);const[y,m]=cur.split("-").map(Number);cur=(m===12?y+1:y)+"-"+String(m===12?1:m+1).padStart(2,"0")}return out};
 const SC={Lead:"#79b8ff","Diagnóstico":"#e5a84b",Propuesta:"#79b8ff","En desarrollo":"#4ECDC4",Entregado:"#56d4a0",Mantenimiento:"#8b949e"};
 const SOURCES=["Instagram","Referido","WhatsApp directo","Web","Academia","Otro"];
 const ROLES=["Co-founder","Inversionista","Desarrollador","Diseñador","Marketing","Ventas","Soporte","Freelance","Otro"];
@@ -493,7 +497,7 @@ useEffect(()=>{
   fetchTC();
 },[]);
 const toUSD=(val,cur)=>{const n=Number(val||0);return cur==="MXN"?Math.round(n/tcMXN*100)/100:n};
-const[ld,setLd]=useState(false);const[vw,setVw]=useState(()=>{try{return localStorage.getItem("stryv_vw_inicial")||"consolidado"}catch(e){return "consolidado"}});const[sub,setSub]=useState(null);
+const[cerrando,setCerrando]=useState(false);const cerrandoRef=React.useRef(false);const[ld,setLd]=useState(false);const[vw,setVw]=useState(()=>{try{return localStorage.getItem("stryv_vw_inicial")||"consolidado"}catch(e){return "consolidado"}});const[sub,setSub]=useState(null);
 const[eid,setEid]=useState(null);const[srch,setSrch]=useState("");const[fSt,setFSt]=useState("Todos");const[acT,setAcT]=useState("curriculum");const[notifOpen,setNotifOpen]=useState(false);const[navGrp,setNavGrp]=useState(null);const[clVw,setClVw]=useState("lista");
 const[dismissedAlerts,setDismissedAlerts]=useState(()=>{try{return JSON.parse(localStorage.getItem("stryv_dismissed")||"[]")}catch{return[]}});
 const dismissAlert=(msg)=>{const nw=[...dismissedAlerts,msg];setDismissedAlerts(nw);try{localStorage.setItem("stryv_dismissed",JSON.stringify(nw))}catch{}};
@@ -549,16 +553,27 @@ const ed=(item,sf,v,s)=>{sf(JSON.parse(JSON.stringify(item)));setEid(item.id);se
 const goN=(v,s,sf,e)=>{setEid(null);setVw(v);setSub(s);sf({...e})};
 const svI=async()=>{const amt=iF.type==="Pago de stack mensual"?Math.round(me.tlCost*100)/100:Number(iF.amount||0);if(!amt){alert("Monto requerido");return}const rec={...iF,amount:amt};if(eid)await dUpd("investments",eid,rec);else await dIns("investments",rec);setIF({...eI});setEid(null);setSub(null);await loadAll()};
 const buildSnap=(mo)=>{const cm=me.costByMo[mo]||{equipo:me.tmCost,tools:me.tlCostPropio,toolsTerceros:me.tlTerceros,ads:0,total:me.totCost};const cobMo=me.byMo[mo]||0;const invMo=me.iMo[mo]||0;const utilRunRate=me.tMRR-cm.total;const utilCaja=(me.byMo[mo]||0)-cm.total;return{month:mo,mrrClientes:Math.round(me.tMRR*100)/100,costoEquipo:Math.round(cm.equipo*100)/100,costoStack:Math.round(cm.tools*100)/100,stackTerceros:Math.round((cm.toolsTerceros||0)*100)/100,costoAds:Math.round(cm.ads*100)/100,costoTotal:Math.round(cm.total*100)/100,utilidad:Math.round(utilRunRate*100)/100,utilidadCaja:Math.round(utilCaja*100)/100,revenueMes:Math.round(cobMo*100)/100,invertidoMes:Math.round(invMo*100)/100,clientesActivos:me.active,teamActivos:me.aTm,toolsActivos:tls.filter(x=>x.status==="Activo").length,cobradoTotal:Math.round(me.tPaid*100)/100,notes:""}};
-const cerrarMes=async(targetMo)=>{const mo=targetMo||new Date().toISOString().substring(0,7);if(snaps.find(s=>s.month===mo)){if(targetMo)return;if(!confirm(`Ya existe un cierre para ${mo}. ¿Reemplazar?`))return;const ex=snaps.find(s=>s.month===mo);await dDel("snapshots",ex.id)}await dIns("snapshots",buildSnap(mo));await loadAll();if(!targetMo)alert(`✓ Mes ${mo} cerrado`)};
-const autoCloseRef=React.useRef(false);
-useEffect(()=>{if(!isA||!user||ld||cl.length===0||autoCloseRef.current)return;autoCloseRef.current=true;
-  const now=new Date();const curMo2=now.toISOString().substring(0,7);
-  const firstDate=cl.reduce((mn,c)=>{const d=c.createdAt?(c.createdAt+"").substring(0,7):null;return d&&(!mn||d<mn)?d:mn},null);
-  if(!firstDate)return;
-  const missing=[];let cur=firstDate;
-  while(cur<curMo2){if(!snaps.find(s=>s.month===cur))missing.push(cur);const[y,m]=cur.split("-").map(Number);const ny=m===12?y+1:y;const nm=m===12?1:m+1;cur=ny+"-"+String(nm).padStart(2,"0")}
-  if(missing.length>0){(async()=>{for(const mo of missing){await cerrarMes(mo)}console.log(`Auto-cierre: ${missing.join(", ")}`)})()}
-},[isA,user,ld,cl,snaps]);
+// FIX-01 · cierre EXPLÍCITO del mes en curso. Un mes pasado no se cierra desde
+// aquí: no hay cifras históricas con las que construirlo.
+const cerrarMes=async(targetMo)=>{
+  const mo=new Date().toISOString().substring(0,7);
+  if(targetMo&&targetMo!==mo){alert(`No se puede cerrar ${targetMo} retroactivamente: el cierre usa las cifras de hoy y sería un dato falso.`);return false}
+  if(cerrandoRef.current)return false;                       // doble clic: una sola operación en vuelo
+  if(snaps.some(s=>s.month===mo)){alert(`El mes ${mo} ya está cerrado. Un cierre no se reemplaza.`);return false}
+  cerrandoRef.current=true;setCerrando(true);
+  try{
+    // Inserción directa: la unicidad la garantiza snapshots_month_key en la base.
+    const{error}=await SB.from("snapshots").insert(toSn(buildSnap(mo)));
+    if(error){
+      if(error.code==="23505"){alert(`El mes ${mo} ya estaba cerrado.`)}
+      else{console.error("cerrarMes:",error.code,error.message);alert("No se pudo cerrar el mes. Intenta de nuevo.")}
+      await loadAll();return false;
+    }
+    await loadAll();alert(`✓ Mes ${mo} cerrado`);return true;
+  }finally{cerrandoRef.current=false;setCerrando(false)}
+};
+const mesActual=new Date().toISOString().substring(0,7);
+const mesesPendientes=useMemo(()=>{const firstDate=cl.reduce((mn,c)=>{const d=c.createdAt?(c.createdAt+"").substring(0,7):null;return d&&(!mn||d<mn)?d:mn},null);return mesesSinCierre(firstDate,new Date().toISOString().substring(0,7),snaps)},[cl,snaps]);
 const mvSt=async(id,s)=>{
   const prev=cl.find(x=>x.id===id)?.stage;
   setD(p=>({...p,clients:p.clients.map(c=>c.id===id?{...c,stage:s}:c)}));
@@ -1507,9 +1522,13 @@ return(<div style={{minHeight:"100vh",background:bg}}>
   const months=[...allMo].sort();
   const hData=months.map(mo=>{const cob=me.byMo[mo]||0;const cm=me.costByMo[mo]||{equipo:0,tools:0,ads:0,total:0};const inv=me.iMo[mo]||0;const util=cob-cm.total;return{mo,cob,equipo:cm.equipo,tools:cm.tools,ads:cm.ads,costos:cm.total,util,inv}});
   return <div>
-  <div style={{marginBottom:16}}>
+  <div style={{marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
     <div style={{fontSize:15,fontWeight:800}}>Historial <span style={{color:mt,fontWeight:400}}>P&L mes a mes · calculado en tiempo real</span></div>
+    {snaps.some(s=>s.month===mesActual)
+      ?<span style={{...bg2("#15803d"),fontSize:11}}>✓ {mesActual} cerrado</span>
+      :<button onClick={()=>cerrarMes()} disabled={cerrando} style={{background:tl,border:"none",color:"#fff",padding:"8px 14px",borderRadius:8,fontSize:11,fontWeight:700,cursor:cerrando?"wait":"pointer",opacity:cerrando?.6:1}}>{cerrando?"Cerrando…":`Cerrar ${mesActual}`}</button>}
   </div>
+  {mesesPendientes.length>0&&<div style={{fontSize:11,color:s2,background:cd2,border:`1px solid ${bd}`,borderRadius:8,padding:"8px 12px",marginBottom:14}}>Sin cierre registrado: {mesesPendientes.join(", ")}. Los cierres no se generan retroactivamente; el cierre guarda las cifras del mes en curso.</div>}
   {months.length===0?<div style={{textAlign:"center",padding:50,color:mt}}>Sin datos — registra pagos e inversiones para ver el historial.</div>:
   <div style={{background:cd,border:`1px solid ${bd}`,borderRadius:12,padding:"12px 0"}}>
     <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",padding:"0 16px"}}>

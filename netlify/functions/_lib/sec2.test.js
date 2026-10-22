@@ -302,3 +302,93 @@ test('ninguna respuesta de error incluye claves, cuerpos del proveedor ni el tok
   const r2 = await background(ev({ headers: { 'x-internal-token': 'malo' }, body: {} }));
   assert.doesNotMatch(r2.body, /token-interno-de-prueba/);
 });
+
+// ─── SEC-2I · Observabilidad del background ──────────────────────────────────
+// Captura console.log/console.error durante cada invocación y extrae la línea
+// "prospect-agent-background: gate {...}".
+async function conLogs(fn) {
+  const lines = [];
+  const origLog = console.log, origErr = console.error;
+  console.log = (...a) => lines.push(a.map(String).join(' '));
+  console.error = (...a) => lines.push(a.map(String).join(' '));
+  try { const r = await fn(); return { r, lines }; } finally { console.log = origLog; console.error = origErr; }
+}
+const gateLines = (lines) => lines.filter((l) => l.startsWith('prospect-agent-background: gate ')).map((l) => JSON.parse(l.slice('prospect-agent-background: gate '.length)));
+const SENSIBLES = /jwt-valido|token-interno-de-prueba|anthropic-key-de-prueba|service-key-de-prueba|x@y|Bearer |useDb/;
+
+test('bg obs: anónimo → una línea DENIED 401 auth=NONE', async () => {
+  const { r, lines } = await conLogs(() => background(ev({ body: { useDb: true } })));
+  assert.equal(r.statusCode, 401);
+  const g = gateLines(lines);
+  assert.equal(g.length, 1);
+  assert.deepEqual(g[0], { result: 'DENIED', code: 401, auth: 'NONE' });
+  assert.equal(calls.length, 0);
+});
+
+test('bg obs: token inválido → DENIED 401 auth=JWT', async () => {
+  script.user = () => resp(401, {});
+  const { lines } = await conLogs(() => background(admin({ useDb: true })));
+  assert.deepEqual(gateLines(lines), [{ result: 'DENIED', code: 401, auth: 'JWT' }]);
+  assert.equal(paidCalls().length, 0);
+});
+
+test('bg obs: usuario sin perfil → DENIED 403 auth=JWT', async () => {
+  script.isAdmin = () => resp(200, false);
+  const { lines } = await conLogs(() => background(admin({ useDb: true })));
+  assert.deepEqual(gateLines(lines), [{ result: 'DENIED', code: 403, auth: 'JWT' }]);
+});
+
+test('bg obs: servicio de autenticación caído → ERROR 503', async () => {
+  script.user = () => { throw new Error('ECONNRESET'); };
+  const { lines } = await conLogs(() => background(admin({ useDb: true })));
+  assert.deepEqual(gateLines(lines), [{ result: 'ERROR', code: 503, auth: 'JWT' }]);
+});
+
+test('bg obs: interruptor activo → DISABLED 503, sin consultar nada', async () => {
+  process.env.AI_FUNCTIONS_DISABLED = 'true';
+  const { lines } = await conLogs(() => background(admin({ useDb: true })));
+  assert.deepEqual(gateLines(lines), [{ result: 'DISABLED', code: 503, auth: 'JWT' }]);
+  assert.equal(calls.length, 0);
+});
+
+test('bg obs: token interno correcto alcanza PAUSED con auth=INTERNAL uid=cron', async () => {
+  const { r, lines } = await conLogs(() => background(ev({ headers: { 'x-internal-token': 'token-interno-de-prueba' }, body: { useDb: true } })));
+  assert.equal(parse(r).paused, true);
+  assert.deepEqual(gateLines(lines), [{ result: 'PAUSED', code: 200, auth: 'INTERNAL', uid: 'cron' }]);
+  assert.equal(calls.length, 0);
+});
+
+test('bg obs: token interno incorrecto → DENIED 401 auth=INTERNAL y nunca PAUSED', async () => {
+  const { lines } = await conLogs(() => background(ev({ headers: { 'x-internal-token': 'malo' }, body: { useDb: true } })));
+  const g = gateLines(lines);
+  assert.deepEqual(g, [{ result: 'DENIED', code: 401, auth: 'INTERNAL' }]);
+  assert.ok(!lines.some((l) => /PAUSED/.test(l)));
+});
+
+test('bg obs: admin con dryRun → ALLOWED dryRun, sin PAUSED; preflight no registra', async () => {
+  let out = await conLogs(() => background(admin({ dryRun: true })));
+  assert.deepEqual(gateLines(out.lines), [{ result: 'ALLOWED', code: 200, auth: 'JWT', uid: 'uid-admin', dryRun: true }]);
+  out = await conLogs(() => background(ev({ method: 'OPTIONS' })));
+  assert.equal(gateLines(out.lines).length, 0);
+});
+
+test('bg obs: ningún log contiene credenciales, correos ni payloads', async () => {
+  const casos = [
+    () => background(ev({ body: { useDb: true, searches: [{ query: 'secreto-payload', city: 'X' }] } })),
+    () => background(admin({ useDb: true })),
+    () => background(ev({ headers: { 'x-internal-token': 'token-interno-de-prueba' }, body: { useDb: true } })),
+    () => background(ev({ headers: { 'x-internal-token': 'malo' }, body: {} })),
+  ];
+  for (const c of casos) {
+    const { lines } = await conLogs(c);
+    for (const l of lines) { assert.doesNotMatch(l, SENSIBLES, l); assert.doesNotMatch(l, /secreto-payload/, l); }
+  }
+});
+
+test('bg obs: ningún intento denegado invoca Anthropic, Places ni Resend', async () => {
+  script.isAdmin = () => resp(200, false);
+  await background(admin({ useDb: true, searches: [{ query: 'a', city: 'b' }] }));
+  await background(ev({ headers: { 'x-internal-token': 'malo' }, body: { useDb: true } }));
+  await background(ev({ body: { useDb: true } }));
+  assert.equal(paidCalls().length, 0);
+});

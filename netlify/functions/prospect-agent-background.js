@@ -1,5 +1,21 @@
 const SUPABASE_URL = "https://lxpgqhghxfqsahwrdmzo.supabase.co";
-const { gate, json, fail, parseJsonBody } = require("./_lib/auth");
+const { gate, json, fail, parseJsonBody, aiDisabled } = require("./_lib/auth");
+
+// ─── Observabilidad del gate (SEC-2I) ───
+// Netlify ejecuta esta función como Background Function: responde 202 y descarta
+// la respuesta del handler. La única evidencia de una decisión de autorización
+// es el log. Se registra UNA línea por invocación con el resultado, nunca
+// tokens, cabeceras, correos ni payloads.
+function tipoAuth(event) {
+  const h = (event && event.headers) || {};
+  const has = (n) => Object.keys(h).some((k) => k.toLowerCase() === n && h[k]);
+  if (has("x-internal-token")) return "INTERNAL";
+  if (has("authorization")) return "JWT";
+  return "NONE";
+}
+function logGate(fields) {
+  console.log("prospect-agent-background: gate " + JSON.stringify(fields));
+}
 
 const sbHeaders = (key) => ({
   "Content-Type": "application/json",
@@ -440,22 +456,38 @@ async function releaseLock(sbKey) {
 async function manualHandler(event) {
   // SEC-2: método → interruptor → preflight → (X-Internal-Token del cron | JWT + is_admin).
   // La autorización va ANTES del estado de pausa: un anónimo no sabe si hay agente.
+  const auth = tipoAuth(event);
   const g = await gate(event, { internal: true });
-  if (g.response) return g.response;
+  if (g.response) {
+    // Preflight (204) no se registra: no es una decisión de autorización.
+    const code = g.response.statusCode;
+    if (code !== 204) {
+      const result = code === 503 ? (aiDisabled() ? "DISABLED" : "ERROR") : "DENIED";
+      logGate({ result, code, auth });
+    }
+    return g.response;
+  }
 
   const parsed = parseJsonBody({ ...event, body: event.body || "{}" });
-  if (!parsed.ok) return fail(400, parsed.message, event);
+  if (!parsed.ok) {
+    logGate({ result: "DENIED", code: 400, auth, uid: g.auth.uid });
+    return fail(400, parsed.message, event);
+  }
   const body = parsed.body;
 
   // Prueba sin costo, solo tras autenticar y autorizar. No salta la pausa.
-  if (body.dryRun === true) return json(200, { authorized: true, paused: true }, event);
+  if (body.dryRun === true) {
+    logGate({ result: "ALLOWED", code: 200, auth, uid: g.auth.uid, dryRun: true });
+    return json(200, { authorized: true, paused: true }, event);
+  }
 
   // PAUSED: agent disabled (domain warmup recovery)
   const AGENT_PAUSED = true;
   if (AGENT_PAUSED) {
-    console.log("Prospect agent PAUSED");
+    logGate({ result: "PAUSED", code: 200, auth, uid: g.auth.uid });
     return json(200, { paused: true, message: "Agent paused (domain warmup recovery)" }, event);
   }
+  logGate({ result: "ALLOWED", code: 200, auth, uid: g.auth.uid });
 
   // Validación de entrada antes de cualquier acción externa.
   if (body.useDb !== undefined && typeof body.useDb !== "boolean") return fail(400, "useDb debe ser booleano", event);
